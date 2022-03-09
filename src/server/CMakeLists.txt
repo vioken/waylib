@@ -11,7 +11,7 @@ find_package(Qt${QT_VERSION_MAJOR}
 )
 
 find_package(PkgConfig)
-pkg_search_module(WLROOTS REQUIRED wlroots>=0.14)
+pkg_search_module(WLROOTS REQUIRED wlroots>=0.15)
 pkg_search_module(PIXMAN REQUIRED pixman-1)
 
 include(${PROJECT_SOURCE_DIR}/cmake/WaylandScannerHelpers.cmake)
