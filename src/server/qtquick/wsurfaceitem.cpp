@@ -25,6 +25,7 @@
 #include "wseat.h"
 #include "wcursor.h"
 #include "wthreadutils.h"
+#include "wquicksurface.h"
 
 #include <QQuickWindow>
 #include <QSGSimpleTextureNode>
@@ -63,16 +64,37 @@ public:
             delete textureProvider;
     }
 
+    // TODO: Don't using WOutput here, wapper by WSurfaceBridge
     inline WOutput *output() const {
         return WOutput::fromScreen(QQuickWindowPrivate::get(window)->topLevelScreen);
     }
     inline qreal scaleFromSurface() const {
         Q_Q(const WSurfaceItem);
-        return surface->size().width() / q->width();
+        return surface->surface()->size().width() / q->width();
     }
 
+    qreal getImplicitWidth() const override {
+        return surface ? surface->size().width() : 0;
+    }
+    qreal getImplicitHeight() const override {
+        return surface ? surface->size().height() : 0;
+    }
+
+    void updateImplicitSize() {
+        implicitWidthChanged();
+        implicitHeightChanged();
+
+        Q_Q(WSurfaceItem);
+        if (!widthValid())
+            q->resetWidth();
+        if (!heightValid())
+            q->resetHeight();
+    }
+
+    void initForSurface();
+
     Q_DECLARE_PUBLIC(WSurfaceItem)
-    WSurface *surface = nullptr;
+    QPointer<WQuickSurface> surface;
     WSGTextureProvider *textureProvider = nullptr;
 };
 
@@ -91,7 +113,7 @@ void WSGTextureProvider::updateTexture()
 {
     dwtexture->setHandle(item->surface->texture());
     Q_EMIT textureChanged();
-    item->q_func()->update();
+    QMetaObject::invokeMethod(item->q_func(), &QQuickItem::update, Qt::QueuedConnection);
 }
 
 WSurfaceItem::WSurfaceItem(QQuickItem *parent)
@@ -121,52 +143,28 @@ bool WSurfaceItem::contains(const QPointF &localPos) const
     if (Q_UNLIKELY(!d->surface))
         return false;
 
-    return d->surface->inputRegionContains(d->scaleFromSurface(), mapToGlobal(localPos));
+    // TODO: Can't using WSurface here, wapper by WSurfaceBridge
+    return d->surface->surface()->inputRegionContains(d->scaleFromSurface(), mapToGlobal(localPos));
 }
 
-void WSurfaceItem::setSurface(WSurface *surface)
+WQuickSurface *WSurfaceItem::surface() const
 {
-    // TODO
-    Q_D(WSurfaceItem);
+    Q_D(const WSurfaceItem);
+    return d->surface.get();
+}
 
-    if (d->surface == surface)
+void WSurfaceItem::setSurface(WQuickSurface *surface)
+{
+    Q_D(WSurfaceItem);
+    if (d->surface == surface || (d->componentComplete && d->surface))
         return;
 
-    if (d->surface) {
-        d->surface->disconnect(this);
-        d->surface->disconnect(d->textureProvider);
-    }
-
+    Q_ASSERT(surface);
     d->surface = surface;
-
-    if (d->surface) {
-        // in render thread
-        surface->server()->threadUtil()->run(this, d->textureProvider,
-                                             &WSGTextureProvider::updateTexture);
-
-        // in render thread
-        connect(d->surface, &WSurface::textureChanged,
-                d->textureProvider, &WSGTextureProvider::updateTexture,
-                Qt::DirectConnection);
-
-        connect(d->surface, &WSurface::destroyed, this,
-                &WSurfaceItem::releaseResources, Qt::DirectConnection);
-    }
-
+    d->initForSurface();
     update();
-    Q_EMIT surfaceChanged(d->surface);
-}
 
-WSurface *WSurfaceItem::surface() const
-{
-    Q_D(const WSurfaceItem);
-    return d->surface;
-}
-
-WOutput *WSurfaceItem::output() const
-{
-    Q_D(const WSurfaceItem);
-    return d->output();
+    Q_EMIT surfaceChanged();
 }
 
 QSGNode *WSurfaceItem::updatePaintNode(QSGNode *oldNode, QQuickItem::UpdatePaintNodeData *)
@@ -187,17 +185,17 @@ QSGNode *WSurfaceItem::updatePaintNode(QSGNode *oldNode, QQuickItem::UpdatePaint
         node->markDirty(QSGNode::DirtyMaterial);
     }
 
-    const QRectF textureGeometry(QPointF(0, 0), d->surface->bufferSize());
+    const QRectF textureGeometry(QPointF(0, 0), d->surface->surface()->bufferSize());
     node->setSourceRect(textureGeometry);
 
     const qreal scale = window()->effectiveDevicePixelRatio();
     const qreal scale_surface = d->scaleFromSurface();
-    const QRectF targetGeometry(d->surface->toEffectivePos(scale, d->surface->textureOffset()),
-                                textureGeometry.size() / d->surface->scale() / scale_surface);
+    const QRectF targetGeometry(d->surface->surface()->toEffectivePos(scale, d->surface->surface()->textureOffset()),
+                                textureGeometry.size() / d->surface->surface()->scale() / scale_surface);
     node->setRect(targetGeometry);
     node->setFiltering(QSGTexture::Linear);
 
-    d->surface->notifyFrameDone();
+    d->surface->surface()->notifyFrameDone();
 
     return node;
 }
@@ -212,7 +210,7 @@ void WSurfaceItem::hoverEnterEvent(QHoverEvent *event)
 
     event->accept();
     auto seat = we->data->seat;
-    seat->notifyEnterSurface(d->surface, we);
+    seat->server()->threadUtil()->run(this, seat, &WSeat::notifyEnterSurface, d->surface->surface(), we);
 }
 
 void WSurfaceItem::hoverLeaveEvent(QHoverEvent *event)
@@ -225,12 +223,12 @@ void WSurfaceItem::hoverLeaveEvent(QHoverEvent *event)
 
     auto seat = we->data->seat;
 
-    if (seat->hoverSurface() != d->surface) {
+    if (seat->hoverSurface() != d->surface->surface()) {
         return QQuickItem::hoverLeaveEvent(event);
     }
 
     event->accept();
-    seat->notifyLeaveSurface(d->surface, we);
+    seat->server()->threadUtil()->run(this, seat, &WSeat::notifyLeaveSurface, d->surface->surface(), we);
 }
 
 void WSurfaceItem::mousePressEvent(QMouseEvent *event)
@@ -276,6 +274,28 @@ void WSurfaceItem::releaseResources()
     QQuickItem::releaseResources();
 }
 
+void WSurfaceItem::componentComplete()
+{
+    Q_D(WSurfaceItem);
+
+    if (d->surface) {
+        d->initForSurface();
+    }
+
+    QQuickItem::componentComplete();
+}
+
+void WSurfaceItem::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
+{
+    Q_D(WSurfaceItem);
+
+    if (d->surface) {
+        d->surface->setSize(newGeometry.size());
+    }
+
+    QQuickItem::geometryChange(newGeometry, oldGeometry);
+}
+
 void WSurfaceItem::invalidateSceneGraph()
 {
     Q_D(WSurfaceItem);
@@ -283,6 +303,31 @@ void WSurfaceItem::invalidateSceneGraph()
         delete d->textureProvider;
     d->textureProvider = nullptr;
     d->surface = nullptr;
+}
+
+void WSurfaceItemPrivate::initForSurface()
+{
+    Q_Q(WSurfaceItem);
+
+    // in render thread
+    surface->surface()->server()->threadUtil()->run(q, textureProvider,
+                                                    &WSGTextureProvider::updateTexture);
+
+    // in render thread
+    QObject::connect(surface->surface(), &WSurface::textureChanged,
+                     textureProvider, &WSGTextureProvider::updateTexture,
+                     Qt::DirectConnection);
+    QObject::connect(surface->surface(), &WSurface::destroyed, q,
+                     &WSurfaceItem::releaseResources, Qt::DirectConnection);
+    QObject::connect(surface, &WQuickSurface::sizeChanged, q, [this] {
+        updateImplicitSize();
+    });
+
+    if (widthValid() && heightValid()) {
+        surface->setSize(q->size());
+    } else {
+        updateImplicitSize();
+    }
 }
 
 WAYLIB_SERVER_END_NAMESPACE

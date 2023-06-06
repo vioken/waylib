@@ -73,17 +73,13 @@ public:
         Q_ASSERT(!objectName().isEmpty());
     }
 
-    bool event(QEvent *e) override;
     Q_SLOT void processWaylandEvents();
 
 private:
     WServerPrivate *server;
-    static QEvent::Type callFunctionEventType;
     friend class WServer;
     friend class WServerPrivate;
 };
-QEvent::Type ServerThread::callFunctionEventType
-    = static_cast<QEvent::Type>(QEvent::registerEventType());
 
 class WServerPrivate : public WObjectPrivate
 {
@@ -91,8 +87,6 @@ public:
     WServerPrivate(WServer *qq)
         : WObjectPrivate(qq)
     {
-        // Mark to uninitialized
-        initialized.lock();
     }
     ~WServerPrivate()
     {
@@ -107,10 +101,9 @@ public:
 
     W_DECLARE_PUBLIC(WServer)
     QScopedPointer<ServerThread> thread;
-    QScopedPointer<QSocketNotifier> sockNot;
     QScopedPointer<WThreadUtil> threadUtil;
+    QScopedPointer<QSocketNotifier> sockNot;
     QScopedPointer<QObject> slotOwner;
-    QMutex initialized;
 
     QVector<WServerInterface*> interfaceList;
 
@@ -152,9 +145,6 @@ void WServerPrivate::init()
                      thread.get(), &ServerThread::processWaylandEvents);
 
     QMetaObject::invokeMethod(q, &WServer::_started, Qt::QueuedConnection);
-
-    // Mark to initialized
-    initialized.unlock();
 }
 
 void WServerPrivate::stop()
@@ -195,24 +185,13 @@ bool WServerPrivate::startThread()
     if (!thread) {
         thread.reset(new ServerThread(this));
         thread->moveToThread(thread.get());
-        threadUtil.reset(new WThreadUtil(thread.get(), ServerThread::callFunctionEventType));
+        threadUtil.reset(new WThreadUtil(thread.get()));
         q_func()->moveToThread(thread.get());
         Q_ASSERT(q_func()->thread() == thread.get());
     }
 
     thread->start(QThread::HighestPriority);
     return true;
-}
-
-bool ServerThread::event(QEvent *e)
-{
-    if (e->type() == callFunctionEventType) {
-        auto ev = static_cast<WThreadUtil::CallEvent*>(e);
-        if (Q_LIKELY(ev->target))
-            ev->function();
-        return true;
-    }
-    return QDaemonThread::event(e);
 }
 
 void ServerThread::processWaylandEvents()
@@ -362,14 +341,22 @@ static bool initializeQtPlatform(bool isMaster, const QStringList &parameters, s
     return true;
 }
 
-void WServer::start()
+static QThread *test1(QObject *a) {
+    return a->thread();
+}
+
+static QThread *test2() {
+    return QThread::currentThread();
+}
+
+QFuture<void> WServer::start()
 {
     W_D(WServer);
 
     if (!d->startThread())
-        return;
+        return {};
 
-    d->threadUtil->run(this, d, &WServerPrivate::init);
+    return d->threadUtil->run(this, d, &WServerPrivate::init);
 }
 
 void WServer::initializeQPA(bool master, const QStringList &parameters)
@@ -403,36 +390,19 @@ void WServer::initializeProxyQPA(int &argc, char **argv, const QStringList &prox
     qunsetenv("WAYLAND_DISPLAY");
 }
 
-static inline bool tryLock(QMutex *mutex, int timeout)
-{
-    bool ok = mutex->tryLock(timeout);
-    if (ok)
-        mutex->unlock();
-    return ok;
-}
-
-bool WServer::waitForStarted(int timeout)
-{
-    if (isRunning())
-        return true;
-
-    W_D(WServer);
-    return tryLock(&d->initialized, timeout);
-}
-
-bool WServer::waitForStoped(int timeout)
+bool WServer::waitForStoped(QDeadlineTimer deadline)
 {
     if (!isRunning())
         return true;
 
     W_D(WServer);
-    return d->thread->wait(timeout);
+    return d->thread->wait(deadline);
 }
 
 bool WServer::isRunning() const
 {
     W_DC(WServer);
-    return tryLock(&const_cast<WServerPrivate*>(d)->initialized, 0);
+    return d->display && d->thread && d->thread->isRunning();
 }
 
 const char *WServer::displayName() const

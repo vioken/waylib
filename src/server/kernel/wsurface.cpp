@@ -55,7 +55,9 @@ void WSurfacePrivate::on_commit(void *)
     if (Q_UNLIKELY(handle->current.width != handle->previous.width
                    || handle->current.height != handle->previous.height)) {
         Q_EMIT q->sizeChanged();
-        Q_EMIT q->effectiveSizeChanged();
+
+        if (q->attachedOutput())
+            Q_EMIT q->effectiveSizeChanged();
     }
 }
 
@@ -73,13 +75,14 @@ void WSurfacePrivate::connect()
 
 void WSurfacePrivate::updateOutputs()
 {
+    std::any oldOutputs = outputs;
     outputs.clear();
     wlr_surface_output *output;
     wl_list_for_each(output, &handle->current_outputs, link) {
         outputs << WOutput::fromHandle<wlr_output>(output->output);
     }
     W_Q(WSurface);
-    q->notifyChanged(WSurface::ChangeType::Outputs);
+    q->notifyChanged(WSurface::ChangeType::Outputs, oldOutputs, outputs);
 }
 
 WSurface::WSurface(QObject *parent)
@@ -111,6 +114,18 @@ void WSurface::setHandle(WSurfaceHandle *handle)
     d->handle = reinterpret_cast<wlr_surface*>(handle);
     d->handle->data = this;
     d->connect();
+}
+
+SurfaceData &WSurface::data()
+{
+    W_D(WSurface);
+    return d->data;
+}
+
+const SurfaceData &WSurface::data() const
+{
+    W_DC(WSurface);
+    return d->data;
 }
 
 WSurfaceHandle *WSurface::handle() const
@@ -230,12 +245,11 @@ void WSurface::enterOutput(WOutput *output)
     Q_ASSERT(!d->outputs.contains(output));
     wlr_surface_send_enter(d->handle, output->nativeInterface<QWOutput>()->handle());
 
-    connect(output, &WOutput::destroyed, this, [d]{
+    connect(output, &WOutput::destroyed, this, [d] {
         d->updateOutputs();
     });
 
     d->updateOutputs();
-    notifyChanged(ChangeType::Outputs);
 }
 
 void WSurface::leaveOutput(WOutput *output)
@@ -244,12 +258,11 @@ void WSurface::leaveOutput(WOutput *output)
     Q_ASSERT(d->outputs.contains(output));
     wlr_surface_send_leave(d->handle, output->nativeInterface<QWOutput>()->handle());
 
-    connect(output, &WOutput::destroyed, this, [d]{
+    connect(output, &WOutput::destroyed, this, [d] {
         d->updateOutputs();
     });
 
     d->updateOutputs();
-    notifyChanged(ChangeType::Outputs);
 }
 
 QVector<WOutput *> WSurface::currentOutputs() const
@@ -262,13 +275,13 @@ WOutput *WSurface::attachedOutput() const
 {
     W_DC(WSurface);
     const auto parent = parentSurface();
-    return parent ? parent->attachedOutput() : d->attachedOutput.data();
+    return parent ? parent->attachedOutput() : d->data.output;
 }
 
 QPointF WSurface::position() const
 {
     W_DC(WSurface);
-    return d->layout ? d->layout->position(this) : QPointF();
+    return d->data.pos;
 }
 
 QPointF WSurface::effectivePosition() const
@@ -287,30 +300,32 @@ void WSurface::setLayout(WSurfaceLayout *layout)
     W_D(WSurface);
     if (d->layout == layout)
         return;
+    std::any old = d->layout;
     d->layout = layout;
-    notifyChanged(ChangeType::Layout);
+    notifyChanged(ChangeType::Layout, old, layout);
 }
 
-void WSurface::notifyChanged(ChangeType type)
+void WSurface::notifyChanged(ChangeType type, std::any oldValue, std::any newValue)
 {
     if (type == ChangeType::Position) {
         Q_EMIT positionChanged();
-        Q_EMIT effectivePositionChanged();
+        if (attachedOutput())
+            Q_EMIT effectivePositionChanged();
     } else if (type == ChangeType::AttachedOutput) {
         W_D(WSurface);
-        if (d->attachedOutput) {
-            disconnect(d->attachedOutput.data(), &WOutput::scaleChanged,
+        if (auto output = std::any_cast<WOutput*>(oldValue)) {
+            disconnect(output, &WOutput::scaleChanged,
                        this, &WSurface::effectivePositionChanged);
-            disconnect(d->attachedOutput.data(), &WOutput::scaleChanged,
+            disconnect(output, &WOutput::scaleChanged,
                        this, &WSurface::effectiveSizeChanged);
         }
 
-        d->attachedOutput = d->layout->output(this);
-
-        connect(d->attachedOutput.data(), &WOutput::scaleChanged,
-                this, &WSurface::effectivePositionChanged);
-        connect(d->attachedOutput.data(), &WOutput::scaleChanged,
-                this, &WSurface::effectiveSizeChanged);
+        if (auto output = std::any_cast<WOutput*>(newValue)) {
+            connect(output, &WOutput::scaleChanged,
+                    this, &WSurface::effectivePositionChanged);
+            connect(output, &WOutput::scaleChanged,
+                    this, &WSurface::effectiveSizeChanged);
+        }
 
         Q_EMIT effectivePositionChanged();
         Q_EMIT effectiveSizeChanged();

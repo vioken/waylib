@@ -236,9 +236,9 @@ void WXdgSurface::setActivate(bool on)
     }
 }
 
-void WXdgSurface::notifyChanged(ChangeType type)
+void WXdgSurface::notifyChanged(ChangeType type, std::any oldValue, std::any newValue)
 {
-    WSurface::notifyChanged(type);
+    WSurface::notifyChanged(type, oldValue, newValue);
 }
 
 void WXdgSurface::notifyBeginState(State state)

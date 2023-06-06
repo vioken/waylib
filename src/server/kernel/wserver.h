@@ -24,6 +24,8 @@
 #include <wglobal.h>
 #include <qwglobal.h>
 
+#include <QDeadlineTimer>
+#include <QFuture>
 #include <QObject>
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -127,13 +129,12 @@ public:
     static WServer *fromThread(const QThread *thread);
     static WServer *from(WServerInterface *interface);
 
-    void start();
+    QFuture<void> start();
     void stop();
     static void initializeQPA(bool master, const QStringList &parameters = {});
     void initializeProxyQPA(int &argc, char **argv, const QStringList &proxyPlatformPlugins = {}, const QStringList &parameters = {});
 
-    bool waitForStarted(int timeout);
-    bool waitForStoped(int timeout);
+    bool waitForStoped(QDeadlineTimer deadline = QDeadlineTimer(QDeadlineTimer::Forever));
     bool isRunning() const;
     const char *displayName() const;
 

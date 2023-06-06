@@ -63,27 +63,27 @@ QHash<WSeat*, EventGrabber*> EventGrabber::seat2GrabberMap;
 
 void WSurfaceLayoutPrivate::updateSurfaceOutput(WSurface *surface)
 {
-    if (surface->parentSurface()) {
-        return;
-    }
+//    if (surface->parentSurface()) {
+//        return;
+//    }
 
-    W_Q(WSurfaceLayout);
-    WOutput *new_output = nullptr;
-    const QRectF surface_geometry(q->position(surface), surface->size());
+//    W_Q(WSurfaceLayout);
+//    WOutput *new_output = nullptr;
+//    const QRectF surface_geometry(q->position(surface), surface->size());
 
-    Q_FOREACH(WOutput *output, outputLayout->outputList()) {
-        const QRectF output_geometry(output->position(), output->transformedSize());
-        if (output_geometry.contains(surface_geometry.center())) {
-            new_output = output;
-            break;
-        }
-    }
+//    Q_FOREACH(WOutput *output, outputLayout->outputList()) {
+//        const QRectF output_geometry(output->position(), output->transformedSize());
+//        if (output_geometry.contains(surface_geometry.center())) {
+//            new_output = output;
+//            break;
+//        }
+//    }
 
-    // Whenever, the window must attch to a screen, so shouldn't update the output of
-    // the surface when not found a new screen object.
-    if (new_output) {
-        q->setOutput(surface, new_output);
-    }
+//    // Whenever, the window must attch to a screen, so shouldn't update the output of
+//    // the surface when not found a new screen object.
+//    if (new_output) {
+//        q->setOutput(surface, new_output);
+//    }
 }
 
 EventGrabber *WSurfaceLayoutPrivate::createEventGrabber(WSurface *surface, WSeat *seat)
@@ -98,23 +98,17 @@ EventGrabber *WSurfaceLayoutPrivate::createEventGrabber(WSurface *surface, WSeat
     return new EventGrabber(seat, q);
 }
 
-WSurfaceLayout::WSurfaceLayout(WOutputLayout *outputLayout, QObject *parent)
-    : WSurfaceLayout(*new WSurfaceLayoutPrivate(this), outputLayout, parent)
+WSurfaceLayout::WSurfaceLayout(QObject *parent)
+    : WSurfaceLayout(*new WSurfaceLayoutPrivate(this), parent)
 {
 
 }
 
-WSurfaceLayout::WSurfaceLayout(WSurfaceLayoutPrivate &dd, WOutputLayout *outputLayout, QObject *parent)
+WSurfaceLayout::WSurfaceLayout(WSurfaceLayoutPrivate &dd, QObject *parent)
     : QObject(parent)
     , WObject(dd)
 {
-    d_func()->outputLayout = outputLayout;
-}
 
-WOutputLayout *WSurfaceLayout::outputLayout() const
-{
-    W_DC(WSurfaceLayout);
-    return d->outputLayout;
 }
 
 QVector<WSurface *> WSurfaceLayout::surfaceList() const
@@ -146,6 +140,21 @@ void WSurfaceLayout::remove(WSurface *surface)
     d->surfaceList.removeOne(surface);
 
     Q_EMIT surfaceRemoved(surface);
+}
+
+void WSurfaceLayout::map(WSurface *surface)
+{
+    surface->data().mapped = true;
+}
+
+void WSurfaceLayout::unmap(WSurface *surface)
+{
+    surface->data().mapped = false;
+}
+
+bool WSurfaceLayout::isMapped(WSurface *surface) const
+{
+    return surface->data().mapped;
 }
 
 void WSurfaceLayout::requestMove(WSurface *surface, WSeat *seat, quint32 serial)
@@ -180,40 +189,28 @@ void WSurfaceLayout::requestActivate(WSurface *surface, WSeat *seat)
     Q_UNUSED(seat)
 }
 
-QPointF WSurfaceLayout::position(const WSurface *surface) const
-{
-    W_DC(WSurfaceLayout);
-    const auto &data = d->surfaceDataMap.value(surface);
-    return data.pos;
-}
-
 bool WSurfaceLayout::setPosition(WSurface *surface, const QPointF &pos)
 {
     W_D(WSurfaceLayout);
-    auto &data = d->surfaceDataMap[surface];
+    auto &data = surface->data();
     if (data.pos == pos)
         return false;
+    std::any old = data.pos;
     data.pos = pos;
-    surface->notifyChanged(WSurface::ChangeType::Position);
+    surface->notifyChanged(WSurface::ChangeType::Position, old, data.pos);
     d->updateSurfaceOutput(surface);
     return true;
-}
-
-WOutput *WSurfaceLayout::output(WSurface *surface) const
-{
-    W_DC(WSurfaceLayout);
-    const auto &data = d->surfaceDataMap.value(surface);
-    return data.output;
 }
 
 bool WSurfaceLayout::setOutput(WSurface *surface, WOutput *output)
 {
     W_D(WSurfaceLayout);
-    auto &data = d->surfaceDataMap[surface];
+    auto &data = surface->data();
     if (data.output == output)
         return false;
+    std::any old = data.output;
     data.output = output;
-    surface->notifyChanged(WSurface::ChangeType::AttachedOutput);
+    surface->notifyChanged(WSurface::ChangeType::AttachedOutput, old, data.output);
     return true;
 }
 

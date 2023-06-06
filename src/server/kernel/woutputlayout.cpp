@@ -22,6 +22,7 @@
 #include "wbackend.h"
 #include "woutput.h"
 #include "wsignalconnector.h"
+#include "private/woutputlayout_p.h"
 
 #include <qwoutputlayout.h>
 #include <qwoutput.h>
@@ -36,36 +37,21 @@ extern "C" {
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
-class WOutputLayoutPrivate : public WObjectPrivate
+WOutputLayoutPrivate::WOutputLayoutPrivate(WOutputLayout *qq)
+    : WObjectPrivate(qq)
+    , handle(new QWOutputLayout(qq))
 {
-public:
-    WOutputLayoutPrivate(WOutputLayout *qq)
-        : WObjectPrivate(qq)
-        , handle(new QWOutputLayout(qq))
-    {
-        connect();
+
+}
+
+WOutputLayoutPrivate::~WOutputLayoutPrivate()
+{
+    Q_FOREACH(auto i, outputList) {
+        i->setLayout(nullptr);
     }
 
-    ~WOutputLayoutPrivate() {
-        Q_FOREACH(auto i, outputList) {
-            i->setLayout(nullptr);
-        }
-
-        delete handle;
-    }
-
-    // begin slot function
-    void on_change(void*);
-    // end slot function
-
-    void connect();
-
-    W_DECLARE_PUBLIC(WOutputLayout)
-
-    QWOutputLayout *handle;
-    QVector<WOutput*> outputList;
-    QVector<WCursor*> cursorList;
-};
+    delete handle;
+}
 
 void WOutputLayoutPrivate::connect()
 {
@@ -76,9 +62,15 @@ void WOutputLayoutPrivate::connect()
     });
 }
 
-WOutputLayout::WOutputLayout(QObject *parent)
+WOutputLayout::WOutputLayout(WOutputLayoutPrivate &dd, QObject *parent)
     : QObject(parent)
-    , WObject(*new WOutputLayoutPrivate(this))
+    , WObject(dd, nullptr)
+{
+    dd.connect();
+}
+
+WOutputLayout::WOutputLayout(QObject *parent)
+    : WOutputLayout(*new WOutputLayoutPrivate(this), parent)
 {
 
 }

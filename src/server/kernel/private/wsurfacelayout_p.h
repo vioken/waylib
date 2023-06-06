@@ -28,6 +28,12 @@
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
+struct SurfaceData {
+    bool mapped = false;
+    QPointF pos;
+    WOutput *output = nullptr;
+};
+
 class EventGrabber;
 class WSurfaceLayoutPrivate : public WObjectPrivate
 {
@@ -41,15 +47,7 @@ public:
 
     W_DECLARE_PUBLIC(WSurfaceLayout)
 
-    struct SurfaceData {
-        WSurface *surface = nullptr;
-        QPointF pos;
-        WOutput *output = nullptr;
-    };
-
-    WOutputLayout *outputLayout = nullptr;
     QVector<WSurface*> surfaceList;
-    QHash<const WSurface*, SurfaceData> surfaceDataMap;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

@@ -71,6 +71,7 @@ public:
     ~WOutput();
 
     WBackend *backend() const;
+    WServer *server() const;
     bool isValid() const;
 
     void attach(QQuickRenderControl *control);

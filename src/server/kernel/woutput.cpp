@@ -147,8 +147,8 @@ public:
     inline void processInputEvent(WInputEvent *event) {
         currentInputEvent = event;
         auto system_event = static_cast<QEvent*>(event->data->nativeEvent);
-        QCoreApplication::sendEvent(q_func()->attachedWindow(), system_event);
-        delete system_event;
+        QCoreApplication::postEvent(q_func()->attachedWindow(), system_event);
+//        delete system_event;
         currentInputEvent = nullptr;
     }
 
@@ -697,6 +697,12 @@ WBackend *WOutput::backend() const
     return d->backend;
 }
 
+WServer *WOutput::server() const
+{
+    W_DC(WOutput);
+    return d->backend->server();
+}
+
 bool WOutput::isValid() const
 {
     W_DC(WOutput);
@@ -707,9 +713,13 @@ void WOutput::attach(QQuickRenderControl *control)
 {
     W_D(WOutput);
 
+    Q_ASSERT(!d->rc);
     d->rc = control;
-    d->rc->prepareThread(backend()->server()->thread());
-    d->init();
+
+    auto renderThread = d->backend->server()->thread();
+    d->rc->moveToThread(renderThread);
+    d->rc->prepareThread(renderThread);
+    server()->threadUtil()->run(this, d, &WOutputPrivate::init);
 }
 
 void WOutput::detach()
@@ -725,7 +735,6 @@ void WOutput::detach()
         w->setScreen(nullptr);
 
         d->rc->invalidate();
-        delete d->rc;
         d->rc = nullptr;
     }
 

@@ -69,7 +69,7 @@ public Q_SLOTS:
     void resize(const QSize &size) override;
 
 protected:
-    void notifyChanged(ChangeType type) override;
+    void notifyChanged(ChangeType type, std::any oldValue, std::any newValue) override;
     void notifyBeginState(State state) override;
     void notifyEndState(State state) override;
 };

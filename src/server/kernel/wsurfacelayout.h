@@ -43,17 +43,16 @@ class WAYLIB_SERVER_EXPORT WSurfaceLayout : public QObject, public WObject
     W_DECLARE_PRIVATE(WSurfaceLayout)
 
 public:
-    explicit WSurfaceLayout(WOutputLayout *outputLayout, QObject *parent = nullptr);
+    explicit WSurfaceLayout(QObject *parent = nullptr);
 
-    WOutputLayout *outputLayout() const;
     QVector<WSurface*> surfaceList() const;
 
     virtual void add(WSurface *surface);
     virtual void remove(WSurface *surface);
 
-    virtual void map(WSurface *surface) = 0;
-    virtual void unmap(WSurface *surface) = 0;
-    virtual bool isMapped(WSurface *surface) const = 0;
+    virtual void map(WSurface *surface);
+    virtual void unmap(WSurface *surface);
+    bool isMapped(WSurface *surface) const;
 
     virtual void requestMove(WSurface *surface, WSeat *seat, quint32 serial);
     virtual void requestResize(WSurface *surface, WSeat *seat, Qt::Edges edge, quint32 serial);
@@ -61,9 +60,7 @@ public:
     virtual void requestUnmaximize(WSurface *surface);
     virtual void requestActivate(WSurface *surface, WSeat *seat);
 
-    virtual QPointF position(const WSurface *surface) const;
     virtual bool setPosition(WSurface *surface, const QPointF &pos);
-    virtual WOutput *output(WSurface *surface) const;
     virtual bool setOutput(WSurface *surface, WOutput *output);
 
 Q_SIGNALS:
@@ -71,7 +68,7 @@ Q_SIGNALS:
     void surfaceRemoved(WSurface *surface);
 
 protected:
-    WSurfaceLayout(WSurfaceLayoutPrivate &dd, WOutputLayout *outputLayout, QObject *parent = nullptr);
+    WSurfaceLayout(WSurfaceLayoutPrivate &dd, QObject *parent = nullptr);
 };
 
 WAYLIB_SERVER_END_NAMESPACE

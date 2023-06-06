@@ -382,10 +382,7 @@ void WSeat::detachInputDevice(WInputDevice *device)
 void WSeat::notifyEnterSurface(WSurface *surface, WInputEvent *event)
 {
     W_D(WSeat);
-    // Do async call that the event maybe to destroyed later, so should
-    // use the data of event instead of the event self.
-    server()->threadUtil()->run(surface, d, &WSeatPrivate::doEnter,
-                                 surface, event->data);
+    d->doEnter(surface, event->data);
 }
 
 void WSeat::notifyLeaveSurface(WSurface *surface, WInputEvent *event)
@@ -393,9 +390,7 @@ void WSeat::notifyLeaveSurface(WSurface *surface, WInputEvent *event)
     Q_UNUSED(event)
     W_D(WSeat);
     Q_ASSERT(d->hoverSurface == surface);
-    // Do async call that the event maybe to destroyed later, so should
-    // use the data of event instead of the event self.
-    server()->threadUtil()->run(server(), d, &WSeatPrivate::doClearFocus, event->data);
+    d->doClearFocus(event->data);
 }
 
 WSurface *WSeat::hoverSurface() const

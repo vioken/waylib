@@ -23,6 +23,7 @@
 #include "wxdgsurface.h"
 #include "wsurfacelayout.h"
 #include "wseat.h"
+#include "wthreadutils.h"
 
 #include <qwseat.h>
 #include <qwxdgshell.h>
@@ -56,7 +57,7 @@ public:
     // toplevel
     void on_request_move(wlr_xdg_toplevel_move_event *event);
     void on_request_resize(wlr_xdg_toplevel_resize_event *event);
-    void on_request_maximize(QWXdgSurface *surface, bool maximize);
+    void on_request_maximize(QWXdgSurface *xdgSurface, bool maximize);
     // end slot function
 
     W_DECLARE_PUBLIC(WXdgShell)
@@ -70,7 +71,6 @@ void WXdgShellPrivate::on_new_xdg_surface(wlr_xdg_surface *wlr_surface)
     // TODO: QWXdgSurface::from(wlr_surface)
     QWXdgSurface *xdgSurface = QWXdgSurface::from(wlr_surface->surface);
     auto surface = new WXdgSurface(reinterpret_cast<WXdgSurfaceHandle*>(xdgSurface));
-    surface->moveToThread(server->thread());
     surface->setParent(server);
     Q_ASSERT(surface->parent() == server);
     QObject::connect(xdgSurface, &QObject::destroyed, server->slotOwner(), [this] (QObject *data) {
@@ -105,8 +105,9 @@ void WXdgShellPrivate::on_surface_destroy(QObject *data)
     auto surface = WXdgSurface::fromHandle(wlr_surface);
     Q_ASSERT(surface);
 
-    if (layout)
+    if (layout) {
         layout->remove(surface);
+    }
     surface->deleteLater();
 }
 
@@ -120,7 +121,8 @@ void WXdgShellPrivate::on_map(QWXdgSurface *xdgSurface)
 void WXdgShellPrivate::on_unmap(QWXdgSurface *xdgSurface)
 {
     Q_ASSERT(xdgSurface);
-    layout->unmap(WXdgSurface::fromHandle<QWXdgSurface>(xdgSurface));
+    auto surface = WXdgSurface::fromHandle<QWXdgSurface>(xdgSurface);
+    layout->unmap(surface);
 }
 
 void WXdgShellPrivate::on_request_move(wlr_xdg_toplevel_move_event *event)
@@ -158,12 +160,13 @@ void WXdgShellPrivate::on_request_resize(wlr_xdg_toplevel_resize_event *event)
     layout->requestResize(surface, seat, toQtEdge(event->edges), event->serial);
 }
 
-void WXdgShellPrivate::on_request_maximize(QWXdgSurface *surface, bool maximize)
+void WXdgShellPrivate::on_request_maximize(QWXdgSurface *xdgSurface, bool maximize)
 {
+    auto surface = WXdgSurface::fromHandle<QWXdgSurface>(xdgSurface);
     if (maximize) {
-        layout->requestMaximize(WXdgSurface::fromHandle<QWXdgSurface>(surface));
+        layout->requestMaximize(surface);
     } else {
-        layout->requestUnmaximize(WXdgSurface::fromHandle<QWXdgSurface>(surface));
+        layout->requestUnmaximize(surface);
     }
 }
 

@@ -48,12 +48,17 @@ endif()
 
 set(QTQUICK_SOURCES
     qtquick/wsurfaceitem.cpp
-    qtquick/wsurfacemanager.cpp
+    qtquick/wquicksurface.cpp
+    qtquick/woutputwindow.cpp
+    qtquick/wquickxdgshell.cpp
+    qtquick/wquickbackend.cpp
+    qtquick/private/woutputwindowitem.cpp
 )
 
 set(UTILS_SOURCES
     utils/wsignalconnector.cpp
     utils/wtools.cpp
+    utils/wthreadutils.cpp
 )
 
 set(QPA_SOURCES
@@ -97,10 +102,12 @@ set(HEADERS
 
     qtquick/wquickrendercontrol.h
     qtquick/wsurfaceitem.h
-    qtquick/wsurfacemanager.h
+    qtquick/wquicksurface.h
+    qtquick/woutputwindow.h
+    qtquick/wquickxdgshell.h
+    qtquick/wquickbackend.h
     qtquick/WQuickRenderControl
     qtquick/WSurfaceItem
-    qtquick/WSurfaceManager
 
     utils/wsignalconnector.h
     utils/wtools.h
@@ -116,6 +123,11 @@ add_library(${TARGET}
     ${QTQUICK_SOURCES}
     ${UTILS_SOURCES}
     ${QPA_SOURCES}
+)
+
+qt_add_qml_module(${TARGET}
+    URI Waylib.Server
+    VERSION "${PROJECT_VERSION}"
 )
 
 set_target_properties(${TARGET}
@@ -165,6 +177,7 @@ target_include_directories(${TARGET}
     PUBLIC
     kernel
     qtquick
+    qtquick/private
     utils
 )
 

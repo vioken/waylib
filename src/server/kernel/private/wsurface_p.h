@@ -23,6 +23,7 @@
 
 #include "wsurface.h"
 #include "wsignalconnector.h"
+#include "wsurfacelayout_p.h"
 
 #include <QPointer>
 
@@ -47,8 +48,10 @@ public:
 
     wlr_surface *handle = nullptr;
     QVector<WOutput*> outputs;
-    QPointer<WOutput> attachedOutput;
     WSurfaceLayout *layout = nullptr;
+
+    // data from WSurfaceLayout
+    SurfaceData data;
 
     WSignalConnector sc;
 };

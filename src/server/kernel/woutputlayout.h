@@ -64,6 +64,9 @@ public:
 Q_SIGNALS:
     void outputAdded(WOutput *output);
     void outputRemoved(WOutput *output);
+
+protected:
+    WOutputLayout(WOutputLayoutPrivate &dd, QObject *parent);
 };
 
 WAYLIB_SERVER_END_NAMESPACE

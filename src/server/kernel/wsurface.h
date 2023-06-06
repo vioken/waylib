@@ -26,6 +26,7 @@
 
 #include <QObject>
 #include <QRect>
+#include <any>
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
@@ -34,6 +35,7 @@ class WSeat;
 class WTextureHandle;
 class WOutput;
 class WSurfaceLayout;
+struct SurfaceData;
 class WSurfaceHandle;
 class WSurfacePrivate;
 class WAYLIB_SERVER_EXPORT WSurface : public QObject, public WObject
@@ -135,7 +137,7 @@ public:
     WSurfaceLayout *layout() const;
     void setLayout(WSurfaceLayout *layout);
 
-    virtual void notifyChanged(ChangeType);
+    virtual void notifyChanged(ChangeType, std::any oldValue, std::any newValue);
     virtual void notifyBeginState(State);
     virtual void notifyEndState(State);
 
@@ -150,6 +152,10 @@ protected:
     WSurface(WSurfacePrivate &dd, QObject *parent);
 
     void setHandle(WSurfaceHandle *handle);
+
+private:
+    SurfaceData &data();
+    const SurfaceData &data() const;
 };
 
 WAYLIB_SERVER_END_NAMESPACE
