@@ -6,12 +6,14 @@
 #include "winputdevice.h"
 #include "wxcursormanager.h"
 #include "wxcursorimage.h"
+#include "wimagebuffer.h"
 #include "wseat.h"
 #include "woutput.h"
 #include "woutputlayout.h"
 #include "platformplugin/qwlrootsintegration.h"
 #include "platformplugin/qwlrootscursor.h"
 
+#include <qwbuffer.h>
 #include <qwcursor.h>
 #include <qwoutput.h>
 #include <qwxcursormanager.h>
@@ -37,16 +39,22 @@ extern "C" {
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
+inline QWBuffer* createImageBuffer(QImage image)
+{
+    auto *bufferImpl = new WImageBufferImpl(image);
+    return QWBuffer::create(bufferImpl, image.width(), image.height());
+}
+
 WCursorPrivate::WCursorPrivate(WCursor *qq)
     : WObjectPrivate(qq)
     , handle(new QWCursor())
 {
-    handle->handle()->data = qq;
+    handle->setData(this, qq);
 }
 
 WCursorPrivate::~WCursorPrivate()
 {
-    handle->handle()->data = nullptr;
+    handle->setData(this, nullptr);
     if (seat)
         seat->setCursor(nullptr);
 
@@ -74,7 +82,8 @@ void WCursorPrivate::setType(const char *name)
             cursorImages.append(new WXCursorImage(xcursor, o->scale()));
             // TODO: Support animation
             WXCursorImage *image = cursorImages.last();
-            handle->setImage(image->image(), image->hotspot());
+            auto *imageBuffer = createImageBuffer(image->image());
+            handle->setBuffer(imageBuffer, image->hotspot(), image->scale());
         }
     }
 }
@@ -153,11 +162,13 @@ void WCursorPrivate::updateCursorImage()
 
                 cursorImages.append(new WXCursorImage(tmp, cursor.hotSpot() * o->scale() / img.devicePixelRatio()));
                 WXCursorImage *image = cursorImages.last();
-                handle->setImage(image->image(), image->hotspot());
+                auto *imageBuffer = createImageBuffer(image->image());
+                handle->setBuffer(imageBuffer, image->hotspot(), image->scale());
             }
         } else {
             cursorImages.append(new WXCursorImage(img, cursor.hotSpot()));
-            handle->setImage(img, cursor.hotSpot());
+            auto *imageBuffer = createImageBuffer(img);
+            handle->setBuffer(imageBuffer, cursor.hotSpot(), img.devicePixelRatio());
         }
     }
 
@@ -294,8 +305,7 @@ WCursorHandle *WCursor::handle() const
 
 WCursor *WCursor::fromHandle(const WCursorHandle *handle)
 {
-    auto wlr_handle = reinterpret_cast<const QWCursor*>(handle)->handle();
-    return reinterpret_cast<WCursor*>(wlr_handle->data);
+    return reinterpret_cast<const QWCursor*>(handle)->getData<WCursor>();
 }
 
 Qt::MouseButton WCursor::fromNativeButton(uint32_t code)
