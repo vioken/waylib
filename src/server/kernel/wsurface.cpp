@@ -73,8 +73,8 @@ void WSurfacePrivate::connect()
     QObject::connect(handle, &QWSurface::commit, q, [this] {
         on_commit();
     });
-    QObject::connect(handle, &QWSurface::map, q, &WSurface::mappedChanged);
-    QObject::connect(handle, &QWSurface::unmap, q, &WSurface::mappedChanged);
+    QObject::connect(handle, &QWSurface::mapped, q, &WSurface::mappedChanged);
+    QObject::connect(handle, &QWSurface::unmapped, q, &WSurface::mappedChanged);
     QObject::connect(handle, &QWSurface::newSubsurface, q, [q, this] (QWSubsurface *sub) {
         setHasSubsurface(true);
         Q_EMIT q->newSubsurface(ensureSubsurface(sub->handle()));
