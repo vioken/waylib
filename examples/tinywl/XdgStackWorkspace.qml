@@ -54,7 +54,7 @@ Item {
             states: [
                 State {
                     name: "maximize"
-                    when: waylandSurface && waylandSurface.isMaximized && outputCoordMapper
+                    when: waylandSurface.isMaximized && outputCoordMapper
                     PropertyChanges {
                         restoreEntryValues: true
                         surface {
