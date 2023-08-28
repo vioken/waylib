@@ -712,8 +712,8 @@ void WSeat::notifyTouchDown(WCursor *cursor, WInputDevice *device, int32_t touch
             notifyTouchFrame(cursor);
         }
 
-        if (state->point(touch_id) == nullptr) {
-            qWarning("Inconsistent touch state, (got 'Down' But touch_id(%s) is not released", touch_id);
+        if (state->point(touch_id) != nullptr) {
+            qWarning("Inconsistent touch state, (got 'Down' But touch_id(%d) is not released", touch_id);
         }
     }
 
