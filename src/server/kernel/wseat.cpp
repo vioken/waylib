@@ -172,7 +172,9 @@ public:
         }
         Q_ASSERT(pointerFocusSurface() == surface->handle()->handle());
 
-        Q_ASSERT(!pointerFocusEventObject || eventObject != pointerFocusEventObject);
+        if (pointerFocusEventObject && eventObject == pointerFocusEventObject)
+            return true;
+
         if (pointerFocusEventObject) {
             Q_ASSERT(onEventObjectDestroy);
             QObject::disconnect(onEventObjectDestroy);
