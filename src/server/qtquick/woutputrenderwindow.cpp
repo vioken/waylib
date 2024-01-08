@@ -1243,12 +1243,12 @@ void WOutputRenderWindow::update()
     d->scheduleDoRender();
 }
 
-qreal WOutputRenderWindow::width()
+qreal WOutputRenderWindow::width() const
 {
     return contentItem()->width();
 }
 
-qreal WOutputRenderWindow::height()
+qreal WOutputRenderWindow::height() const
 {
     return contentItem()->height();
 }
