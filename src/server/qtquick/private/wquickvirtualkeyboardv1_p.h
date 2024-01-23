@@ -5,6 +5,7 @@
 
 #include <wglobal.h>
 #include <wquickwaylandserver.h>
+#include <winputmethodhelper.h>
 
 #include <qwglobal.h>
 #include <qwkeyboard.h>
@@ -54,6 +55,18 @@ Q_SIGNALS:
 
 private:
     void create() override;
+};
+
+class WVirtualKeyboardV1Adaptor : public WVirtualKeyboardAdaptor
+{
+    Q_OBJECT
+
+public:
+    explicit WVirtualKeyboardV1Adaptor(WQuickVirtualKeyboardV1 *vkv1);
+    WInputDevice *keyboard() const override;
+
+private:
+    WQuickVirtualKeyboardV1 *m_vk;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

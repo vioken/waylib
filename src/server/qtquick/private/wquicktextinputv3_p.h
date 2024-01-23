@@ -3,16 +3,15 @@
 
 #pragma once
 
-#include <wglobal.h>
-#include <wquickwaylandserver.h>
+#include "wglobal.h"
+#include "wquickwaylandserver.h"
+#include "winputmethodhelper.h"
 
 #include <qwglobal.h>
 
 #include <QQmlEngine>
 #include <QRect>
 
-Q_MOC_INCLUDE("wsurfaceitem.h")
-Q_MOC_INCLUDE("wtoplevelsurface.h")
 Q_MOC_INCLUDE("wsurface.h")
 Q_MOC_INCLUDE("wseat.h")
 Q_MOC_INCLUDE(<qwtextinputv3.h>)
@@ -22,23 +21,18 @@ class QWTextInputV3;
 class QWTextInputManagerV3;
 QW_END_NAMESPACE
 
-struct wlr_text_input_v3_state;
 WAYLIB_SERVER_BEGIN_NAMESPACE
-class WQuickTextInputV3Private;
-class WToplevelSurface;
-class WSurfaceItem;
 class WSurface;
-class WQuickTextInputV3;
-class WQuickTextInputManagerV3Private;
 class WSeat;
-class WTextInputV3State;
-
+class WQuickTextInputV3;
+class WQuickTextInputV3Private;
+class WQuickTextInputManagerV3Private;
 class WAYLIB_SERVER_EXPORT WQuickTextInputManagerV3 : public WQuickWaylandServerInterface, public WObject
 {
     Q_OBJECT
     W_DECLARE_PRIVATE(WQuickTextInputManagerV3)
     QML_NAMED_ELEMENT(TextInputManagerV3)
-    Q_PROPERTY(QList<WQuickTextInputV3 *> textInputs READ textInputs)
+    Q_PROPERTY(QList<WQuickTextInputV3 *> textInputs READ textInputs NOTIFY textInputsChanged)
 
 public:
     explicit WQuickTextInputManagerV3(QObject *parent = nullptr);
@@ -46,24 +40,44 @@ public:
 
 Q_SIGNALS:
     void newTextInput(WQuickTextInputV3 *ti);
+    void textInputsChanged();
 
 private:
     void create() override;
 };
 
+/**
+ * @brief The text input unstable v3 protocol entity used in QML
+ * text input v3 use a double buffer state, thus, surrounding text
+ * , text change cause, content type and cursor rect should be
+ * considered as changed when committed.
+ */
 class WQuickTextInputV3 : public QObject, public WObject
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(TextInputV3)
     QML_UNCREATABLE("Only created by TextInputManagerV3 in C++")
     W_DECLARE_PRIVATE(WQuickTextInputV3)
-
     Q_PROPERTY(WSeat *seat READ seat CONSTANT FINAL)
-    Q_PROPERTY(WTextInputV3State *state READ state CONSTANT FINAL)
-    Q_PROPERTY(WTextInputV3State *pendingState READ pendingState CONSTANT FINAL)
-    Q_PROPERTY(WSurface *focusedSurface READ focusedSurface FINAL)
+    Q_PROPERTY(WSurface *focusedSurface READ focusedSurface NOTIFY focusedSurfaceChanged FINAL)
+    Q_PROPERTY(QString surroundingText READ surroundingText NOTIFY committed FINAL)
+    Q_PROPERTY(uint surroundingCursor READ surroundingCursor NOTIFY committed FINAL)
+    Q_PROPERTY(uint surroundingAnchor READ surroundingAnchor NOTIFY committed FINAL)
+    Q_PROPERTY(ChangeCause textChangeCause READ textChangeCause NOTIFY committed FINAL)
+    Q_PROPERTY(ContentHints contentHints READ contentHints NOTIFY committed FINAL)
+    Q_PROPERTY(ContentPurpose contentPurpose READ contentPurpose NOTIFY committed FINAL)
+    Q_PROPERTY(QRect cursorRect READ cursorRect NOTIFY committed FINAL)
+    Q_PROPERTY(Features features READ features NOTIFY committed FINAL)
 
 public:
+    enum Feature {
+        SurroundingText = 1 << 0,
+        ContentType = 1 << 1,
+        CursorRect = 1 << 2
+    };
+    Q_FLAG(Feature)
+    Q_DECLARE_FLAGS(Features, Feature)
+
     enum ChangeCause {
         InputMethod,
         Other
@@ -83,7 +97,8 @@ public:
         Latin = 0x100,
         Multiline = 0x200
     };
-    Q_ENUM(ContentHint)
+    Q_FLAG(ContentHint)
+    Q_DECLARE_FLAGS(ContentHints, ContentHint)
 
     enum ContentPurpose {
         Normal,
@@ -104,9 +119,15 @@ public:
     Q_ENUM(ContentPurpose)
 
     WSeat *seat() const;
-    WTextInputV3State *state() const;
-    WTextInputV3State *pendingState() const;
     WSurface *focusedSurface() const;
+    QString surroundingText() const;
+    uint surroundingCursor() const;
+    uint surroundingAnchor() const;
+    ChangeCause textChangeCause() const;
+    ContentHints contentHints() const;
+    ContentPurpose contentPurpose() const;
+    QRect cursorRect() const;
+    Features features() const;
     wl_client *waylandClient() const;
     QW_NAMESPACE::QWTextInputV3 *handle() const;
 
@@ -119,53 +140,50 @@ public Q_SLOTS:
     void sendDone();
 
 Q_SIGNALS:
-    void enable();
-    void disable();
-    void commit();
+    void enabled();
+    void disabled();
+    void committed();
+    void focusedSurfaceChanged();
 
 private:
     WQuickTextInputV3(QW_NAMESPACE::QWTextInputV3 *handle, QObject *parent);
     friend class WQuickTextInputManagerV3;
 };
 
-class WTextInputV3StatePrivate;
-class WTextInputV3State : public QObject, public WObject
+class WTextInputV3Adaptor : public WTextInputAdaptor
 {
     Q_OBJECT
-    W_DECLARE_PRIVATE(WTextInputV3State)
-    Q_PROPERTY(QString surroundingText READ surroundingText FINAL)
-    Q_PROPERTY(quint32 surroundingCursor READ surroundingCursor FINAL)
-    Q_PROPERTY(quint32 surroundingAnchor READ surroundingAnchor FINAL)
-    Q_PROPERTY(WQuickTextInputV3::ChangeCause textChangeCause READ textChangeCause FINAL)
-    Q_PROPERTY(WQuickTextInputV3::ContentHint contentHint READ contentHint FINAL)
-    Q_PROPERTY(WQuickTextInputV3::ContentPurpose contentPurpose READ contentPurpose FINAL)
-    Q_PROPERTY(QRect cursorRect READ cursorRect FINAL)
-    Q_PROPERTY(Features features READ features FINAL)
-
 public:
-    enum Feature {
-        SurroundingText = 1 << 0,
-        ContentType = 1 << 1,
-        CursorRect = 1 << 2
-    };
-    Q_FLAG(Feature)
-    Q_DECLARE_FLAGS(Features, Feature)
+    WTextInputV3Adaptor(WQuickTextInputV3 *tiv3);
+    WSeat *seat() const override;
+    WSurface *focusedSurface() const override;
+    QString surroundingText() const override;
+    int surroundingCursor() const override;
+    int surroundingAnchor() const override;
+    im::ChangeCause textChangeCause() const override;
+    im::ContentHints contentHints() const override;
+    im::ContentPurpose contentPurpose() const override;
+    QRect cursorRect() const override;
+    im::Features features() const override;
+    wl_client *waylandClient() const override;
 
-    wlr_text_input_v3_state *handle() const;
-    QString surroundingText() const;
-    quint32 surroundingCursor() const;
-    quint32 surroundingAnchor() const;
-    WQuickTextInputV3::ChangeCause textChangeCause() const;
-    WQuickTextInputV3::ContentHint contentHint() const;
-    WQuickTextInputV3::ContentPurpose contentPurpose() const;
-    QRect cursorRect() const;
-    Features features() const;
-
-    friend QDebug operator<<(QDebug debug, const WTextInputV3State &state);
+public slots:
+    void sendEnter(WSurface *surface) override;
+    void sendLeave() override;
+    void sendDone() override;
+    void handleIMCommitted(WInputMethodAdaptor *im) override;
+    void handleKeyboardFocusChanged(WSurface *keyboardFocus) override;
 
 private:
-    explicit WTextInputV3State(wlr_text_input_v3_state *handle, QObject *parent = nullptr);
-    friend class WQuickTextInputV3Private;
+    WQuickTextInputV3 *m_ti;
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(WQuickTextInputV3::ContentHints)
+Q_DECLARE_OPERATORS_FOR_FLAGS(WQuickTextInputV3::Features)
 WAYLIB_SERVER_END_NAMESPACE
-Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WTextInputV3State::Features)
+Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickTextInputV3::ChangeCause)
+Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickTextInputV3::ContentHint)
+Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickTextInputV3::ContentHints)
+Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickTextInputV3::ContentPurpose)
+Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickTextInputV3::Feature)
+Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickTextInputV3::Features)

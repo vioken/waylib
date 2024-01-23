@@ -48,6 +48,12 @@ ws_generate(
     unstable/text-input/text-input-unstable-v1.xml
     text-input-unstable-v1-protocol
 )
+ws_generate(
+    server
+    wayland-protocols
+    ${CMAKE_CURRENT_SOURCE_DIR}/protocols/text-input-unstable-v2.xml
+    text-input-unstable-v2-protocol
+)
 
 set(KERNEL_SOURCES
     kernel/wbackend.cpp
@@ -57,6 +63,8 @@ set(KERNEL_SOURCES
     kernel/wseat.cpp
     kernel/wserver.cpp
     kernel/wsurface.cpp
+    kernel/wtextinputv1.cpp
+    kernel/wtextinputv2.cpp
 
     kernel/wtexture.cpp
     kernel/wtypes.cpp
@@ -68,6 +76,7 @@ set(KERNEL_SOURCES
     kernel/wxcursorimage.cpp
     kernel/wglobal.cpp
     kernel/wsocket.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v2-protocol.c
 )
 
 set(QTQUICK_SOURCES
@@ -101,6 +110,7 @@ set(QTQUICK_SOURCES
     qtquick/private/wquickoutputmanager.cpp
     qtquick/private/wquicklayershell.cpp
     qtquick/private/wquicktextinputv1.cpp
+    qtquick/private/wquicktextinputv2.cpp
     qtquick/private/wquicktextinputv3.cpp
     qtquick/private/wquickinputmethodv2.cpp
     qtquick/private/wquickvirtualkeyboardv1.cpp
@@ -144,6 +154,8 @@ set(HEADERS
     kernel/wxcursorimage.h
     kernel/wsocket.h
     kernel/wtoplevelsurface.h
+    kernel/wtextinputv1.h
+    kernel/wtextinputv2.h
 
     kernel/WOutput
     kernel/WServer
@@ -175,6 +187,7 @@ set(HEADERS
     qtquick/wquicktextureproxy.h
     qtquick/woutputlayer.h
     qtquick/wrenderbufferblitter.h
+    qtquick/winputmethodhelper.h
 
     utils/wtools.h
     utils/wthreadutils.h
@@ -198,6 +211,7 @@ set(PRIVATE_HEADERS
     qtquick/private/wquicktextureproxy_p.h
     qtquick/private/wquicklayershell_p.h
     qtquick/private/wquicktextinputv1_p.h
+    qtquick/private/wquicktextinputv2_p.h
     qtquick/private/wquicktextinputv3_p.h
     qtquick/private/wquickinputmethodv2_p.h
     qtquick/private/wquickvirtualkeyboardv1_p.h
@@ -207,6 +221,7 @@ set(PRIVATE_HEADERS
     qtquick/private/wrenderbuffernode_p.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.h
+    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v2-protocol.h
 )
 
 if(NOT DISABLE_XWAYLAND)

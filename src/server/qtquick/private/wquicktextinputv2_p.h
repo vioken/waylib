@@ -1,10 +1,11 @@
-// Copyright (C) 2023 Yixue Wang <wangyixue@deepin.org>.
+// Copyright (C) 2024 Yixue Wang <wangyixue@deepin.org>.
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #pragma once
 
 #include <wglobal.h>
 #include <wquickwaylandserver.h>
+#include <wtextinputv2.h>
 #include <winputmethodhelper.h>
 
 #include <qwglobal.h>
@@ -12,37 +13,52 @@
 #include <QObject>
 #include <QQmlEngine>
 
-QW_BEGIN_NAMESPACE
-class QWDisplay;
-QW_END_NAMESPACE
+Q_MOC_INCLUDE(<wsurfaceitem.h>)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
-class WSurface;
-class WSeat;
-class WTextInputV1;
-class WQuickTextInputV1Private;
-class WQuickTextInputManagerV1Private;
-class WQuickTextInputV1 : public QObject, public WObject
+class WQuickTextInputManagerV2Private;
+class WQuickTextInputV2Private;
+class WQuickTextInputV2;
+class WTextInputV2;
+
+class WQuickTextInputManagerV2 : public WQuickWaylandServerInterface, public WObject
 {
     Q_OBJECT
-    W_DECLARE_PRIVATE(WQuickTextInputV1)
-    QML_NAMED_ELEMENT(TextInputV1)
-    QML_UNCREATABLE("Only created in C++ by WQuickTextInputManagerV1.")
-    Q_PROPERTY(WSeat* seat READ seat NOTIFY seatChanged FINAL)
+    W_DECLARE_PRIVATE(WQuickTextInputManagerV2)
+    QML_NAMED_ELEMENT(TextInputManagerV2)
+    Q_PROPERTY(QList<WQuickTextInputV2 *> textInputs READ textInputs NOTIFY textInputsChanged FINAL)
+
+public:
+    explicit WQuickTextInputManagerV2(QObject *parent = nullptr);
+    QList<WQuickTextInputV2 *> textInputs() const;
+
+Q_SIGNALS:
+    void newTextInput(WQuickTextInputV2 *textInput);
+    void textInputsChanged();
+
+protected:
+    void create() override;
+};
+
+class WQuickTextInputV2 : public QObject, public WObject
+{
+    Q_OBJECT
+    W_DECLARE_PRIVATE(WQuickTextInputV2)
+    QML_NAMED_ELEMENT(TextInputV2)
+    QML_UNCREATABLE("Only created in C++ by WQuickTextInputManagerV2.")
+    Q_PROPERTY(WSeat *seat READ seat CONSTANT FINAL)
+    Q_PROPERTY(WSurface *focusedSurface READ focusedSurface NOTIFY focusedSurfaceChanged FINAL)
     Q_PROPERTY(QString surroundingText READ surroundingText NOTIFY surroundingTextChanged FINAL)
-    Q_PROPERTY(uint surroundingTextCursor READ surroundingTextCursor NOTIFY surroundingTextChanged FINAL)
-    Q_PROPERTY(uint surroundingTextAnchor READ surroundingTextAnchor NOTIFY surroundingTextChanged FINAL)
-    Q_PROPERTY(ContentHints contentHint READ contentHint NOTIFY contentTypeChanged FINAL)
+    Q_PROPERTY(int surroundingCursor READ surroundingCursor NOTIFY surroundingTextChanged FINAL)
+    Q_PROPERTY(int surroundingAnchor READ surroundingAnchor NOTIFY surroundingTextChanged FINAL)
+    Q_PROPERTY(ContentHints contentHints READ contentHints NOTIFY contentTypeChanged FINAL)
     Q_PROPERTY(ContentPurpose contentPurpose READ contentPurpose NOTIFY contentTypeChanged FINAL)
     Q_PROPERTY(QRect cursorRectangle READ cursorRectangle NOTIFY cursorRectangleChanged FINAL)
     Q_PROPERTY(QString preferredLanguage READ preferredLanguage NOTIFY preferredLanguageChanged FINAL)
-    Q_PROPERTY(WSurface* focusedSurface READ focusedSurface NOTIFY focusedSurfaceChanged FINAL)
 
 public:
     enum ContentHint {
         CH_None = 0x0,
-        CH_Default = 0x7,
-        CH_Password = 0xc0,
         CH_AutoCompletion = 0x1,
         CH_AutoCorrection = 0x2,
         CH_AutoCapitalization = 0x4,
@@ -74,6 +90,20 @@ public:
     };
     Q_ENUM(ContentPurpose)
 
+    enum UpdateState {
+        US_Change,
+        US_Full,
+        US_Reset,
+        US_Enter
+    };
+    Q_ENUM(UpdateState)
+
+    enum InputPanelVisibility {
+        IPV_Hidden,
+        IPV_Visible
+    };
+    Q_ENUM(InputPanelVisibility)
+
     enum PreeditStyle {
         PS_Default,
         PS_None,
@@ -94,89 +124,67 @@ public:
     Q_ENUM(TextDirection)
 
     WSeat *seat() const;
+    WSurface *focusedSurface() const;
     QString surroundingText() const;
-    uint surroundingTextCursor() const;
-    uint surroundingTextAnchor() const;
-    ContentHints contentHint() const;
+    int surroundingCursor() const;
+    int surroundingAnchor() const;
+    ContentHints contentHints() const;
     ContentPurpose contentPurpose() const;
     QRect cursorRectangle() const;
     QString preferredLanguage() const;
-    WSurface *focusedSurface() const;
-    wl_client *waylandClient() const;
-    WTextInputV1 *handle() const;
+    WTextInputV2 *handle() const;
 
 Q_SIGNALS:
-    void seatChanged();
-    void activated();
-    void deactivated();
+    void enabled(WSurface *surface);
+    void disabled(WSurface *surface);
     void showInputPanel();
     void hideInputPanel();
-    void reset();
-    void surroundingTextChanged();
-    void contentTypeChanged();
-    void cursorRectangleChanged();
-    void preferredLanguageChanged();
-    void committed();
-    void invokeAction(uint button, uint index);
-    void beforeDestroy();
+    void stateUpdated(UpdateState reason);
     void focusedSurfaceChanged();
+    void surroundingTextChanged();
+    void cursorRectangleChanged();
+    void contentTypeChanged();
+    void preferredLanguageChanged();
 
 public Q_SLOTS:
     void sendEnter(WSurface *surface);
-    void sendLeave();
-    void sendModifiersMap(QStringList modifiers);
-    void sendInputPanelState(uint state);
-    void sendPreeditString(QString text, QString commit);
+    void sendLeave(WSurface *surface);
+    void sendInputPanelState(InputPanelVisibility visibility, QRect geometry);
+    void sendPreeditString(const QString &text, const QString &commit);
     void sendPreeditStyling(uint index, uint length, PreeditStyle style);
     void sendPreeditCursor(int index);
-    void sendCommitString(QString text);
+    void sendCommitString(const QString &text);
     void sendCursorPosition(int index, int anchor);
-    void sendDeleteSurroundingText(int index, uint length);
-    void sendKeySym(uint time, uint sym, uint state, uint modifiers);
-    void sendLanguage(QString language);
-    void sendTextDirection(TextDirection textDirection);
+    void sendDeleteSurroundingText(uint beforeLength, uint afterLength);
+    void sendModifiersMap(QStringList map);
+    void sendKeysym(uint time, Qt::Key sym, uint state, uint modifiers);
+    void sendLanguage(const QString &language);
+    void sendConfigureSurroundingText(int beforeCursor, int afterCursor);
+    void sendInputMethodChanged(uint flags);
 
 private:
-    explicit WQuickTextInputV1(WTextInputV1 *handle, QObject *parent = nullptr);
-    friend class WQuickTextInputManagerV1;
+    explicit WQuickTextInputV2(WTextInputV2 *handle, QObject *parent = nullptr);
+    friend class WQuickTextInputManagerV2;
 };
 
-class WQuickTextInputManagerV1 : public WQuickWaylandServerInterface, public WObject
-{
-    Q_OBJECT
-    W_DECLARE_PRIVATE(WQuickTextInputManagerV1)
-    QML_NAMED_ELEMENT(TextInputManagerV1)
-    Q_PROPERTY(QList<WQuickTextInputV1*> textInputs READ textInputs NOTIFY textInputsChanged FINAL)
-
-public:
-    explicit WQuickTextInputManagerV1(QObject *parent = nullptr);
-    QList<WQuickTextInputV1 *> textInputs() const;
-
-Q_SIGNALS:
-    void newTextInput(WQuickTextInputV1 *newTextInput);
-    void textInputsChanged();
-
-protected:
-    void create() override;
-};
-
-class WTextInputV1Adaptor : public WTextInputAdaptor
+class WTextInputV2Adaptor : public WTextInputAdaptor
 {
     Q_OBJECT
 public:
-    WTextInputV1Adaptor(WQuickTextInputV1 *ti);
+    explicit WTextInputV2Adaptor(WQuickTextInputV2 *ti);
     WSeat *seat() const override;
     WSurface *focusedSurface() const override;
     QString surroundingText() const override;
     int surroundingCursor() const override;
     int surroundingAnchor() const override;
+    im::ChangeCause textChangeCause() const override;
     im::ContentHints contentHints() const override;
     im::ContentPurpose contentPurpose() const override;
     QRect cursorRect() const override;
     im::Features features() const override;
     wl_client *waylandClient() const override;
 
-public Q_SLOTS:
+public slots:
     void sendEnter(WSurface *surface) override;
     void sendLeave() override;
     void sendDone() override;
@@ -184,6 +192,6 @@ public Q_SLOTS:
     void handleKeyboardFocusChanged(WSurface *keyboardFocus) override;
 
 private:
-    WQuickTextInputV1 *m_ti;
+    WQuickTextInputV2 *m_ti;
 };
 WAYLIB_SERVER_END_NAMESPACE

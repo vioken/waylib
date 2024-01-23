@@ -6,6 +6,7 @@
 #include <wglobal.h>
 #include <wquickwaylandserver.h>
 #include <wtoplevelsurface.h>
+#include <winputmethodhelper.h>
 #include <wsurfaceitem.h>
 
 #include <qwglobal.h>
@@ -17,7 +18,6 @@
 Q_MOC_INCLUDE("wquicktextinputv3_p.h")
 Q_MOC_INCLUDE("wsurface.h")
 
-struct wlr_input_method_v2_state;
 QW_BEGIN_NAMESPACE
 class QWInputMethodV2;
 class QWInputPopupSurfaceV2;
@@ -34,19 +34,22 @@ class WQuickInputMethodV2;
 class WQuickInputMethodManagerV2Private;
 class WQuickTextInputV3;
 class WSurface;
-class WInputPopupSurfacePrivate;
+class WInputPopupPrivate;
 
 class WQuickInputMethodManagerV2 : public WQuickWaylandServerInterface, public WObject
 {
     Q_OBJECT
     QML_NAMED_ELEMENT(InputMethodManagerV2)
     W_DECLARE_PRIVATE(WQuickInputMethodManagerV2)
+    Q_PROPERTY(QList<WQuickInputMethodV2 *> inputMethods READ inputMethods NOTIFY inputMethodsChanged FINAL)
 
 public:
     explicit WQuickInputMethodManagerV2(QObject *parent = nullptr);
+    QList<WQuickInputMethodV2 *> inputMethods() const;
 
 Q_SIGNALS:
     void newInputMethod(WQuickInputMethodV2 *im);
+    void inputMethodsChanged();
 
 private:
     void create() override;
@@ -69,18 +72,17 @@ public Q_SLOTS:
     void sendTextInputRectangle(const QRect &sbox);
 };
 
-class WInputPopupV2 : public WToplevelSurface, public WObject
+class WInputPopup : public WToplevelSurface, public WObject
 {
     Q_OBJECT
-    W_DECLARE_PRIVATE(WInputPopupSurface)
+    W_DECLARE_PRIVATE(WInputPopup)
     QML_NAMED_ELEMENT(WaylandInputPopupSurface)
     QML_UNCREATABLE("Only created in C++")
 
 public:
-    WInputPopupV2(WQuickInputPopupSurfaceV2 *surface, WSurface *parentSurface, QObject *parent = nullptr);
+    WInputPopup(WInputPopupSurfaceAdaptor *surface, WSurface *parentSurface, QObject *parent = nullptr);
     WSurface *surface() const override;
-    WQuickInputPopupSurfaceV2 *handle() const;
-    QW_NAMESPACE::QWInputPopupSurfaceV2 *qwHandle() const;
+    WInputPopupSurfaceAdaptor *handle() const;
     QRect getContentGeometry() const override;
     bool doesNotAcceptFocus() const override;
     bool isActivated() const override;
@@ -90,23 +92,23 @@ public Q_SLOTS:
     bool checkNewSize(const QSize &size) override;
 };
 
-class WInputPopupV2Item : public WSurfaceItem
+class WInputPopupItem : public WSurfaceItem
 {
     Q_OBJECT
-    Q_PROPERTY(WInputPopupV2* surface READ surface WRITE setSurface NOTIFY surfaceChanged REQUIRED)
+    Q_PROPERTY(WInputPopup* surface READ surface WRITE setSurface NOTIFY surfaceChanged FINAL REQUIRED)
     QML_NAMED_ELEMENT(InputPopupSurfaceItem)
 
 public:
-    explicit WInputPopupV2Item(QQuickItem *parent = nullptr);
+    explicit WInputPopupItem(QQuickItem *parent = nullptr);
 
-    WInputPopupV2 *surface() const;
-    void setSurface(WInputPopupV2 *surface);
+    WInputPopup *surface() const;
+    void setSurface(WInputPopup *surface);
 
 Q_SIGNALS:
     void surfaceChanged();
 
 private:
-    WInputPopupV2 *m_inputPopupSurface;
+    WInputPopup *m_inputPopupSurface;
 };
 
 class WQuickInputMethodKeyboardGrabV2 : public QObject, public WObject
@@ -115,74 +117,16 @@ class WQuickInputMethodKeyboardGrabV2 : public QObject, public WObject
     QML_NAMED_ELEMENT(InputMethodKeyboardGrabV2)
     QML_UNCREATABLE("Only created by InputMethodV2 in C++")
     W_DECLARE_PRIVATE(WQuickInputMethodKeyboardGrabV2)
-    Q_PROPERTY(KeyboardModifiers depressedModifiers READ depressedModifiers WRITE setDepressedModifiers NOTIFY depressedModifiersChanged FINAL)
-    Q_PROPERTY(KeyboardModifiers latchedModifiers READ latchedModifiers WRITE setLatchedModifiers NOTIFY latchedModifiersChanged FINAL)
-    Q_PROPERTY(KeyboardModifiers lockedModifiers READ lockedModifiers WRITE setLockedModifiers NOTIFY lockedModifiersChanged FINAL)
-    Q_PROPERTY(KeyboardModifiers group READ group WRITE setGroup NOTIFY groupChanged FINAL)
-    Q_PROPERTY(WInputDevice *keyboard READ keyboard FINAL)
 
 public:
-    enum KeyboardModifier {
-        ModifierShift = 1 << 0,
-        ModifierCaps = 1 << 1,
-        ModifierCtrl = 1 << 2,
-        ModifierAlt = 1 << 3,
-        ModifierMod2 = 1 << 4,
-        ModifierMod3 = 1 << 5,
-        ModifierLogo = 1 << 6,
-        ModifierMod5 = 1 << 7,
-    };
-    Q_FLAG(KeyboardModifier)
-    Q_DECLARE_FLAGS(KeyboardModifiers, KeyboardModifier)
-
     explicit WQuickInputMethodKeyboardGrabV2(QW_NAMESPACE::QWInputMethodKeyboardGrabV2 *handle, QObject *parent = nullptr);
     QW_NAMESPACE::QWInputMethodKeyboardGrabV2 *handle() const;
-    wlr_input_method_keyboard_grab_v2 *nativeHandle() const;
-
-    KeyboardModifiers depressedModifiers() const;
-    KeyboardModifiers latchedModifiers() const;
-    KeyboardModifiers lockedModifiers() const;
-    KeyboardModifiers group() const;
-    void setDepressedModifiers(KeyboardModifiers modifiers);
-    void setLatchedModifiers(KeyboardModifiers modifiers);
-    void setLockedModifiers(KeyboardModifiers modifiers);
-    void setGroup(KeyboardModifiers group);
     WInputDevice *keyboard() const;
 
 public Q_SLOTS:
-    void sendKey(quint32 time, Qt::Key key, quint32 state);
-    void sendModifiers();
+    void sendKey(uint time, Qt::Key key, uint state);
+    void sendModifiers(uint depressed, uint latched, uint locked, uint group);
     void setKeyboard(WInputDevice *keyboard);
-
-Q_SIGNALS:
-    void depressedModifiersChanged(KeyboardModifiers);
-    void latchedModifiersChanged(KeyboardModifiers);
-    void lockedModifiersChanged(KeyboardModifiers);
-    void groupChanged(KeyboardModifiers);
-};
-
-class WInputMethodV2StatePrivate;
-class WInputMethodV2State : public QObject, public WObject
-{
-    Q_OBJECT
-    W_DECLARE_PRIVATE(WInputMethodV2State)
-    Q_PROPERTY(QString commitString READ commitString FINAL)
-    Q_PROPERTY(quint32 deleteSurroundingBeforeLength READ deleteSurroundingBeforeLength FINAL)
-    Q_PROPERTY(quint32 deleteSurroundingAfterLength READ deleteSurroundingAfterLength FINAL)
-    Q_PROPERTY(QString preeditStringText READ preeditStringText FINAL)
-    Q_PROPERTY(qint32 preeditStringCursorBegin READ preeditStringCursorBegin FINAL)
-    Q_PROPERTY(qint32 preeditStringCursorEnd READ preeditStringCursorEnd FINAL)
-public:
-    QString commitString() const;
-    quint32 deleteSurroundingBeforeLength() const;
-    quint32 deleteSurroundingAfterLength() const;
-    QString preeditStringText() const;
-    qint32 preeditStringCursorBegin() const;
-    qint32 preeditStringCursorEnd() const;
-
-private:
-    explicit WInputMethodV2State(wlr_input_method_v2_state *handle, QObject *parent = nullptr);
-    friend class WQuickInputMethodV2Private;
 };
 
 class WQuickInputMethodV2 : public QObject, public WObject
@@ -192,13 +136,25 @@ class WQuickInputMethodV2 : public QObject, public WObject
     QML_UNCREATABLE("Only created by InputMethodManagerV2 in C++")
     W_DECLARE_PRIVATE(WQuickInputMethodV2)
     Q_PROPERTY(WSeat *seat READ seat CONSTANT FINAL)
-    Q_PROPERTY(QList<WQuickInputPopupSurfaceV2 *> popupSurfaces READ popupSurfaces FINAL)
-    Q_PROPERTY(WInputMethodV2State* state READ state FINAL)
+    Q_PROPERTY(QList<WQuickInputPopupSurfaceV2 *> popupSurfaces READ popupSurfaces NOTIFY popupSurfacesChanged FINAL)
+    Q_PROPERTY(WQuickInputMethodKeyboardGrabV2 *activeKeyboardGrab READ activeKeyboardGrab NOTIFY activeKeyboardGrabChanged FINAL)
+    Q_PROPERTY(QString commitString READ commitString NOTIFY committed FINAL)
+    Q_PROPERTY(quint32 deleteSurroundingBeforeLength READ deleteSurroundingBeforeLength NOTIFY committed FINAL)
+    Q_PROPERTY(quint32 deleteSurroundingAfterLength READ deleteSurroundingAfterLength NOTIFY committed FINAL)
+    Q_PROPERTY(QString preeditString READ preeditString NOTIFY committed FINAL)
+    Q_PROPERTY(qint32 preeditCursorBegin READ preeditCursorBegin NOTIFY committed FINAL)
+    Q_PROPERTY(qint32 preeditCursorEnd READ preeditCursorEnd NOTIFY committed FINAL)
 
 public:
     WSeat *seat() const;
+    QString commitString() const;
+    uint deleteSurroundingBeforeLength() const;
+    uint deleteSurroundingAfterLength() const;
+    QString preeditString() const;
+    int preeditCursorBegin() const;
+    int preeditCursorEnd() const;
     QList<WQuickInputPopupSurfaceV2 *> popupSurfaces() const;
-    WInputMethodV2State *state() const;
+    WQuickInputMethodKeyboardGrabV2 *activeKeyboardGrab() const;
     QW_NAMESPACE::QWInputMethodV2 *handle() const;
 
 public Q_SLOTS:
@@ -209,18 +165,76 @@ public Q_SLOTS:
     void sendSurroundingText(const QString &text, quint32 cursor, quint32 anchor);
     void sendTextChangeCause(quint32 cause);
     void sendUnavailable();
-    void sendTextInputRectangle(const QRect &rect);
 
 Q_SIGNALS:
-    void commit();
+    void committed();
     void newPopupSurface(WQuickInputPopupSurfaceV2 *surface);
     void newKeyboardGrab(WQuickInputMethodKeyboardGrabV2 *keyboardGrab);
+    void popupSurfacesChanged();
+    void activeKeyboardGrabChanged();
 
 private:
     explicit WQuickInputMethodV2(QW_NAMESPACE::QWInputMethodV2 *handle, QObject *parent = nullptr);
     friend class WQuickInputMethodManagerV2;
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(WQuickInputMethodKeyboardGrabV2::KeyboardModifiers)
+class WInputMethodV2Adaptor : public WInputMethodAdaptor
+{
+    Q_OBJECT
+public:
+    explicit WInputMethodV2Adaptor(WQuickInputMethodV2 *imv2);
+    WSeat *seat() const override;
+    QString commitString() const override;
+    uint deleteSurroundingBeforeLength() const override;
+    uint deleteSurroundingAfterLength() const override;
+    QString preeditString() const override;
+    int preeditCursorBegin() const override;
+    int preeditCursorEnd() const override;
+
+public Q_SLOTS:
+    void activate() override;
+    void deactivate() override;
+    void sendDone() override;
+    void sendUnavailable() override;
+    void sendContentType(im::ContentHints hints, im::ContentPurpose purpose) override;
+    void sendSurroundingText(const QString &text, uint cursor, uint anchor) override;
+    void sendTextChangeCause(im::ChangeCause cause) override;
+    void handleTICommitted(WTextInputAdaptor *textInput) override;
+
+private:
+    WQuickInputMethodV2 *m_im;
+};
+
+class WKeyboardGrabV2Adaptor : public WKeyboardGrabAdaptor
+{
+    Q_OBJECT
+public:
+    explicit WKeyboardGrabV2Adaptor(WQuickInputMethodKeyboardGrabV2 *kgv2, WSeat *seat);
+    WInputDevice *keyboard() const override;
+
+public Q_SLOTS:
+    void sendKey(uint time, Qt::Key key, uint state) override;
+    void sendModifiers(uint depressed, uint latched, uint locked, uint group) override;
+    void setKeyboard(WInputDevice *keyboard) override;
+    void startGrab(wlr_seat_keyboard_grab *grab) override;
+    void endGrab() override;
+
+private:
+    WQuickInputMethodKeyboardGrabV2 *m_kg;
+    WSeat *m_seat; // save the seat where the grab is created
+};
+
+class WInputPopupSurfaceV2Adaptor : public WInputPopupSurfaceAdaptor
+{
+    Q_OBJECT
+public:
+    explicit WInputPopupSurfaceV2Adaptor(WQuickInputPopupSurfaceV2 *ipsv2);
+    WSurface *surface() const override;
+
+public Q_SLOTS:
+    void sendTextInputRectangle(const QRect &sbox) override;
+
+private:
+    WQuickInputPopupSurfaceV2 *m_ips;
+};
 WAYLIB_SERVER_END_NAMESPACE
-Q_DECLARE_METATYPE(WAYLIB_SERVER_NAMESPACE::WQuickInputMethodKeyboardGrabV2::KeyboardModifiers)
