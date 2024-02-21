@@ -11,6 +11,7 @@
 #include <qwtextinputv3.h>
 
 #include <QLoggingCategory>
+#include <QtQml>
 
 extern "C" {
 #include <wlr/types/wlr_text_input_v3.h>
@@ -38,7 +39,9 @@ public:
 WQuickTextInputManagerV3::WQuickTextInputManagerV3(QObject *parent) :
     WQuickWaylandServerInterface(parent),
     WObject(*new WQuickTextInputManagerV3Private(this))
-{}
+{
+    connect(this, &WQuickTextInputManagerV3::newTextInput, this, &WQuickTextInputManagerV3::textInputsChanged);
+}
 
 QList<WQuickTextInputV3 *> WQuickTextInputManagerV3::textInputs() const
 {
@@ -53,12 +56,13 @@ void WQuickTextInputManagerV3::create()
     d->manager = QWTextInputManagerV3::create(server()->handle());
     connect(d->manager, &QWTextInputManagerV3::textInput, this, [this, d] (QWTextInputV3 *textInput) {
         auto quickTextInput = new WQuickTextInputV3(textInput, this);
-        connect(quickTextInput->handle(), &QWTextInputV3::beforeDestroy, this, [d, quickTextInput] () {
+        connect(quickTextInput->handle(), &QWTextInputV3::beforeDestroy, this, [this, d, quickTextInput] () {
             d->textInputs.removeAll(quickTextInput);
+            Q_EMIT textInputsChanged();
             quickTextInput->deleteLater();
         });
         d->textInputs.append(quickTextInput);
-        Q_EMIT this->newTextInput(quickTextInput);
+        Q_EMIT newTextInput(quickTextInput);
     });
 }
 
@@ -69,52 +73,75 @@ public:
     WQuickTextInputV3Private(QWTextInputV3 *h, WQuickTextInputV3 *qq)
         : WObjectPrivate(qq)
         , handle(h)
-        , state(new WTextInputV3State(&h->handle()->current, qq))
-        , pendingState(new WTextInputV3State(&h->handle()->pending, qq))
     { }
 
     QWTextInputV3 *const handle;
-    WTextInputV3State *const state;
-    WTextInputV3State *const pendingState;
 
     wl_client *waylandClient() const override
     {
-        return handle->handle()->resource->client;
+        return wl_resource_get_client(handle->handle()->resource);
     }
 };
 
-WQuickTextInputV3::WQuickTextInputV3(QWTextInputV3 *handle, QObject *parent) :
+WQuickTextInputV3::WQuickTextInputV3(QWTextInputV3 *h, QObject *parent) :
     QObject(parent),
-    WObject(*new WQuickTextInputV3Private(handle, this), nullptr)
+    WObject(*new WQuickTextInputV3Private(h, this), nullptr)
 {
-    W_D(WQuickTextInputV3);
-    connect(d->handle, &QWTextInputV3::enable, this, &WQuickTextInputV3::enable);
-    connect(d->handle, &QWTextInputV3::disable, this, &WQuickTextInputV3::disable);
-    connect(d->handle, &QWTextInputV3::commit, this, &WQuickTextInputV3::commit);
+    connect(handle(), &QWTextInputV3::enable, this, &WQuickTextInputV3::enabled);
+    connect(handle(), &QWTextInputV3::disable, this, &WQuickTextInputV3::disabled);
+    connect(handle(), &QWTextInputV3::commit, this, &WQuickTextInputV3::committed);
 }
 
 WSeat *WQuickTextInputV3::seat() const
 {
     W_DC(WQuickTextInputV3);
-    return WSeat::fromHandle(QWSeat::from(d->handle->handle()->seat));
-}
-
-WTextInputV3State *WQuickTextInputV3::state() const
-{
-    W_DC(WQuickTextInputV3);
-    return d->state;
-}
-
-WTextInputV3State *WQuickTextInputV3::pendingState() const
-{
-    W_DC(WQuickTextInputV3);
-    return d->pendingState;
+    return WSeat::fromHandle(QWSeat::from(handle()->handle()->seat));
 }
 
 WSurface *WQuickTextInputV3::focusedSurface() const
 {
     W_DC(WQuickTextInputV3);
-    return WSurface::fromHandle(d->handle->handle()->focused_surface);
+    return WSurface::fromHandle(handle()->handle()->focused_surface);
+}
+
+QString WQuickTextInputV3::surroundingText() const
+{
+    return handle()->handle()->current.surrounding.text;
+}
+
+uint WQuickTextInputV3::surroundingCursor() const
+{
+    return handle()->handle()->current.surrounding.cursor;
+}
+
+uint WQuickTextInputV3::surroundingAnchor() const
+{
+    return handle()->handle()->current.surrounding.anchor;
+}
+
+WQuickTextInputV3::ChangeCause WQuickTextInputV3::textChangeCause() const
+{
+    return ChangeCause(handle()->handle()->current.text_change_cause);
+}
+
+WQuickTextInputV3::ContentHints WQuickTextInputV3::contentHints() const
+{
+    return ContentHints(handle()->handle()->current.content_type.hint);
+}
+
+WQuickTextInputV3::ContentPurpose WQuickTextInputV3::contentPurpose() const
+{
+    return ContentPurpose(handle()->handle()->current.content_type.purpose);
+}
+
+QRect WQuickTextInputV3::cursorRect() const
+{
+    return WTools::fromWLRBox(&handle()->handle()->current.cursor_rectangle);
+}
+
+WQuickTextInputV3::Features WQuickTextInputV3::features() const
+{
+    return Features(handle()->handle()->current.features);
 }
 
 wl_client *WQuickTextInputV3::waylandClient() const
@@ -130,114 +157,144 @@ QWTextInputV3 *WQuickTextInputV3::handle() const
 
 void WQuickTextInputV3::sendEnter(WSurface *surface)
 {
+    // NOTE: As this function may be called in QML,
+    // we may not check if one surface belongs to a client or not,
+    // check the condition here.
+    // TODO: If all protocol entity do the check itself, we might not
+    // need to expose waylandClient to public.
     W_D(WQuickTextInputV3);
-    d->handle->sendEnter(surface->handle());
+    wl_client *surfaceClient = wl_resource_get_client(surface->handle()->handle()->resource);
+    if (d->waylandClient() == surfaceClient) {
+        handle()->sendEnter(surface->handle());
+        Q_EMIT focusedSurfaceChanged();
+    } else {
+        qmlWarning(this) << "Sending surface belongs to another client" << surfaceClient
+                         << "to client" << d->waylandClient() << "is not allowed";
+    }
 }
 
 void WQuickTextInputV3::sendLeave()
 {
-    W_D(WQuickTextInputV3);
-    d->handle->sendLeave();
+    if (focusedSurface()) {
+        handle()->sendLeave();
+        Q_EMIT focusedSurfaceChanged();
+    }
 }
 
 void WQuickTextInputV3::sendPreeditString(const QString &text, qint32 cursor_begin, qint32 cursor_end)
 {
-    W_D(WQuickTextInputV3);
-    d->handle->sendPreeditString(qPrintable(text), cursor_begin, cursor_end);
+    handle()->sendPreeditString(qPrintable(text), cursor_begin, cursor_end);
 }
 
 void WQuickTextInputV3::sendCommitString(const QString &text)
 {
-    W_D(WQuickTextInputV3);
-    d->handle->sendCommitString(qPrintable(text));
+    handle()->sendCommitString(qPrintable(text));
 }
 
 void WQuickTextInputV3::sendDeleteSurroundingText(quint32 before_length, quint32 after_length)
 {
-    W_D(WQuickTextInputV3);
-    d->handle->sendDeleteSurroundingText(before_length, after_length);
+    handle()->sendDeleteSurroundingText(before_length, after_length);
 }
 
 void WQuickTextInputV3::sendDone()
 {
-    W_D(WQuickTextInputV3);
-    d->handle->sendDone();
+    handle()->sendDone();
 }
 
-class WTextInputV3StatePrivate : public WObjectPrivate
+WTextInputV3Adaptor::WTextInputV3Adaptor(WQuickTextInputV3 *tiv3)
+    : WTextInputAdaptor(tiv3)
+    , m_ti(tiv3)
 {
-    W_DECLARE_PUBLIC(WTextInputV3State)
-    explicit WTextInputV3StatePrivate(wlr_text_input_v3_state *h, WTextInputV3State *qq)
-        : WObjectPrivate(qq)
-        , handle(h)
-    { }
-
-    wlr_text_input_v3_state *const handle;
-};
-
-QString WTextInputV3State::surroundingText() const
-{
-    W_DC(WTextInputV3State);
-    return d->handle->surrounding.text;
+    connect(m_ti->handle(), &QWTextInputV3::beforeDestroy, this, [this]() { Q_EMIT beforeDestroy(this); });
+    connect(m_ti, &WQuickTextInputV3::enabled, this, [this]() { Q_EMIT enabled(this); });
+    connect(m_ti, &WQuickTextInputV3::disabled, this, [this]() { Q_EMIT disabled(this); });
 }
 
-quint32 WTextInputV3State::surroundingCursor() const
+WSeat *WTextInputV3Adaptor::seat() const
 {
-    W_DC(WTextInputV3State);
-    return d->handle->surrounding.cursor;
+    return m_ti->seat();
 }
 
-quint32 WTextInputV3State::surroundingAnchor() const
+WSurface *WTextInputV3Adaptor::focusedSurface() const
 {
-    W_DC(WTextInputV3State);
-    return d->handle->surrounding.anchor;
+    return m_ti->focusedSurface();
 }
 
-WQuickTextInputV3::ChangeCause WTextInputV3State::textChangeCause() const
+QString WTextInputV3Adaptor::surroundingText() const
 {
-    W_DC(WTextInputV3State);
-    return static_cast<WQuickTextInputV3::ChangeCause>(d->handle->text_change_cause);
+    return m_ti->surroundingText();
 }
 
-WQuickTextInputV3::ContentHint WTextInputV3State::contentHint() const
+int WTextInputV3Adaptor::surroundingCursor() const
 {
-    W_DC(WTextInputV3State);
-    return static_cast<WQuickTextInputV3::ContentHint>(d->handle->content_type.hint);
+    return m_ti->surroundingCursor();
 }
 
-WQuickTextInputV3::ContentPurpose WTextInputV3State::contentPurpose() const
+int WTextInputV3Adaptor::surroundingAnchor() const
 {
-    W_DC(WTextInputV3State);
-    return static_cast<WQuickTextInputV3::ContentPurpose>(d->handle->content_type.purpose);
+    return m_ti->surroundingAnchor();
 }
 
-QRect WTextInputV3State::cursorRect() const
+IM::ChangeCause WTextInputV3Adaptor::textChangeCause() const
 {
-    W_DC(WTextInputV3State);
-    return WTools::fromWLRBox(&d->handle->cursor_rectangle);
+    return static_cast<IM::ChangeCause>(m_ti->textChangeCause());
 }
 
-WTextInputV3State::Features WTextInputV3State::features() const
+IM::ContentHints WTextInputV3Adaptor::contentHints() const
 {
-    W_DC(WTextInputV3State);
-    return Features(d->handle->features);
+    return static_cast<IM::ContentHints>(m_ti->contentHints().toInt());
 }
 
-WTextInputV3State::WTextInputV3State(wlr_text_input_v3_state *handle, QObject *parent)
-    : QObject(parent)
-    , WObject(*new WTextInputV3StatePrivate(handle, this))
-{ }
-
-QDebug operator<<(QDebug debug, const WTextInputV3State &state)
+IM::ContentPurpose WTextInputV3Adaptor::contentPurpose() const
 {
-    debug << "SurroundingText: " << state.surroundingText() << Qt::endl;
-    debug << "SurroundingCursor: " << state.surroundingCursor() << Qt::endl;
-    debug << "SurroundingAnchor: " << state.surroundingAnchor() << Qt::endl;
-    debug << "CursorRect: " << state.cursorRect() << Qt::endl;
-    debug << "ContentHint: " << state.contentHint() << Qt::endl;
-    debug << "ContentPurpose: " << state.contentPurpose() << Qt::endl;
-    debug << "Features: " << state.features();
-    return debug;
+    return static_cast<IM::ContentPurpose>(m_ti->contentPurpose());
 }
 
+QRect WTextInputV3Adaptor::cursorRect() const
+{
+    return m_ti->cursorRect();
+}
+
+IM::Features WTextInputV3Adaptor::features() const
+{
+    return static_cast<IM::Features>(m_ti->features().toInt());
+}
+
+wl_client *WTextInputV3Adaptor::waylandClient() const
+{
+    return m_ti->waylandClient();
+}
+
+void WTextInputV3Adaptor::sendEnter(WSurface *surface)
+{
+    m_ti->sendEnter(surface);
+}
+
+void WTextInputV3Adaptor::sendLeave()
+{
+    m_ti->sendLeave();
+}
+
+void WTextInputV3Adaptor::sendDone()
+{
+    m_ti->sendDone();
+}
+
+void WTextInputV3Adaptor::handleIMCommitted(WInputMethodAdaptor *im)
+{
+    if (!im->preeditString().isEmpty()) {
+        m_ti->sendPreeditString(im->preeditString(), im->preeditCursorBegin(), im->preeditCursorEnd());
+    }
+    if (!im->commitString().isEmpty()) {
+        m_ti->sendCommitString(im->commitString());
+    }
+    if (im->deleteSurroundingBeforeLength() || im->deleteSurroundingAfterLength()) {
+        m_ti->sendDeleteSurroundingText(im->deleteSurroundingBeforeLength(), im->deleteSurroundingAfterLength());
+    }
+    m_ti->sendDone();
+}
+
+void WTextInputV3Adaptor::handleKeyboardFocusChanged(WSurface *keyboardFocus)
+{
+}
 WAYLIB_SERVER_END_NAMESPACE

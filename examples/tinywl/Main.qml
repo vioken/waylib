@@ -145,9 +145,9 @@ Item {
         }
 
         // TODO: add attached property for XdgSurface
-        XdgDecorationManager {
-            id: decorationManager
-        }
+        // XdgDecorationManager {
+        //     id: decorationManager
+        // }
 
         InputMethodManagerV2 {
             id: inputMethodManagerV2
@@ -155,6 +155,10 @@ Item {
 
         TextInputManagerV1 {
             id: textInputManagerV1
+        }
+
+        TextInputManagerV2 {
+            id: textInputManagerV2
         }
 
         TextInputManagerV3 {
@@ -187,6 +191,7 @@ Item {
         id: inputMethodHelperSeat0
         seat: seat0
         textInputManagerV1: textInputManagerV1
+        textInputManagerV2: textInputManagerV2
         textInputManagerV3: textInputManagerV3
         inputMethodManagerV2: inputMethodManagerV2
         virtualKeyboardManagerV1: virtualKeyboardManagerV1

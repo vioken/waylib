@@ -86,4 +86,13 @@ WQuickVirtualKeyboardV1::WQuickVirtualKeyboardV1(QWVirtualKeyboardV1 *handle, QO
     , WObject(*new WQuickVirtualKeyboardV1Private(handle, this))
 { }
 
+WVirtualKeyboardV1Adaptor::WVirtualKeyboardV1Adaptor(WQuickVirtualKeyboardV1 *vkv1)
+    : WVirtualKeyboardAdaptor(vkv1)
+    , m_vk(vkv1)
+{ }
+
+WInputDevice *WVirtualKeyboardV1Adaptor::keyboard() const
+{
+    return m_vk->keyboard();
+}
 WAYLIB_SERVER_END_NAMESPACE

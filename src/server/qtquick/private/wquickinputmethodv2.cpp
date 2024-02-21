@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "wquickinputmethodv2_p.h"
+#include "winputmethodhelper.h"
 #include "wseat.h"
 #include "winputdevice.h"
 #include "wsurface.h"
@@ -47,7 +48,14 @@ public:
 WQuickInputMethodManagerV2::WQuickInputMethodManagerV2(QObject *parent) :
     WQuickWaylandServerInterface(parent),
     WObject(*new WQuickInputMethodManagerV2Private(this), nullptr)
-{ }
+{
+    connect(this, &WQuickInputMethodManagerV2::newInputMethod, this, &WQuickInputMethodManagerV2::inputMethodsChanged);
+}
+
+QList<WQuickInputMethodV2 *> WQuickInputMethodManagerV2::inputMethods() const
+{
+    return d_func()->inputMethods;
+}
 
 void WQuickInputMethodManagerV2::create()
 {
@@ -56,18 +64,20 @@ void WQuickInputMethodManagerV2::create()
     d->manager = QWInputMethodManagerV2::create(server()->handle());
     connect(d->manager, &QWInputMethodManagerV2::inputMethod, this, [this, d] (QWInputMethodV2 *im) {
         auto quickInputMethod = new WQuickInputMethodV2(im, this);
-        connect(quickInputMethod->handle(), &QWInputMethodV2::beforeDestroy, this, [d, quickInputMethod]() {
+        connect(quickInputMethod->handle(), &QWInputMethodV2::beforeDestroy, this, [this, d, quickInputMethod]() {
             d->inputMethods.removeAll(quickInputMethod);
+            Q_EMIT inputMethodsChanged();
             quickInputMethod->deleteLater();
         });
         d->inputMethods.append(quickInputMethod);
-        Q_EMIT this->newInputMethod(quickInputMethod);
+        Q_EMIT newInputMethod(quickInputMethod);
     });
 }
 
 class WQuickInputPopupSurfaceV2Private : public WObjectPrivate
 {
 public:
+    W_DECLARE_PUBLIC(WQuickInputPopupSurfaceV2)
     WQuickInputPopupSurfaceV2Private(QWInputPopupSurfaceV2 *h, WQuickInputPopupSurfaceV2 *qq)
         : WObjectPrivate(qq)
         , handle(h)
@@ -79,87 +89,80 @@ public:
         }
     }
 
-    W_DECLARE_PUBLIC(WQuickInputPopupSurfaceV2)
-    QWInputPopupSurfaceV2 *handle;
+    QWInputPopupSurfaceV2 *const handle;
     WSurface *popupSurface;
 };
 
 class WQuickInputMethodKeyboardGrabV2Private : public WObjectPrivate
 {
 public:
+    W_DECLARE_PUBLIC(WQuickInputMethodKeyboardGrabV2)
     WQuickInputMethodKeyboardGrabV2Private(QWInputMethodKeyboardGrabV2 *h, WQuickInputMethodKeyboardGrabV2 *qq)
         : WObjectPrivate(qq)
         , handle(h)
     { }
-    W_DECLARE_PUBLIC(WQuickInputMethodKeyboardGrabV2)
 
-    inline wlr_input_method_keyboard_grab_v2 *nativeHandle() const {
+    wl_client *waylandClient() const override
+    {
         Q_ASSERT(handle);
-        return handle->handle();
+        return wl_resource_get_client(handle->handle()->resource);
     }
 
-    wl_client *waylandClient() const {
-        return nativeHandle()->resource->client;
-    }
-
-    QWInputMethodKeyboardGrabV2 *handle;
-    wlr_keyboard_modifiers modifiers;
+    QWInputMethodKeyboardGrabV2 *const handle;
 };
 
 class WQuickInputMethodV2Private : public WObjectPrivate
 {
 public:
+    W_DECLARE_PUBLIC(WQuickInputMethodV2)
     WQuickInputMethodV2Private(QWInputMethodV2 *h, WQuickInputMethodV2 *qq)
         : WObjectPrivate(qq)
         , handle(h)
         , activeKeyboardGrab(nullptr)
-        , state(new WInputMethodV2State(&h->handle()->current, qq))
     { }
 
-    QWInputMethodV2 *handle;
+    QWInputMethodV2 *const handle;
     QList<WQuickInputPopupSurfaceV2 *> popupSurfaces;
     WQuickInputMethodKeyboardGrabV2 *activeKeyboardGrab;
-    WInputMethodV2State *const state;
-
-    W_DECLARE_PUBLIC(WQuickInputMethodV2)
 };
 
-WQuickInputMethodV2::WQuickInputMethodV2(QWInputMethodV2 *handle, QObject *parent) :
+WQuickInputMethodV2::WQuickInputMethodV2(QWInputMethodV2 *h, QObject *parent) :
     QObject(parent),
-    WObject(*new WQuickInputMethodV2Private(handle, this), nullptr)
+    WObject(*new WQuickInputMethodV2Private(h, this), nullptr)
 {
     W_D(WQuickInputMethodV2);
-    connect(d->handle, &QWInputMethodV2::commit, this, &WQuickInputMethodV2::commit);
-    connect(d->handle, &QWInputMethodV2::newPopupSurface, this, [this, d](QWInputPopupSurfaceV2 *surface) {
+    connect(handle(), &QWInputMethodV2::commit, this, &WQuickInputMethodV2::committed);
+    connect(handle(), &QWInputMethodV2::newPopupSurface, this, [this, d](QWInputPopupSurfaceV2 *surface) {
         auto quickPopupSurface = new WQuickInputPopupSurfaceV2(surface, this);
         d->popupSurfaces.append(quickPopupSurface);
-        connect(quickPopupSurface->handle(), &QWInputPopupSurfaceV2::beforeDestroy, this, [d, quickPopupSurface]() {
+        connect(quickPopupSurface->handle(), &QWInputPopupSurfaceV2::beforeDestroy, this, [this, d, quickPopupSurface]() {
             d->popupSurfaces.removeAll(quickPopupSurface);
+            Q_EMIT popupSurfacesChanged();
             quickPopupSurface->deleteLater();
         });
-        Q_EMIT this->newPopupSurface(quickPopupSurface);
+        Q_EMIT newPopupSurface(quickPopupSurface);
     });
-    connect(d->handle, &QWInputMethodV2::grabKeybord, this, [this, d](QWInputMethodKeyboardGrabV2 *keyboardGrab){
+    connect(handle(), &QWInputMethodV2::grabKeybord, this, [this, d](QWInputMethodKeyboardGrabV2 *keyboardGrab){
         auto quickKeyboardGrab = new WQuickInputMethodKeyboardGrabV2(keyboardGrab, this);
         d->activeKeyboardGrab = quickKeyboardGrab;
-        connect(quickKeyboardGrab->handle(), &QWInputMethodKeyboardGrabV2::beforeDestroy, this, [d, quickKeyboardGrab]() {
+        connect(quickKeyboardGrab->handle(), &QWInputMethodKeyboardGrabV2::beforeDestroy, this, [this, d, quickKeyboardGrab]() {
             d->activeKeyboardGrab = nullptr;
+            Q_EMIT activeKeyboardGrabChanged();
             quickKeyboardGrab->deleteLater();
         });
-        Q_EMIT this->newKeyboardGrab(quickKeyboardGrab);
+        Q_EMIT newKeyboardGrab(quickKeyboardGrab);
     });
+    connect(this, &WQuickInputMethodV2::newPopupSurface, this, &WQuickInputMethodV2::popupSurfacesChanged);
 }
 
 QList<WQuickInputPopupSurfaceV2 *> WQuickInputMethodV2::popupSurfaces() const
 {
-    W_DC(WQuickInputMethodV2);
-    return d->popupSurfaces;
+    return d_func()->popupSurfaces;
 }
 
-WInputMethodV2State *WQuickInputMethodV2::state() const
+WQuickInputMethodKeyboardGrabV2 *WQuickInputMethodV2::activeKeyboardGrab() const
 {
-    W_DC(WQuickInputMethodV2);
-    return d->state;
+    return d_func()->activeKeyboardGrab;
 }
 
 QWInputMethodV2 *WQuickInputMethodV2::handle() const
@@ -169,59 +172,42 @@ QWInputMethodV2 *WQuickInputMethodV2::handle() const
 
 WSeat *WQuickInputMethodV2::seat() const
 {
-    W_DC(WQuickInputMethodV2);
-    return WSeat::fromHandle(QWSeat::from(d->handle->handle()->seat));
+    return WSeat::fromHandle(QWSeat::from(d_func()->handle->handle()->seat));
 }
 
 void WQuickInputMethodV2::sendContentType(quint32 hint, quint32 purpose)
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendContentType(hint, purpose);
+    handle()->sendContentType(hint, purpose);
 }
 
 void WQuickInputMethodV2::sendActivate()
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendActivate();
+    handle()->sendActivate();
 }
 
 void WQuickInputMethodV2::sendDeactivate()
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendDeactivate();
+    handle()->sendDeactivate();
 }
 
 void WQuickInputMethodV2::sendDone()
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendDone();
+    handle()->sendDone();
 }
 
 void WQuickInputMethodV2::sendSurroundingText(const QString &text, quint32 cursor, quint32 anchor)
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendSurroundingText(qPrintable(text), cursor, anchor);
+    handle()->sendSurroundingText(qPrintable(text), cursor, anchor);
 }
 
 void WQuickInputMethodV2::sendTextChangeCause(quint32 cause)
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendTextChangeCause(cause);
+    handle()->sendTextChangeCause(cause);
 }
 
 void WQuickInputMethodV2::sendUnavailable()
 {
-    W_D(WQuickInputMethodV2);
-    d->handle->sendUnavailable();
-}
-
-void WQuickInputMethodV2::sendTextInputRectangle(const QRect &rect)
-{
-    W_D(WQuickInputMethodV2);
-    // FIXME: Just send text input rectangle to all
-    for (auto popupSurface : d->popupSurfaces) {
-        popupSurface->sendTextInputRectangle(rect);
-    }
+    handle()->sendUnavailable();
 }
 
 WQuickInputPopupSurfaceV2::WQuickInputPopupSurfaceV2(QWInputPopupSurfaceV2 *handle, QObject *parent) :
@@ -240,11 +226,9 @@ QWInputPopupSurfaceV2 *WQuickInputPopupSurfaceV2::handle() const
     return d_func()->handle;
 }
 
-
 void WQuickInputPopupSurfaceV2::sendTextInputRectangle(const QRect &sbox)
 {
-    W_D(WQuickInputPopupSurfaceV2);
-    d->handle->send_text_input_rectangle(sbox);
+    handle()->send_text_input_rectangle(sbox);
 }
 
 WQuickInputMethodKeyboardGrabV2::WQuickInputMethodKeyboardGrabV2(QWInputMethodKeyboardGrabV2 *handle, QObject *parent):
@@ -254,69 +238,14 @@ WQuickInputMethodKeyboardGrabV2::WQuickInputMethodKeyboardGrabV2(QWInputMethodKe
 
 QWInputMethodKeyboardGrabV2 *WQuickInputMethodKeyboardGrabV2::handle() const
 {
-    W_DC(WQuickInputMethodKeyboardGrabV2);
-    return d->handle;
-}
-
-wlr_input_method_keyboard_grab_v2 *WQuickInputMethodKeyboardGrabV2::nativeHandle() const
-{
-    W_DC(WQuickInputMethodKeyboardGrabV2);
-    return d->handle->handle();
-}
-
-WQuickInputMethodKeyboardGrabV2::KeyboardModifiers WQuickInputMethodKeyboardGrabV2::depressedModifiers() const
-{
-    W_DC(WQuickInputMethodKeyboardGrabV2);
-    return {d->modifiers.depressed};
-}
-
-WQuickInputMethodKeyboardGrabV2::KeyboardModifiers WQuickInputMethodKeyboardGrabV2::latchedModifiers() const
-{
-    W_DC(WQuickInputMethodKeyboardGrabV2);
-    return {d->modifiers.latched};
-}
-
-WQuickInputMethodKeyboardGrabV2::KeyboardModifiers WQuickInputMethodKeyboardGrabV2::lockedModifiers() const
-{
-    W_DC(WQuickInputMethodKeyboardGrabV2);
-    return {d->modifiers.locked};
-}
-
-WQuickInputMethodKeyboardGrabV2::KeyboardModifiers WQuickInputMethodKeyboardGrabV2::group() const
-{
-    W_DC(WQuickInputMethodKeyboardGrabV2);
-    return {d->modifiers.group};
-}
-
-void WQuickInputMethodKeyboardGrabV2::setDepressedModifiers(KeyboardModifiers modifiers)
-{
-    W_D(WQuickInputMethodKeyboardGrabV2);
-    d->modifiers.depressed = modifiers;
-}
-
-void WQuickInputMethodKeyboardGrabV2::setLatchedModifiers(KeyboardModifiers modifiers)
-{
-    W_D(WQuickInputMethodKeyboardGrabV2);
-    d->modifiers.latched = modifiers;
-}
-
-void WQuickInputMethodKeyboardGrabV2::setLockedModifiers(KeyboardModifiers modifiers)
-{
-    W_D(WQuickInputMethodKeyboardGrabV2);
-    d->modifiers.locked = modifiers;
-}
-
-void WQuickInputMethodKeyboardGrabV2::setGroup(KeyboardModifiers group)
-{
-    W_D(WQuickInputMethodKeyboardGrabV2);
-    d->modifiers.group = group;
+    return d_func()->handle;
 }
 
 WInputDevice *WQuickInputMethodKeyboardGrabV2::keyboard() const
 {
     W_DC(WQuickInputMethodKeyboardGrabV2);
-    if (d->handle->handle()->keyboard) {
-        return WInputDevice::fromHandle(QWInputDevice::from(&d->handle->handle()->keyboard->base));
+    if (handle()->handle()->keyboard) {
+        return WInputDevice::fromHandle(QWInputDevice::from(&handle()->handle()->keyboard->base));
     } else {
         return nullptr;
     }
@@ -325,13 +254,14 @@ WInputDevice *WQuickInputMethodKeyboardGrabV2::keyboard() const
 void WQuickInputMethodKeyboardGrabV2::sendKey(quint32 time, Qt::Key key, quint32 state)
 {
     W_D(WQuickInputMethodKeyboardGrabV2);
-    d->handle->sendKey(time, key, state);
+    handle()->sendKey(time, key, state);
 }
 
-void WQuickInputMethodKeyboardGrabV2::sendModifiers()
+void WQuickInputMethodKeyboardGrabV2::sendModifiers(uint depressed, uint latched, uint locked, uint group)
 {
     W_D(WQuickInputMethodKeyboardGrabV2);
-    d->handle->sendModifiers(&d->modifiers);
+    wlr_keyboard_modifiers wlrModifiers = {.depressed = depressed, .latched = latched, .locked = locked, .group = group};
+    handle()->sendModifiers(&wlrModifiers);
 }
 
 void WQuickInputMethodKeyboardGrabV2::setKeyboard(WInputDevice *keyboard)
@@ -345,69 +275,17 @@ void WQuickInputMethodKeyboardGrabV2::setKeyboard(WInputDevice *keyboard)
             wl_resource_get_client(virtualKeyboard->handle()->resource) == d->waylandClient()) {
             return;
         }
-        d->handle->setKeyboard(qwKeyboard);
+        handle()->setKeyboard(qwKeyboard);
     } else {
-        d->handle->setKeyboard(nullptr);
+        handle()->setKeyboard(nullptr);
     }
 }
 
-class WInputMethodV2StatePrivate : public WObjectPrivate
-{
-    W_DECLARE_PUBLIC(WInputMethodV2State)
-public:
-    WInputMethodV2StatePrivate(wlr_input_method_v2_state *h, WInputMethodV2State *qq)
-        : WObjectPrivate(qq)
-        , handle(h)
-    {}
-    wlr_input_method_v2_state *const handle;
-};
-
-QString WInputMethodV2State::commitString() const
-{
-    W_DC(WInputMethodV2State);
-    return d->handle->commit_text;
-}
-
-quint32 WInputMethodV2State::deleteSurroundingBeforeLength() const
-{
-    W_DC(WInputMethodV2State);
-    return d->handle->delete_c.before_length;
-}
-
-quint32 WInputMethodV2State::deleteSurroundingAfterLength() const
-{
-    W_DC(WInputMethodV2State);
-    return d->handle->delete_c.after_length;
-}
-
-QString WInputMethodV2State::preeditStringText() const
-{
-    W_DC(WInputMethodV2State);
-    return d->handle->preedit.text;
-}
-
-qint32 WInputMethodV2State::preeditStringCursorBegin() const
-{
-    W_DC(WInputMethodV2State);
-    return d->handle->preedit.cursor_begin;
-}
-
-qint32 WInputMethodV2State::preeditStringCursorEnd() const
-{
-    W_DC(WInputMethodV2State);
-    return d->handle->preedit.cursor_end;
-}
-
-WInputMethodV2State::WInputMethodV2State(wlr_input_method_v2_state *handle, QObject *parent)
-    : QObject(parent)
-    , WObject(*new WInputMethodV2StatePrivate(handle, this))
-{}
-
-class WInputPopupSurfacePrivate : public WObjectPrivate
+class WInputPopupPrivate : public WObjectPrivate
 {
 public:
-    W_DECLARE_PUBLIC(WInputPopupV2)
-    explicit WInputPopupSurfacePrivate(WQuickInputPopupSurfaceV2 *surface, WSurface *parentSurface, WInputPopupV2 *qq)
+    W_DECLARE_PUBLIC(WInputPopup)
+    explicit WInputPopupPrivate(WInputPopupSurfaceAdaptor *surface, WSurface *parentSurface, WInputPopup *qq)
         : WObjectPrivate(qq)
         , handle(surface)
         , parent(parentSurface)
@@ -418,67 +296,61 @@ public:
         return {handle->surface()->handle()->handle()->current.width, handle->surface()->handle()->handle()->current.height};
     }
 
-    WQuickInputPopupSurfaceV2 *handle;
+    WInputPopupSurfaceAdaptor *const handle;
     WSurface *const parent;
 };
 
-WInputPopupV2::WInputPopupV2(WQuickInputPopupSurfaceV2 *surface, WSurface *parentSurface, QObject *parent)
+WInputPopup::WInputPopup(WInputPopupSurfaceAdaptor *surface, WSurface *parentSurface, QObject *parent)
     : WToplevelSurface(parent)
-    , WObject(*new WInputPopupSurfacePrivate(surface, parentSurface, this))
+    , WObject(*new WInputPopupPrivate(surface, parentSurface, this))
 { }
 
-bool WInputPopupV2::doesNotAcceptFocus() const
+bool WInputPopup::doesNotAcceptFocus() const
 {
     return true;
 }
 
-WSurface *WInputPopupV2::surface() const
+WSurface *WInputPopup::surface() const
 {
-    W_DC(WInputPopupSurface);
-    return d->handle->surface();
+    return handle()->surface();
 }
 
-WQuickInputPopupSurfaceV2 *WInputPopupV2::handle() const
+WInputPopupSurfaceAdaptor *WInputPopup::handle() const
 {
     return d_func()->handle;
 }
 
-QWInputPopupSurfaceV2 *WInputPopupV2::qwHandle() const
-{
-    return d_func()->handle->handle();
-}
-
-bool WInputPopupV2::isActivated() const
+bool WInputPopup::isActivated() const
 {
     return true;
 }
 
-QRect WInputPopupV2::getContentGeometry() const
+QRect WInputPopup::getContentGeometry() const
 {
     return {0, 0, d_func()->size().width(), d_func()->size().height()};
 }
 
-WSurface *WInputPopupV2::parentSurface() const
+WSurface *WInputPopup::parentSurface() const
 {
     return d_func()->parent;
 }
 
-bool WInputPopupV2::checkNewSize(const QSize &size)
+bool WInputPopup::checkNewSize(const QSize &size)
 {
     return size == d_func()->size();
 }
 
-WInputPopupV2Item::WInputPopupV2Item(QQuickItem *parent)
+WInputPopupItem::WInputPopupItem(QQuickItem *parent)
     : WSurfaceItem(parent)
     , m_inputPopupSurface(nullptr)
 { }
 
-WInputPopupV2 *WInputPopupV2Item::surface() const
+WInputPopup *WInputPopupItem::surface() const
 {
     return m_inputPopupSurface;
 }
 
-void WInputPopupV2Item::setSurface(WInputPopupV2 *surface)
+void WInputPopupItem::setSurface(WInputPopup *surface)
 {
     if (m_inputPopupSurface == surface)
         return;
@@ -487,4 +359,191 @@ void WInputPopupV2Item::setSurface(WInputPopupV2 *surface)
     Q_EMIT this->surfaceChanged();
 }
 
+QString WQuickInputMethodV2::commitString() const
+{
+    return d_func()->handle->handle()->current.commit_text;
+}
+
+uint WQuickInputMethodV2::deleteSurroundingBeforeLength() const
+{
+    return d_func()->handle->handle()->current.delete_c.before_length;
+}
+
+uint WQuickInputMethodV2::deleteSurroundingAfterLength() const
+{
+    return d_func()->handle->handle()->current.delete_c.after_length;
+}
+
+QString WQuickInputMethodV2::preeditString() const
+{
+    return d_func()->handle->handle()->current.preedit.text;
+}
+
+int WQuickInputMethodV2::preeditCursorBegin() const
+{
+    return d_func()->handle->handle()->current.preedit.cursor_begin;
+}
+
+int WQuickInputMethodV2::preeditCursorEnd() const
+{
+    return d_func()->handle->handle()->current.preedit.cursor_end;
+}
+
+WInputMethodV2Adaptor::WInputMethodV2Adaptor(WQuickInputMethodV2 *imv2)
+    : WInputMethodAdaptor(imv2)
+    , m_im(imv2)
+{
+    connect(m_im->handle(), &QWInputMethodV2::beforeDestroy, this, [this]() { Q_EMIT beforeDestroy(this); });
+    connect(m_im, &WQuickInputMethodV2::newKeyboardGrab, this, [this](WQuickInputMethodKeyboardGrabV2 *kg) {
+        Q_EMIT newKeyboardGrab(new WKeyboardGrabV2Adaptor(kg, m_im->seat()));
+    });
+    connect(m_im, &WQuickInputMethodV2::newPopupSurface, this, [this](WQuickInputPopupSurfaceV2 *ipsv2) {
+        Q_EMIT newInputPopupSurface(new WInputPopupSurfaceV2Adaptor(ipsv2));
+    });
+    connect(m_im, &WQuickInputMethodV2::committed, this, [this]() { Q_EMIT committed(this); });
+}
+
+WSeat *WInputMethodV2Adaptor::seat() const
+{
+    return m_im->seat();
+}
+
+QString WInputMethodV2Adaptor::commitString() const
+{
+    return m_im->commitString();
+}
+
+uint WInputMethodV2Adaptor::deleteSurroundingBeforeLength() const
+{
+    return m_im->deleteSurroundingBeforeLength();
+}
+
+uint WInputMethodV2Adaptor::deleteSurroundingAfterLength() const
+{
+    return m_im->deleteSurroundingAfterLength();
+}
+
+QString WInputMethodV2Adaptor::preeditString() const
+{
+    return m_im->preeditString();
+}
+
+int WInputMethodV2Adaptor::preeditCursorBegin() const
+{
+    return m_im->preeditCursorBegin();
+}
+
+int WInputMethodV2Adaptor::preeditCursorEnd() const
+{
+    return m_im->preeditCursorEnd();
+}
+
+void WInputMethodV2Adaptor::activate()
+{
+    m_im->sendActivate();
+}
+
+void WInputMethodV2Adaptor::deactivate()
+{
+    m_im->sendDeactivate();
+}
+
+void WInputMethodV2Adaptor::sendDone()
+{
+    m_im->sendDone();
+}
+
+void WInputMethodV2Adaptor::sendUnavailable()
+{
+    m_im->sendUnavailable();
+}
+
+void WInputMethodV2Adaptor::sendContentType(im::ContentHints hints, im::ContentPurpose purpose)
+{
+    m_im->sendContentType(hints.toInt(), purpose);
+}
+
+void WInputMethodV2Adaptor::sendSurroundingText(const QString &text, uint cursor, uint anchor)
+{
+    m_im->sendSurroundingText(text, cursor, anchor);
+}
+
+void WInputMethodV2Adaptor::sendTextChangeCause(im::ChangeCause cause)
+{
+    m_im->sendTextChangeCause(cause);
+}
+
+void WInputMethodV2Adaptor::handleTICommitted(WTextInputAdaptor *ti)
+{
+    Q_ASSERT(ti);
+    IM::Features features = ti->features();
+    if (features.testFlag(IM::F_SurroundingText)) {
+        sendSurroundingText(ti->surroundingText(), ti->surroundingCursor(), ti->surroundingAnchor());
+    }
+    sendTextChangeCause(ti->textChangeCause());
+    if (features.testFlag(IM::F_ContentType)) {
+        sendContentType(ti->contentHints(), ti->contentPurpose());
+    }
+    sendDone();
+}
+
+WKeyboardGrabV2Adaptor::WKeyboardGrabV2Adaptor(WQuickInputMethodKeyboardGrabV2 *kgv2, WSeat *seat)
+    : WKeyboardGrabAdaptor(kgv2)
+    , m_kg(kgv2)
+    , m_seat(seat)
+{
+    connect(m_kg->handle(), &QWInputMethodKeyboardGrabV2::beforeDestroy, this, [this]() { Q_EMIT beforeDestroy(this); });
+}
+
+WInputDevice *WKeyboardGrabV2Adaptor::keyboard() const
+{
+    return m_kg->keyboard();
+}
+
+WInputPopupSurfaceV2Adaptor::WInputPopupSurfaceV2Adaptor(WQuickInputPopupSurfaceV2 *ipsv2)
+    : WInputPopupSurfaceAdaptor(ipsv2)
+    , m_ips(ipsv2)
+{
+    connect(m_ips->handle(), &QWInputPopupSurfaceV2::beforeDestroy, this, [this]() {
+        Q_EMIT beforeDestroy(this);
+    });
+}
+
+WSurface *WInputPopupSurfaceV2Adaptor::surface() const
+{
+    return m_ips->surface();
+}
+
+void WInputPopupSurfaceV2Adaptor::sendTextInputRectangle(const QRect &sbox)
+{
+    m_ips->sendTextInputRectangle(sbox);
+}
+
+void WKeyboardGrabV2Adaptor::sendKey(uint time, Qt::Key key, uint state)
+{
+    m_kg->sendKey(time, key, state);
+}
+
+void WKeyboardGrabV2Adaptor::sendModifiers(uint depressed, uint latched, uint locked, uint group)
+{
+    m_kg->sendModifiers(depressed, latched, locked, group);
+}
+
+void WKeyboardGrabV2Adaptor::setKeyboard(WInputDevice *keyboard)
+{
+    m_kg->setKeyboard(keyboard);
+}
+
+void WKeyboardGrabV2Adaptor::endGrab()
+{
+    if (m_kg->keyboard()) {
+        m_seat->handle()->keyboardSendModifiers(&m_kg->handle()->handle()->keyboard->modifiers);
+    }
+    m_seat->handle()->keyboardEndGrab();
+}
+
+void WKeyboardGrabV2Adaptor::startGrab(wlr_seat_keyboard_grab *grab)
+{
+    m_seat->handle()->keyboardStartGrab(grab);
+}
 WAYLIB_SERVER_END_NAMESPACE
