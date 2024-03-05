@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "wrenderhelper.h"
-#include "wbackend.h"
 #include "wtools.h"
 #include "private/wqmlhelper_p.h"
 
@@ -369,7 +368,7 @@ public:
 
     bool getShm(wlr_shm_attributes *attribs) const override;
     bool beginDataPtrAccess(uint32_t flags, void **data, uint32_t *format, size_t *stride) override;
-    void endDataPtrAccess();
+    void endDataPtrAccess() override;
 
 private:
     QImage m_image;
