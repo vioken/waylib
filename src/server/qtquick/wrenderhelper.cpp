@@ -654,20 +654,13 @@ QSGRendererInterface::GraphicsApi WRenderHelper::probe(QWBackend *testBackend, c
                 , allocDeleter
             };
 
-            auto swapchainDeleter = [](wlr_swapchain *swapchain) {
-                wlr_swapchain_destroy(swapchain);
-            };
-
             bool hasSupportedFormat = false;
             for (int formatId = 0; formatId < formats->len; formatId++) {
                 auto *format = &formats->formats[formatId];
 
-                std::unique_ptr<wlr_swapchain, decltype(swapchainDeleter)> swapchain {
-                    wlr_swapchain_create(alloc.get(), 1000, 800, format)
-                    , swapchainDeleter
-                };
+                auto *swapchain = wlr_swapchain_create(alloc.get(), 1000, 800, format); // destroy follow alloc
 
-                auto *buffer = wlr_swapchain_acquire(swapchain.get(), nullptr); // destroy follow swapchain
+                auto *buffer = wlr_swapchain_acquire(swapchain, nullptr); // destroy follow swapchain
 
                 if (!buffer) {
                     continue;
