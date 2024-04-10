@@ -256,12 +256,13 @@ public:
         if (frameDoneConnection)
             QObject::disconnect(frameDoneConnection);
 
-        if (!q_func()->isVisible())
-            return;
-
         if (auto output = surface->primaryOutput()) {
-            frameDoneConnection = QObject::connect(output, &WOutput::bufferCommitted,
-                                                   surface, &WSurface::notifyFrameDone);
+            frameDoneConnection = QObject::connect(output, &WOutput::bufferCommitted,[&](){
+                if (auto privt=QQuickItemPrivate::get(q_func()); ( q_func()->isVisible()
+                    || (privt->extra.isAllocated() && privt->extra->recursiveEffectRefCount ) )) {
+                        Q_EMIT surface->notifyFrameDone();
+                }
+            });
         }
     }
 
@@ -427,8 +428,7 @@ void WSurfaceItemContent::itemChange(ItemChange change, const ItemChangeData &da
     W_D(WSurfaceItemContent);
 
     if (change == ItemVisibleHasChanged) {
-        if (d->surface)
-            d->updateFrameDoneConnection();
+        // lazy frameDone connection no more processed here
     }
 }
 
