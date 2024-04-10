@@ -610,6 +610,8 @@ void WSurfaceItem::setResizeMode(ResizeMode newResizeMode)
     if (d->resizeMode == newResizeMode)
         return;
     d->resizeMode = newResizeMode;
+    if (newResizeMode != ManualResize)
+        resize(newResizeMode);
     Q_EMIT resizeModeChanged();
 }
 
