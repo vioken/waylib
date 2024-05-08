@@ -108,6 +108,7 @@ set(QTQUICK_SOURCES
     qtquick/private/wquickforeigntoplevelmanagerv1.cpp
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
+    qtquick/private/wquickswipehandler.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
