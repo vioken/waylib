@@ -31,7 +31,7 @@ public:
         return item->d_func();
     }
 
-    WQuickObserver *target;
+    QPointer<WQuickObserver> target;
 
     Q_DECLARE_PUBLIC(WQuickCoordMapper)
 };
@@ -94,6 +94,9 @@ WQuickCoordMapper::WQuickCoordMapper(WQuickObserver *target, QQuickItem *parent)
 void WQuickCoordMapper::updatePosition()
 {
     Q_D(WQuickCoordMapper);
+
+    if (!d->target)
+        return;
 
     auto parent = parentItem();
     Q_ASSERT(parent);

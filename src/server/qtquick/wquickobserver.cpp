@@ -61,6 +61,10 @@ WQuickObserver::~WQuickObserver()
 
 const QPointF WQuickObserver::globalPosition() const
 {
+    const Q_D(WQuickObserver);
+    if (d->inDestructor)
+        return QQuickItem::position();
+
     if (!parentItem())
         return position();
     return parentItem()->mapToGlobal(position());

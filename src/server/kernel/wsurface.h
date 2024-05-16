@@ -65,7 +65,7 @@ public:
     uint32_t preferredBufferScale() const;
     void setPreferredBufferScale(uint32_t newPreferredBufferScale);
     void resetPreferredBufferScale();
-    // release resources requiring instant release, then QObject::deleteLater 
+    // release resources requiring instant release, then QObject::deleteLater
     void deleteLater();
 
 public Q_SLOTS:

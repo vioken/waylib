@@ -58,7 +58,7 @@ public:
 
     QW_NAMESPACE::QWBuffer *buffer = nullptr;
     QVector<WOutput*> outputs;
-    WOutput *primaryOutput = nullptr;
+    QPointer<WOutput> primaryOutput;
     QMetaObject::Connection frameDoneConnection;
 };
 

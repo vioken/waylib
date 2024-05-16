@@ -475,7 +475,6 @@ void WSurfacePrivate::instantRelease()
         subsurface->disconnect(q);
         for (auto o : outputs)
             o->disconnect(q);
-        handle = nullptr;
     }
 }
 
