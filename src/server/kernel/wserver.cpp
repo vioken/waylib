@@ -16,6 +16,7 @@
 #include <qwdisplay.h>
 #include <qwdatadevice.h>
 #include <qwprimaryselectionv1.h>
+#include <qwlogging.h>
 
 #include <QVector>
 #include <QThread>
@@ -45,7 +46,6 @@ extern "C" {
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
-#include <wlr/util/log.h>
 #ifndef DISABLE_XWAYLAND
 #include <wlr/xwayland/shell.h>
 #endif
@@ -165,11 +165,7 @@ WServer::WServer(WServerPrivate &dd, QObject *parent)
     : QObject(parent)
     , WObject(dd)
 {
-#ifdef QT_DEBUG
-    wlr_log_init(WLR_DEBUG, NULL);
-#else
-    wlr_log_init(WLR_INFO, NULL);
-#endif
+    QWLog::init();
 }
 
 QWDisplay *WServer::handle() const
