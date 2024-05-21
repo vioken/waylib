@@ -49,6 +49,10 @@
 
 #include <QScopedPointer>
 #include <QList>
+#include <QObject>
+#include <QThread>
+
+#include <type_traits>
 
 struct wl_client;
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -74,8 +78,13 @@ protected:
         return -1;
     }
 
+    void invalidate();
+    virtual void instantRelease() {}
+
     WObject *q_ptr;
     QList<std::pair<const void*, void*>> attachedDatas;
+    QList<QMetaObject::Connection> connections;
+    bool invalidated = false;
 
     Q_DECLARE_PUBLIC(WObject)
 };
@@ -116,6 +125,48 @@ public:
         const void *owner = typeid(T).name();
         removeAttachedData<T>(owner);
     }
+
+    template<typename Func1, typename Func2>
+    static typename std::enable_if<std::is_base_of<WObject, typename QtPrivate::FunctionPointer<Func1>::Object>::value, QMetaObject::Connection>::type
+    safeConnect(const typename QtPrivate::FunctionPointer<Func1>::Object *sender,
+                Func1 signal, const QObject *receiver, Func2 slot,
+                Qt::ConnectionType type = Qt::AutoConnection) {
+        auto connection = QObject::connect(sender, signal, receiver, slot, type);
+        if (!connection)
+            return connection;
+
+        // Isn't thread safety
+        Q_ASSERT(QThread::currentThread() == sender->thread());
+        auto d = static_cast<const WObject*>(sender)->w_d_ptr.get();
+        Q_ASSERT(!d->invalidated);
+        d->connections.append(connection);
+        return connection;
+    }
+
+    template<typename T, typename Func1, typename Func2>
+    static typename std::enable_if<std::is_base_of<WObject, T>::value
+                                       && std::is_base_of<typename QtPrivate::FunctionPointer<Func1>::Object, decltype(T::handle())>::value,
+                                   QMetaObject::Connection>::type
+    safeConnect(const T *sender, Func1 signal, const QObject *receiver, Func2 slot,
+                Qt::ConnectionType type = Qt::AutoConnection) {
+        auto connection = QObject::connect(sender->handle(), signal, receiver, slot, type);
+        if (!connection)
+            return connection;
+
+        // Isn't thread safety
+        Q_ASSERT(QThread::currentThread() == sender->thread());
+        auto d = static_cast<const WObject*>(sender)->w_d_ptr.get();
+        Q_ASSERT(!d->invalidated);
+        d->connections.append(connection);
+        return connection;
+    }
+
+    bool safeDisconnect(const QObject *receiver);
+    bool safeDisconnect(const QMetaObject::Connection &connection);
+
+    void safeDelete();
+    // release resources requiring instant release, then QObject::deleteLater
+    void safeDeleteLater();
 
 protected:
     WObject(WObjectPrivate &dd, WObject *parent = nullptr);

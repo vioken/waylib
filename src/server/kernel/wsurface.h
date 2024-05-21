@@ -65,8 +65,6 @@ public:
     uint32_t preferredBufferScale() const;
     void setPreferredBufferScale(uint32_t newPreferredBufferScale);
     void resetPreferredBufferScale();
-    // release resources requiring instant release, then QObject::deleteLater 
-    void deleteLater();
 
 public Q_SLOTS:
     void enterOutput(WOutput *output);
@@ -90,6 +88,9 @@ Q_SIGNALS:
 
 protected:
     WSurface(WSurfacePrivate &dd, QObject *parent);
+    // destroy by safeDelete or safeDeleteLater
+    ~WSurface() override;
+    using QObject::deleteLater;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

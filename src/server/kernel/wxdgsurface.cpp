@@ -86,7 +86,7 @@ void WXdgSurfacePrivate::instantRelease()
     handle->disconnect(q);
     if (auto toplevel = handle->topToplevel())
         toplevel->disconnect(q);
-    surface->deleteLater();
+    surface->safeDeleteLater();
     surface = nullptr;
 }
 
