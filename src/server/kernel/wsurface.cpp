@@ -190,7 +190,7 @@ WSurface *WSurfacePrivate::ensureSubsurface(wlr_subsurface *subsurface)
 
     auto qwsurface = QWSurface::from(subsurface->surface);
     auto surface = new WSurface(qwsurface, q_func());
-    QObject::connect(qwsurface, &QWSurface::beforeDestroy, surface, &WSurface::deleteLater);
+    WObject::safeConnect(surface, &QWSurface::beforeDestroy, surface, [surface]{ surface->safeDeleteLater(); });
 
     return surface;
 }
@@ -263,7 +263,9 @@ WSurface *WSurface::fromHandle(wlr_surface *handle)
 bool WSurface::inputRegionContains(const QPointF &localPos) const
 {
     W_DC(WSurface);
-    return d->handle->pointAcceptsInput(localPos);
+    if (d->handle)
+        return d->handle->pointAcceptsInput(localPos);
+    return false;
 }
 
 bool WSurface::mapped() const
@@ -466,6 +468,7 @@ void WSurface::unmap()
 void WSurfacePrivate::instantRelease()
 {
     W_Q(WSurface);
+    qDebug()<<q<<"instantRelease";
     if (handle) {
         handle->setData(nullptr, nullptr);
         handle->disconnect(q);

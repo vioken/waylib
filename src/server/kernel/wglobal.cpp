@@ -15,7 +15,8 @@ WObject::WObject(WObjectPrivate &dd, WObject *)
 
 WObject::~WObject()
 {
-
+    W_D(WObject);
+    d->invalidate();
 }
 
 WObjectPrivate *WObjectPrivate::get(WObject *qq)

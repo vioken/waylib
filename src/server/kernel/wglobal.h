@@ -88,7 +88,10 @@ protected:
 
     Q_DECLARE_PUBLIC(WObject)
 };
-
+template<typename T>
+concept IsPublicDestructible = requires(T *t){
+    delete t;
+};
 class WAYLIB_SERVER_EXPORT WObject
 {
 public:
@@ -137,6 +140,8 @@ public:
 
         // Isn't thread safety
         Q_ASSERT(QThread::currentThread() == sender->thread());
+        static_assert(!std::is_destructible_v<std::remove_pointer_t<decltype(sender)>>);
+        // static_assert(signal!=&QObject::destroyed);
         auto d = static_cast<const WObject*>(sender)->w_d_ptr.get();
         Q_ASSERT(!d->invalidated);
         d->connections.append(connection);
@@ -144,17 +149,20 @@ public:
     }
 
     template<typename T, typename Func1, typename Func2>
-    static typename std::enable_if<std::is_base_of<WObject, T>::value
-                                       && std::is_base_of<typename QtPrivate::FunctionPointer<Func1>::Object, decltype(T::handle())>::value,
-                                   QMetaObject::Connection>::type
-    safeConnect(const T *sender, Func1 signal, const QObject *receiver, Func2 slot,
-                Qt::ConnectionType type = Qt::AutoConnection) {
+    static QMetaObject::Connection
+    safeConnect(const T *sender, Func1 signal, const QObject *receiver, Func2 slot, Qt::ConnectionType type = Qt::AutoConnection)
+                requires std::is_base_of_v<WObject, T>
+                && (!std::is_base_of_v<WObject, typename QtPrivate::FunctionPointer<Func1>::Object>)
+                && requires(T t) { std::is_base_of_v<typename QtPrivate::FunctionPointer<Func1>::Object,decltype(*t.handle())>; }
+                {
         auto connection = QObject::connect(sender->handle(), signal, receiver, slot, type);
         if (!connection)
             return connection;
 
         // Isn't thread safety
         Q_ASSERT(QThread::currentThread() == sender->thread());
+        static_assert(!std::is_destructible_v<T>, "must use safeDelete, destructor should be hidden");
+        // static_assert(std::function<signal>!=&QObject::destroyed);
         auto d = static_cast<const WObject*>(sender)->w_d_ptr.get();
         Q_ASSERT(!d->invalidated);
         d->connections.append(connection);

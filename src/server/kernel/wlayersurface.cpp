@@ -98,7 +98,7 @@ void WLayerSurfacePrivate::instantRelease()
     W_Q(WLayerSurface);
     handle->disconnect(q);
     handle->surface()->disconnect(q);
-    surface->deleteLater();
+    surface->safeDeleteLater();
     surface = nullptr;
 }
 
@@ -267,12 +267,6 @@ WLayerSurface::WLayerSurface(QWLayerSurfaceV1 *handle, QObject *parent)
 WLayerSurface::~WLayerSurface()
 {
 
-}
-
-void WLayerSurface::deleteLater()
-{
-    d_func()->instantRelease();
-    QObject::deleteLater();
 }
 
 bool WLayerSurface::isPopup() const

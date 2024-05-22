@@ -43,8 +43,6 @@ class WAYLIB_SERVER_EXPORT WLayerSurface : public WToplevelSurface, public WObje
 
 public:
     explicit WLayerSurface(QW_NAMESPACE::QWLayerSurfaceV1 *handle, QObject *parent = nullptr);
-    ~WLayerSurface();
-    void deleteLater();
 
     enum class LayerType {
         Background = 0,
@@ -118,6 +116,11 @@ Q_SIGNALS:
 public Q_SLOTS:
     bool checkNewSize(const QSize &size) override;
     void setActivate(bool on) override;
+
+protected:
+    // destroy by safeDelete or safeDeleteLater
+    ~WLayerSurface() override;
+    using QObject::deleteLater;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(WLayerSurface::AnchorTypes)

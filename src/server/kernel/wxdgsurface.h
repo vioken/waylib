@@ -28,7 +28,6 @@ class WAYLIB_SERVER_EXPORT WXdgSurface : public WToplevelSurface, public WObject
 
 public:
     explicit WXdgSurface(QW_NAMESPACE::QWXdgSurface *handle, QObject *parent = nullptr);
-    ~WXdgSurface();
 
     bool isPopup() const;
     bool doesNotAcceptFocus() const override;
@@ -57,9 +56,6 @@ public:
 
     QString title() const override;
     QString appId() const override;
-    
-    //release resources requiring instant release, then QObject::deleteLater
-    void deleteLater();
 
 public Q_SLOTS:
     void setResizeing(bool resizeing) override;
@@ -74,6 +70,10 @@ public Q_SLOTS:
 Q_SIGNALS:
     void parentXdgSurfaceChanged();
     void resizeingChanged();
+protected:
+    // destroy by safeDelete or safeDeleteLater
+    ~WXdgSurface() override;
+    using QObject::deleteLater;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

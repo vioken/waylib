@@ -68,7 +68,7 @@ void WQuickLayerShellPrivate::onSurfaceDestroy(QWLayerSurfaceV1 *layerSurface)
     bool ok = surfaceList.removeOne(surface);
     Q_ASSERT(ok);
     Q_EMIT q_func()->surfaceRemoved(surface);
-    surface->deleteLater();
+    surface->safeDeleteLater();
 }
 
 WQuickLayerShell::WQuickLayerShell(QObject *parent):

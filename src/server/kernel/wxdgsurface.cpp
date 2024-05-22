@@ -90,13 +90,6 @@ void WXdgSurfacePrivate::instantRelease()
     surface = nullptr;
 }
 
-void WXdgSurface::deleteLater()
-{
-    W_D(WXdgSurface);
-    d->instantRelease();
-    QObject::deleteLater();
-}
-
 void WXdgSurfacePrivate::on_configure(wlr_xdg_surface_configure *event)
 {
     if (handle->topToplevel()) {

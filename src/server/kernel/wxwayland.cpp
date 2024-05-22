@@ -128,7 +128,7 @@ void WXWaylandPrivate::on_surface_destroy(QWXWaylandSurface *xwl_surface)
     bool ok = surfaceList.removeOne(surface);
     Q_ASSERT(ok);
     q_func()->surfaceRemoved(surface);
-    surface->deleteLater();
+    surface->safeDeleteLater();
 }
 
 WXWayland::WXWayland(QWCompositor *compositor, bool lazy)
@@ -226,7 +226,7 @@ void WXWayland::destroy(WServer *server)
 
     for (auto surface : list) {
         surfaceRemoved(surface);
-        surface->deleteLater();
+        surface->safeDeleteLater();
     }
 }
 

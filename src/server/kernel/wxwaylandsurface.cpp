@@ -94,7 +94,7 @@ void WXWaylandSurfacePrivate::init()
     });
     QObject::connect(handle, &QWXWaylandSurface::dissociate, q, [this, q] {
         Q_ASSERT(surface);
-        surface->deleteLater();
+        surface->safeDeleteLater();
         surface = nullptr;
         Q_EMIT q->surfaceChanged();
     });

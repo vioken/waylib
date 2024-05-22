@@ -59,7 +59,7 @@ void WXdgShellPrivate::onSurfaceDestroy(QWXdgSurface *xdgSurface)
     bool ok = surfaceList.removeOne(surface);
     Q_ASSERT(ok);
     q_func()->surfaceRemoved(surface);
-    surface->deleteLater();
+    surface->safeDeleteLater();
 }
 
 WXdgShell::WXdgShell()
@@ -106,7 +106,7 @@ void WXdgShell::destroy(WServer *server)
 
     for (auto surface : list) {
         surfaceRemoved(surface);
-        surface->deleteLater();
+        surface->safeDeleteLater();
     }
 }
 
