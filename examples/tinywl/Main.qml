@@ -93,6 +93,10 @@ Item {
             }
         }
 
+        SecurityContextManagerV1 {
+
+        }
+
         OutputManager {
             id: outputManagerV1
 
