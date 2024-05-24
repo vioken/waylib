@@ -139,12 +139,14 @@ void WXdgSurfacePrivate::connect()
 {
     W_Q(WXdgSurface);
 
-    QObject::connect(handle, &QWXdgSurface::configure, q, [this] (wlr_xdg_surface_configure *event) {
+    WObject::safeConnect(q, &QWXdgSurface::configure, q, [this] (wlr_xdg_surface_configure *event) {
         on_configure(event);
     });
-    QObject::connect(handle, &QWXdgSurface::ackConfigure, q, [this] (wlr_xdg_surface_configure *event) {
+    WObject::safeConnect(q, &QWXdgSurface::ackConfigure, q, [this] (wlr_xdg_surface_configure *event) {
         on_ack_configure(event);
     });
+
+    // TODO
 
     if (auto toplevel = handle->topToplevel()) {
         QObject::connect(toplevel, &QWXdgToplevel::requestMove, q, [q] (wlr_xdg_toplevel_move_event *event) {

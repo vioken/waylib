@@ -206,10 +206,10 @@ void WXWayland::create(WServer *server)
     // free follow display
 
     auto handle = QWXWayland::create(server->handle(), d->compositor, d->lazy);
-    QObject::connect(handle, &QWXWayland::newSurface, this, [d] (wlr_xwayland_surface *surface) {
+    WObject::safeConnect(this, &QWXWayland::newSurface, this, [d] (wlr_xwayland_surface *surface) {
         d->on_new_surface(surface);
     });
-    QObject::connect(handle, &QWXWayland::ready, this, [d] {
+    WObject::safeConnect(this, &QWXWayland::ready, this, [d] {
         d->init();
     });
 

@@ -100,6 +100,7 @@ protected:
     friend class QWlrootsRenderWindow;
     friend class WEventJunkman;
 
+    ~WSeat() override = default;
     void create(WServer *server) override;
     void destroy(WServer *server) override;
     wl_global *global() const override;

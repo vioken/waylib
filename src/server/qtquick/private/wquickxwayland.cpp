@@ -64,11 +64,11 @@ void XWayland::surfaceAdded(WXWaylandSurface *surface)
 
     QObject::connect(surface, &WXWaylandSurface::isToplevelChanged,
                      qq, &WQuickXWayland::onIsToplevelChanged);
-    QObject::connect(surface->handle(), &QWXWaylandSurface::associate,
+    WObject::safeConnect(surface, &QWXWaylandSurface::associate,
                      qq, [this, surface] {
         qq->addSurface(surface);
     });
-    QObject::connect(surface->handle(), &QWXWaylandSurface::dissociate,
+    WObject::safeConnect(surface, &QWXWaylandSurface::dissociate,
                      qq, [this, surface] {
         qq->removeSurface(surface);
     });
@@ -197,7 +197,7 @@ void WQuickXWayland::tryCreateXWayland()
 
     xwayland = server()->attach<XWayland>(this);
     xwayland->setOwnsSocket(ownsSocket());
-    connect(xwayland->handle(), &QWXWayland::ready, this, &WQuickXWayland::ready);
+    WObject::safeConnect(xwayland, &QWXWayland::ready, this, &WQuickXWayland::ready);
 
     Q_EMIT displayNameChanged();
 }

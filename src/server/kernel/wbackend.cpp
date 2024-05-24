@@ -113,7 +113,7 @@ void WBackendPrivate::on_output_destroy(QWOutput *output)
         if (outputList.at(i)->handle() == output) {
             auto device = outputList.takeAt(i);
             q_func()->outputRemoved(device);
-            delete device;
+            device->safeDelete();
             return;
         }
     }
@@ -121,6 +121,7 @@ void WBackendPrivate::on_output_destroy(QWOutput *output)
 
 void WBackendPrivate::connect()
 {
+    // TODO
     QObject::connect(handle(), &QWBackend::newOutput, q_func(), [this] (QWOutput *output) {
         on_new_output(output);
     });
@@ -189,8 +190,10 @@ void WBackend::destroy(WServer *server)
     for (auto i : d->outputList)
         outputRemoved(i);
 
-    qDeleteAll(d->inputList);
-    qDeleteAll(d->outputList);
+    for(auto i : d->inputList)
+        i->safeDelete();
+    for(auto o : d->outputList)
+        o->safeDelete();
     d->inputList.clear();
     d->outputList.clear();
     m_handle = nullptr;

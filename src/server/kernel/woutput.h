@@ -67,7 +67,6 @@ public:
     Q_ENUM(Transform)
 
     explicit WOutput(QW_NAMESPACE::QWOutput *handle, WBackend *backend);
-    ~WOutput();
 
     WBackend *backend() const;
     WServer *server() const;
@@ -126,6 +125,9 @@ Q_SIGNALS:
     void scaleChanged();
     void forceSoftwareCursorChanged();
     void bufferCommitted();
+
+protected:
+    ~WOutput() override;
 
 private:
     friend class QWlrootsIntegration;

@@ -76,7 +76,6 @@ public:
     Q_ENUM(DecorationsType)
 
     explicit WXWaylandSurface(QW_NAMESPACE::QWXWaylandSurface *handle, WXWayland *xwayland, QObject *parent = nullptr);
-    ~WXWaylandSurface();
 
     static WXWaylandSurface *fromHandle(QW_NAMESPACE::QWXWaylandSurface *handle);
     static WXWaylandSurface *fromHandle(wlr_xwayland_surface *handle);
@@ -136,6 +135,9 @@ Q_SIGNALS:
 
     void requestConfigure(QRect geometry, ConfigureFlags flags);
     void requestActivate();
+
+protected:
+    ~WXWaylandSurface() override;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

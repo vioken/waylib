@@ -55,6 +55,7 @@ public:
     QVector<WXWaylandSurface*> surfaceList() const;
 
 protected:
+    ~WXWayland() override = default;
     virtual void surfaceAdded(WXWaylandSurface *surface);
     virtual void surfaceRemoved(WXWaylandSurface *surface);
 
