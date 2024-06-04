@@ -940,7 +940,7 @@ void WSurfaceItem::onSurfaceCommit()
     // Maybe the beforeRequestResizeSurfaceStateSeq is set by resizeSurfaceToItemSize,
     // the resizeSurfaceToItemSize wants to resize the wl_surface to current size of WSurfaceitem,
     // If change the WSurfaceItem's size at here, you will see the WSurfaceItem flash.
-    if (d->beforeRequestResizeSurfaceStateSeq < d->surface->handle()->handle()->current.seq) {
+    if (Q_LIKELY(d->surface) && d->beforeRequestResizeSurfaceStateSeq < d->surface->handle()->handle()->current.seq) {
         if (d->beforeRequestResizeSurfaceStateSeq != 0) {
             Q_ASSERT(d->beforeRequestResizeSurfaceStateSeq == d->surface->handle()->handle()->current.seq - 1);
             d->beforeRequestResizeSurfaceStateSeq = 0;
