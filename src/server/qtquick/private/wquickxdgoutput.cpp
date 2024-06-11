@@ -58,14 +58,16 @@ WOutputLayout *WQuickXdgOutputManager::layout() const
     return d->layout;
 }
 
-void WQuickXdgOutputManager::create()
+WServerInterface *WQuickXdgOutputManager::create()
 {
     W_D(WQuickXdgOutputManager);
-    WQuickWaylandServerInterface::create();
-    if (d->layout)
-        QWXdgOutputManagerV1::create(server()->handle(), d->layout);
-    else
-        qWarning() << "Output layout not set, xdg output manager will never be created!";
+
+    if (!d->layout)
+        qFatal() << "Output layout not set, xdg output manager will never be created!";
+
+    auto handle = QWXdgOutputManagerV1::create(server()->handle(), d->layout);
+
+    return new WServerInterface(handle, handle->handle()->global);
 }
 
 WAYLIB_SERVER_END_NAMESPACE
