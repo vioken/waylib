@@ -171,8 +171,6 @@ Item {
             seat: seat0.seat
             lazy: false
 
-            onReady: masterSocket.addClient(client())
-
             onSurfaceAdded: function(surface) {
                 QmlHelper.xwaylandSurfaceManager.add({waylandSurface: surface})
             }
