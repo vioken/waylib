@@ -71,10 +71,16 @@ static bool globalFilter(const wl_client *client,
     WServerPrivate *d = reinterpret_cast<WServerPrivate*>(data);
 
     if (auto interface = d->q_func()->findInterface(global)) {
-        if (interface->targetSocket() && WSocket::get(client) != interface->targetSocket())
+        if (interface->targetSocket()
+            && (interface->exclusionTargetSocket()
+                == bool(WSocket::get(client) == interface->targetSocket()))) {
             return false;
-        if (!interface->targetClients().isEmpty() && !interface->targetClients().contains(WClient::get(client)))
+        }
+        if (!interface->targetClients().isEmpty()
+            && (interface->exclusionTargetClients()
+                == interface->targetClients().contains(WClient::get(client)))) {
             return false;
+        }
     }
 
 #ifndef DISABLE_XWAYLAND
