@@ -51,14 +51,13 @@ WQuickInputMethodManagerV2::WQuickInputMethodManagerV2(QObject *parent) :
     WObject(*new WQuickInputMethodManagerV2Private(this), nullptr)
 { }
 
-WServerInterface *WQuickInputMethodManagerV2::create()
+void WQuickInputMethodManagerV2::create()
 {
     W_D(WQuickInputMethodManagerV2);
+    WQuickWaylandServerInterface::create();
     d->manager = QWInputMethodManagerV2::create(server()->handle());
     Q_ASSERT(d->manager);
     connect(d->manager, &QWInputMethodManagerV2::inputMethod, this, &WQuickInputMethodManagerV2::newInputMethod);
-
-    return new WServerInterface(d->manager, d->manager->handle()->global);
 }
 
 class WQuickInputPopupSurfaceV2Private : public WWrapObjectPrivate

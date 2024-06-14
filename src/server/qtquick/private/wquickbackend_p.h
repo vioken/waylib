@@ -49,7 +49,7 @@ Q_SIGNALS:
     void inputRemoved(WInputDevice *input);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
     void polish() override;
 };
 

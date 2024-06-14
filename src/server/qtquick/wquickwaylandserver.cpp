@@ -15,7 +15,6 @@ public:
 
     bool isPolished = false;
     WSocket *ownsSocket = nullptr;
-    WServerInterface *interface = nullptr;
 };
 
 class WQuickWaylandServerPrivate : public WServerPrivate
@@ -60,8 +59,8 @@ void WQuickWaylandServerPrivate::interfaces_append(QQmlListProperty<WQuickWaylan
     i->setParent(q);
 
     if (self->componentComplete) {
-        i->doCreate();
-        QMetaObject::invokeMethod(i, &WQuickWaylandServerInterface::doPolish, Qt::QueuedConnection);
+        i->create();
+        QMetaObject::invokeMethod(i, &WQuickWaylandServerInterface::polish, Qt::QueuedConnection);
     }
 
     Q_EMIT q->interfacesChanged();
@@ -179,44 +178,24 @@ void WQuickWaylandServerInterface::setOwnsSocket(WSocket *socket)
     d->ownsSocket = socket;
     Q_EMIT ownsSocketChanged();
 
-    if (d->interface)
-        d->interface->setOwnsSocket(socket);
+    ownsSocketChange();
 }
 
-WServerInterface *WQuickWaylandServerInterface::create()
+void WQuickWaylandServerInterface::create()
 {
-    return nullptr;
+    Q_EMIT beforeCreate();
 }
 
 void WQuickWaylandServerInterface::polish()
 {
-
-}
-
-void WQuickWaylandServerInterface::doCreate()
-{
     Q_D(WQuickWaylandServerInterface);
-    Q_ASSERT(!d->interface);
-    Q_EMIT beforeCreate();
-    d->interface = create();
-
-    if (!d->interface)
-        return;
-
-    d->interface->setOwnsSocket(ownsSocket());
-
-    if (!server()->interfaceList().contains(d->interface))
-        server()->attach(d->interface);
-}
-
-void WQuickWaylandServerInterface::doPolish()
-{
-    Q_D(WQuickWaylandServerInterface);
-
-    polish();
-
     d->isPolished = true;
     Q_EMIT afterPolish();
+}
+
+void WQuickWaylandServerInterface::ownsSocketChange()
+{
+
 }
 
 WQuickWaylandServer::WQuickWaylandServer(QObject *parent)
@@ -237,10 +216,10 @@ void WQuickWaylandServer::componentComplete()
 
     start();
     for (auto i : d->m_interfaces)
-        i->doCreate();
+        i->create();
 
     for (auto i : d->m_interfaces)
-        i->doPolish();
+        i->polish();
 
     d->componentComplete = true;
 

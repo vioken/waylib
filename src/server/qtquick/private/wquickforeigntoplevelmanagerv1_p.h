@@ -74,7 +74,7 @@ Q_SIGNALS:
     void rectangleChanged(WXdgSurface *surface, wlr_foreign_toplevel_handle_v1_set_rectangle_event *event);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

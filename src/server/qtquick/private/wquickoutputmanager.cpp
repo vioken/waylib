@@ -46,9 +46,10 @@ WQuickOutputManager::WQuickOutputManager(QObject *parent):
 
 }
 
-WServerInterface *WQuickOutputManager::create()
+void WQuickOutputManager::create()
 {
     W_D(WQuickOutputManager);
+    WQuickWaylandServerInterface::create();
 
     d->manager = QWOutputManagerV1::create(server()->handle());
     connect(d->manager, &QWOutputManagerV1::test, this, [d](QWOutputConfigurationV1 *config) {
@@ -58,8 +59,6 @@ WServerInterface *WQuickOutputManager::create()
     connect(d->manager, &QWOutputManagerV1::apply, this, [d](QWOutputConfigurationV1 *config) {
         d->outputMgrApplyOrTest(config, false);
     });
-
-    return new WServerInterface(d->manager, d->manager->handle()->global);
 }
 
 void WQuickOutputManagerPrivate::outputMgrApplyOrTest(QWOutputConfigurationV1 *config, int onlyTest)

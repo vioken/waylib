@@ -47,7 +47,7 @@ Q_SIGNALS:
     void newInputMethod(QW_NAMESPACE::QWInputMethodV2 *inputMethod);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 
 class WQuickInputPopupSurfaceV2 : public WWrapObject

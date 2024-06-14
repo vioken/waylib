@@ -215,6 +215,6 @@ Q_SIGNALS:
     void newTextInput(WTextInputV1 *textInput);
 
 protected:
-    WServerInterface *create() override;
+    void create() override;
 };
 WAYLIB_SERVER_END_NAMESPACE

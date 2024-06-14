@@ -23,7 +23,7 @@ public:
     explicit WQuickFractionalScaleManagerV1(QObject *parent = nullptr);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

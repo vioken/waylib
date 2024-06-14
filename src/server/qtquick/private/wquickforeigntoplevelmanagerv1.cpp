@@ -226,12 +226,11 @@ void WQuickForeignToplevelManagerV1::remove(WXdgSurface *surface) {
     d->remove(surface);
 }
 
-WServerInterface *WQuickForeignToplevelManagerV1::create() {
+void WQuickForeignToplevelManagerV1::create() {
     W_D(WQuickForeignToplevelManagerV1);
+    WQuickWaylandServerInterface::create();
 
     d->manager = QWForeignToplevelManagerV1::create(server()->handle());
-
-    return new WServerInterface(d->manager, d->manager->handle()->global);
 }
 
 WQuickForeignToplevelManagerAttached *WQuickForeignToplevelManagerV1::qmlAttachedProperties(QObject *target)

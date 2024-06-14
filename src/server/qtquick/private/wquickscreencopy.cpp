@@ -6,12 +6,6 @@
 
 #include <qwscreencopyv1.h>
 
-extern "C" {
-#define static
-#include <wlr/types/wlr_screencopy_v1.h>
-#undef static
-}
-
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 using QW_NAMESPACE::QWScreenCopyManagerV1;
@@ -35,12 +29,11 @@ WQuickScreenCopyManager::WQuickScreenCopyManager(QObject *parent)
 
 }
 
-WServerInterface *WQuickScreenCopyManager::create()
+void WQuickScreenCopyManager::create()
 {
     W_D(WQuickScreenCopyManager);
-    auto handle = QWScreenCopyManagerV1::create(server()->handle());
-
-    return new WServerInterface(handle, handle->handle()->global);
+    WQuickWaylandServerInterface::create();
+    QWScreenCopyManagerV1::create(server()->handle());
 }
 
 WAYLIB_SERVER_END_NAMESPACE

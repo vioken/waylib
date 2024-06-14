@@ -45,6 +45,6 @@ Q_SIGNALS:
     void newVirtualKeyboard(QW_NAMESPACE::QWVirtualKeyboardV1 *virtualKeyboard);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 WAYLIB_SERVER_END_NAMESPACE

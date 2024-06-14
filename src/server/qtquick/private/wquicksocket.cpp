@@ -127,6 +127,8 @@ void WQuickSocket::setFreezeClientWhenDisable(bool newFreezeClientWhenDisable)
 
 void WQuickSocket::polish()
 {
+    WQuickWaylandServerInterface::polish();
+
     if (m_socketFile.isEmpty()) {
         Q_ASSERT(!m_socket);
         auto socket = new WSocket(m_freezeClientWhenDisable);
@@ -142,6 +144,7 @@ void WQuickSocket::polish()
 
 void WQuickSocket::setSocket(WSocket *socket)
 {
+    Q_ASSERT(isPolished());
     Q_ASSERT(m_socket != socket);
     if (m_socket)
         m_socket->deleteLater();

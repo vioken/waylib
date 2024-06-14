@@ -60,7 +60,7 @@ Q_SIGNALS:
     void requestTestOrApply(QW_NAMESPACE::QWOutputConfigurationV1 *config, bool onlyTest);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

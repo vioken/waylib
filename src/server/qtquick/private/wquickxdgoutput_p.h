@@ -25,7 +25,7 @@ public:
     WOutputLayout *layout() const;
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

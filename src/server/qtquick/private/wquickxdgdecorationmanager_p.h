@@ -65,7 +65,7 @@ Q_SIGNALS:
     void preferredModeChanged(DecorationMode mode);
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

@@ -38,7 +38,7 @@ Q_SIGNALS:
     void shellChanged();
 
 private:
-    WServerInterface *create() override;
+    void create() override;
 
     QW_NAMESPACE::QWXWaylandShellV1 *m_shell = nullptr;
 };
@@ -86,7 +86,8 @@ Q_SIGNALS:
 private:
     friend class XWayland;
 
-    WServerInterface *create() override;
+    void create() override;
+    void ownsSocketChange() override;
     void tryCreateXWayland();
     void onIsToplevelChanged();
     void addSurface(WXWaylandSurface *surface);

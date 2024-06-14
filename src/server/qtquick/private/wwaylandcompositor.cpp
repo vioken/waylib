@@ -11,12 +11,6 @@
 #include <qwcompositor.h>
 #include <qwsubcompositor.h>
 
-extern "C" {
-#define static
-#include <wlr/types/wlr_compositor.h>
-#undef static
-}
-
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
@@ -82,21 +76,11 @@ QWSubcompositor *WWaylandCompositor::subcompositor() const
     return d->subcompositor;
 }
 
-class WCompositor : public WServerInterface
-{
-public:
-private:
-    void create(WServer *server) override {
-        ;
-    }
-
-    QWCompositor *compositor = nullptr;
-    QWSubcompositor *subsompositor = nullptr;
-};
-
-WServerInterface *WWaylandCompositor::create()
+void WWaylandCompositor::create()
 {
     W_D(WWaylandCompositor);
+
+    WQuickWaylandServerInterface::create();
 
     Q_ASSERT(d->backend);
     d->renderer = WRenderHelper::createRenderer(d->backend->backend());
@@ -116,8 +100,6 @@ WServerInterface *WWaylandCompositor::create()
     Q_EMIT allocatorChanged();
     Q_EMIT compositorChanged();
     Q_EMIT subcompositorChanged();
-
-    return new WServerInterface(d->compositor, d->compositor->handle()->global);
 }
 
 WAYLIB_SERVER_END_NAMESPACE

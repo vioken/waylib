@@ -39,11 +39,9 @@ protected:
     friend class WQuickWaylandServer;
     friend class WQuickWaylandServerPrivate;
 
-    [[nodiscard]] virtual WServerInterface *create();
+    virtual void create();
     virtual void polish();
-
-    void doCreate();
-    void doPolish();
+    virtual void ownsSocketChange();
 };
 
 class WQuickWaylandServerPrivate;
