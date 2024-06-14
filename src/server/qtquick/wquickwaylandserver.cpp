@@ -180,7 +180,7 @@ void WQuickWaylandServerInterface::setTargetSocket(WSocket *socket)
     Q_EMIT targetSocketChanged();
 
     if (d->interface)
-        d->interface->setTargetSocket(socket, false);
+        d->interface->setTargetSocket(socket);
 }
 
 WServerInterface *WQuickWaylandServerInterface::create()
@@ -203,7 +203,7 @@ void WQuickWaylandServerInterface::doCreate()
     if (!d->interface)
         return;
 
-    d->interface->setTargetSocket(targetSocket(), false);
+    d->interface->setTargetSocket(targetSocket());
 
     if (!server()->interfaceList().contains(d->interface))
         server()->attach(d->interface);
