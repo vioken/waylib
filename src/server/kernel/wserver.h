@@ -28,7 +28,6 @@ typedef bool (*GlobalFilterFunc)(const wl_client *client,
 
 class WServer;
 class WSocket;
-class WClient;
 class WServerInterface
 {
 public:
@@ -52,26 +51,18 @@ public:
         return m_server;
     }
 
-    inline void setTargetSocket(const WSocket *socket) {
-        m_targetSocket = socket;
+    inline void setOwnsSocket(const WSocket *socket) {
+        m_ownsSocket = socket;
     }
-    inline const WSocket *targetSocket() const {
-        return m_targetSocket;
-    }
-
-    inline void setTargetClients(const QList<WClient*> &clients) {
-        m_targetClients = clients;
-    }
-    inline QList<WClient*> targetClients() const {
-        return m_targetClients;
+    inline const WSocket *ownsSocket() const {
+        return m_ownsSocket;
     }
 
 protected:
     void *m_handle = nullptr;
     wl_global *m_global = nullptr;
     WServer *m_server = nullptr;
-    const WSocket *m_targetSocket = nullptr;
-    QList<WClient*> m_targetClients;
+    const WSocket *m_ownsSocket = nullptr;
 
     virtual void create(WServer *server) {
         Q_UNUSED(server);

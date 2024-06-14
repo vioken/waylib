@@ -116,6 +116,10 @@ public:
         , parentSocket(parent)
     {}
 
+    ~WSocketPrivate() {
+        q_func()->close();
+    }
+
     static WSocketPrivate *get(WSocket *qq) {
         return qq->d_func();
     }
@@ -123,7 +127,10 @@ public:
     void shutdown();
     void restore();
 
-    void addClient(WClient *client);
+    void addClient(wl_client *client);
+    wl_client *createClient(int fd);
+    void removeClient(wl_client *client);
+    void destroyClient(wl_client *client);
 
     W_DECLARE_PUBLIC(WSocket)
 
@@ -131,18 +138,18 @@ public:
     const bool freezeClientWhenDisable;
     int fd = -1;
     int fd_lock = -1;
-    bool ownsFd = true;
     QString socket_file;
-    QPointer<WSocket> parentSocket;
+    const QPointer<WSocket> parentSocket;
 
     wl_display *display = nullptr;
     wl_event_source *eventSource = nullptr;
-    QList<WClient*> clients;
+    QList<wl_client*> clients;
 };
 
+
 struct WlClientDestroyListener {
-    WlClientDestroyListener(WClient *client)
-        : client(client)
+    WlClientDestroyListener(WSocket *socket)
+        : socket(socket)
     {
         destroy.notify = handle_destroy;
     }
@@ -153,7 +160,7 @@ struct WlClientDestroyListener {
     static void handle_destroy(struct wl_listener *listener, void *);
 
     wl_listener destroy;
-    QPointer<WClient> client;
+    QPointer<WSocket> socket;
 };
 
 WlClientDestroyListener::~WlClientDestroyListener()
@@ -173,6 +180,14 @@ WlClientDestroyListener *WlClientDestroyListener::get(const wl_client *client)
     return tmp;
 }
 
+void WlClientDestroyListener::handle_destroy(wl_listener *listener, void *data)
+{
+    WlClientDestroyListener *self = wl_container_of(listener, self, destroy);
+    if (self->socket)
+        WSocketPrivate::get(self->socket)->removeClient(reinterpret_cast<wl_client*>(data));
+    delete self;
+}
+
 static bool pauseClient(wl_client *client, bool pause)
 {
     pid_t pid = 0;
@@ -190,7 +205,7 @@ void WSocketPrivate::shutdown()
         return;
 
     for (auto client : clients) {
-        client->freeze();
+        pauseClient(client, true);
     }
 }
 
@@ -200,102 +215,48 @@ void WSocketPrivate::restore()
         return;
 
     for (auto client : clients) {
-        client->activate();
+        pauseClient(client, false);
     }
 }
 
-void WSocketPrivate::addClient(WClient *client)
+void WSocketPrivate::addClient(wl_client *client)
 {
     Q_ASSERT(!clients.contains(client));
     clients.append(client);
 
+    auto listener = new WlClientDestroyListener(q_func());
+    wl_client_add_destroy_listener(client, &listener->destroy);
+
     if (!enabled && freezeClientWhenDisable) {
-        client->freeze();
+        pauseClient(client, true);
     }
 
-    W_Q(WSocket);
-
-    Q_EMIT q->clientAdded(client);
-    Q_EMIT q->clientsChanged();
+    Q_EMIT q_func()->clientsChanged();
 }
 
-class WClientPrivate : public WObjectPrivate
+wl_client *WSocketPrivate::createClient(int fd)
 {
-public:
-    WClientPrivate(wl_client *handle, WSocket *socket, WClient *qq)
-        : WObjectPrivate(qq)
-        , handle(handle)
-        , socket(socket)
-    {
-        auto listener = new WlClientDestroyListener(qq);
-        wl_client_add_destroy_listener(handle, &listener->destroy);
+    auto wl_client = wl_client_create(display, fd);
+    if (!wl_client) {
+        qWarning() << "wl_client_create failed";
     }
 
-    ~WClientPrivate() {
-        if (handle) {
-            auto listener = WlClientDestroyListener::get(handle);
-            Q_ASSERT(listener);
-            delete listener;
-        }
+    return wl_client;
+}
+
+void WSocketPrivate::removeClient(wl_client *client)
+{
+    bool ok = clients.removeOne(client);
+    if (ok) {
+        destroyClient(client);
+        Q_EMIT q_func()->clientsChanged();
     }
-
-    W_DECLARE_PUBLIC(WClient)
-
-    wl_client *handle = nullptr;
-    WSocket *socket = nullptr;
-};
-
-void WlClientDestroyListener::handle_destroy(wl_listener *listener, void *data)
-{
-    WlClientDestroyListener *self = wl_container_of(listener, self, destroy);
-    if (self->client) {
-        Q_ASSERT(reinterpret_cast<wl_client*>(data) == self->client->handle());
-        self->client->d_func()->handle = nullptr;
-        auto socket = self->client->socket();
-        Q_ASSERT(socket);
-        bool ok = socket->removeClient(self->client);
-        Q_ASSERT(ok);
-    }
-
-    delete self;
 }
 
-WClient::WClient(wl_client *client, WSocket *socket)
-    : QObject(nullptr)
-    , WObject(*new WClientPrivate(client, socket, this))
+void WSocketPrivate::destroyClient(wl_client *client)
 {
-
-}
-
-WSocket *WClient::socket() const
-{
-    W_DC(WClient);
-    return d->socket;
-}
-
-wl_client *WClient::handle() const
-{
-    W_DC(WClient);
-    return d->handle;
-}
-
-WClient *WClient::get(const wl_client *client)
-{
-    if (auto tmp = WlClientDestroyListener::get(client))
-        return tmp->client;
-    return nullptr;
-}
-
-void WClient::freeze()
-{
-    W_D(WClient);
-    pauseClient(d->handle, true);
-}
-
-void WClient::activate()
-{
-    W_D(WClient);
-    pauseClient(d->handle, false);
+    auto listener = WlClientDestroyListener::get(client);
+    delete listener;
 }
 
 WSocket::WSocket(bool freezeClientWhenDisable, WSocket *parentSocket, QObject *parent)
@@ -305,15 +266,10 @@ WSocket::WSocket(bool freezeClientWhenDisable, WSocket *parentSocket, QObject *p
 
 }
 
-WSocket::~WSocket()
-{
-    close();
-}
-
 WSocket *WSocket::get(const wl_client *client)
 {
-    if (auto c = WClient::get(client))
-        return c->socket();
+    if (auto tmp = WlClientDestroyListener::get(client))
+        return tmp->socket;
     return nullptr;
 }
 
@@ -347,23 +303,19 @@ void WSocket::close()
     }
     Q_ASSERT(!d->display);
 
-    if (d->ownsFd) {
-        if (d->fd >= 0) {
-            ::close(d->fd);
-            d->fd = -1;
-            Q_EMIT validChanged();
-        }
-        if (d->fd_lock >= 0) {
-            ::close(d->fd_lock);
-            d->fd_lock = -1;
-        }
-    } else {
-        Q_ASSERT(d->fd_lock < 0);
+    if (d->fd >= 0) {
+        ::close(d->fd);
+        d->fd = -1;
+        Q_EMIT validChanged();
+    }
+    if (d->fd_lock >= 0) {
+        ::close(d->fd_lock);
+        d->fd_lock = -1;
     }
 
     if (!d->clients.isEmpty()) {
         for (auto client : d->clients)
-            delete client;
+            d->destroyClient(client);
 
         d->clients.clear();
         Q_EMIT clientsChanged();
@@ -417,7 +369,6 @@ bool WSocket::create(const QString &filePath)
     if (d->fd < 0)
         return false;
 
-    d->ownsFd = true;
     d->fd_lock = wl_socket_lock(filePath);
     if (d->fd_lock < 0) {
         close();
@@ -452,15 +403,21 @@ bool WSocket::create(const QString &filePath)
     return true;
 }
 
-static QString getSocketFile(int fd, bool doCheck) {
-    if (doCheck) {   // check socket file
+bool WSocket::create(int fd, bool doListen)
+{
+    W_D(WSocket);
+
+    if (isValid())
+        return false;
+
+    {   // check socket file
         struct ::stat stat_buf = {0};
         if (fstat(fd, &stat_buf) != 0) {
             qDebug("fstat failed on create by FD");
-            return {};
+            return false;
         } else if (!S_ISSOCK(stat_buf.st_mode)) {
             qDebug("fd is not a socket");
-            return {};
+            return false;
         }
 
         int accept_conn = 0;
@@ -468,12 +425,14 @@ static QString getSocketFile(int fd, bool doCheck) {
         if (getsockopt(fd, SOL_SOCKET, SO_ACCEPTCONN, &accept_conn,
                        &accept_conn_size) != 0) {
             qDebug("getsockopt failed on FD");
-            return {};
+            return false;
         } else if (accept_conn == 0) {
             qDebug("fd is not a socket");
-            return {};
+            return false;
         }
     }
+
+    QString socketFile;
 
     {   // get socket file path
         struct ::sockaddr_un addr;
@@ -484,11 +443,11 @@ static QString getSocketFile(int fd, bool doCheck) {
             // this is the case when we call it from QLocalServer, then there is no peername
             len = sizeof(addr);
             if (::getsockname(fd, (sockaddr *)&addr, &len) != 0)
-                return {};
+                return false;
         }
 
         if (len <= offsetof(::sockaddr_un, sun_path))
-            return {};
+            return false;
         len -= offsetof(::sockaddr_un, sun_path);
 
         QStringDecoder toUtf16(QStringDecoder::System, QStringDecoder::Flag::Stateless);
@@ -504,23 +463,11 @@ static QString getSocketFile(int fd, bool doCheck) {
                 name.truncate(truncPos);
             }
 
-            return name;
+            socketFile = name;
+        } else {
+            return false;
         }
     }
-
-    return {};
-}
-
-bool WSocket::create(int fd, bool doListen)
-{
-    W_D(WSocket);
-
-    if (isValid())
-        return false;
-
-    QString socketFile = getSocketFile(fd, true);
-    if (socketFile.isEmpty())
-        return false;
 
     if (doListen && ::listen(d->fd, 128) < 0) {
         qDebug("listen() failed with error: %s\n", strerror(errno));
@@ -528,7 +475,6 @@ bool WSocket::create(int fd, bool doListen)
     }
 
     d->fd = fd;
-    d->ownsFd = true;
 
     if (d->socket_file != socketFile) {
         d->socket_file = socketFile;
@@ -536,20 +482,6 @@ bool WSocket::create(int fd, bool doListen)
     }
 
     return true;
-}
-
-bool WSocket::bind(int fd)
-{
-    W_D(WSocket);
-
-    if (isValid())
-        return false;
-
-    d->fd = fd;
-    d->ownsFd = false;
-    d->socket_file = getSocketFile(fd, false);
-
-    return false;
 }
 
 bool WSocket::isListening() const
@@ -570,7 +502,9 @@ static int socket_data(int fd, uint32_t, void *data)
     if (client_fd < 0) {
         qDebug("failed to accept: %s", strerror(errno));
     } else {
-        d->q_func()->addClient(client_fd);
+        auto client = d->createClient(client_fd);
+        if (client)
+            d->addClient(client);
     }
 
     return 1;
@@ -599,64 +533,21 @@ bool WSocket::listen(wl_display *display)
     return true;
 }
 
-WClient *WSocket::addClient(int fd)
+void WSocket::addClient(wl_client *client)
 {
     W_D(WSocket);
-    auto client = wl_client_create(d->display, fd);
-    if (!client) {
-        qWarning() << "wl_client_create failed";
-        return nullptr;
-    }
-
-    auto wclient = new WClient(client, this);
-    d->addClient(wclient);
-
-    return wclient;
+    if (d->clients.contains(client))
+        return;
+    d->addClient(client);
 }
 
-WClient *WSocket::addClient(wl_client *client)
+void WSocket::removeClient(wl_client *client)
 {
     W_D(WSocket);
-
-    WClient *wclient = nullptr;
-    if (wclient = WClient::get(client)) {
-        if (wclient->socket() != this)
-            return nullptr;
-        if (d->clients.contains(wclient))
-            return wclient;
-    } else {
-        wclient = new WClient(client, this);
-    }
-
-    d->addClient(wclient);
-    return wclient;
+    d->removeClient(client);
 }
 
-bool WSocket::removeClient(wl_client *client)
-{
-    W_D(WSocket);
-
-    if (auto c = WClient::get(client))
-        return removeClient(c);
-    return false;
-}
-
-bool WSocket::removeClient(WClient *client)
-{
-    W_D(WSocket);
-
-    bool ok = d->clients.removeOne(client);
-    if (!ok)
-        return false;
-
-    Q_EMIT aboutToBeDestroyedClient(client);
-    delete client;
-    Q_EMIT clientsChanged();
-
-    return true;
-}
-
-QList<WClient *> WSocket::clients() const
+QList<wl_client*> WSocket::clients() const
 {
     W_DC(WSocket);
     return d->clients;
@@ -682,15 +573,6 @@ void WSocket::setEnabled(bool on)
     }
 
     Q_EMIT enabledChanged();
-}
-
-void WSocket::setParentSocket(WSocket *parentSocket)
-{
-    W_D(WSocket);
-    if (d->parentSocket == parentSocket)
-        return;
-    d->parentSocket = parentSocket;
-    Q_EMIT parentSocketChanged();
 }
 
 WAYLIB_SERVER_END_NAMESPACE

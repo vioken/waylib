@@ -58,7 +58,6 @@
 struct wl_client;
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
-class WClient;
 class WObjectPrivate;
 class WAYLIB_SERVER_EXPORT WObject
 {
@@ -97,7 +96,7 @@ public:
         removeAttachedData<T>(owner);
     }
 
-    WClient *waylandClient() const;
+    wl_client *waylandClient() const;
 
 protected:
     WObject(WObjectPrivate &dd, WObject *parent = nullptr);

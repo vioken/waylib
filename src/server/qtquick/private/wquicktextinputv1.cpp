@@ -6,7 +6,6 @@
 #include "wseat.h"
 #include "wsurface.h"
 #include "wtools.h"
-#include "wsocket.h"
 #include "private/wglobal_p.h"
 
 #include <qwdisplay.h>
@@ -38,7 +37,7 @@ public:
     WTextInputV1 *const handle;
     wl_client *waylandClient() const override
     {
-        return handle->waylandClient()->handle();
+        return handle->waylandClient();
     }
 };
 

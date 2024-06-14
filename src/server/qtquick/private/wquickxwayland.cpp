@@ -142,11 +142,11 @@ void WQuickXWayland::setCompositor(QWLRoots::QWCompositor *compositor)
         tryCreateXWayland();
 }
 
-WClient *WQuickXWayland::client() const
+wl_client *WQuickXWayland::client() const
 {
     if (!xwayland || !xwayland->isValid())
         return nullptr;
-    return xwayland->waylandClient();
+    return xwayland->handle()->handle()->server->client;
 }
 
 pid_t WQuickXWayland::pid() const

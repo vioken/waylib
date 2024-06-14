@@ -71,9 +71,7 @@ static bool globalFilter(const wl_client *client,
     WServerPrivate *d = reinterpret_cast<WServerPrivate*>(data);
 
     if (auto interface = d->q_func()->findInterface(global)) {
-        if (interface->targetSocket() && WSocket::get(client) != interface->targetSocket())
-            return false;
-        if (!interface->targetClients().isEmpty() && !interface->targetClients().contains(WClient::get(client)))
+        if (interface->ownsSocket() && WSocket::get(client) != interface->ownsSocket())
             return false;
     }
 
