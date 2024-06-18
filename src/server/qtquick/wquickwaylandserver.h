@@ -8,6 +8,7 @@
 #include <QQmlEngine>
 
 Q_MOC_INCLUDE(<wsocket.h>)
+Q_DECLARE_OPAQUE_POINTER(wl_client*)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 

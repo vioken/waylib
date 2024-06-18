@@ -130,6 +130,7 @@ set(QTQUICK_SOURCES
     qtquick/private/wquickxdgoutput.cpp
     qtquick/private/wquickfractionalscalemanagerv1.cpp
     qtquick/private/wquickscreencopy.cpp
+    qtquick/private/wquicksecuritycontextmanagerv1.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
     ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.c
@@ -239,6 +240,7 @@ set(PRIVATE_HEADERS
     qtquick/private/wquickfractionalscalemanagerv1_p.h
     qtquick/private/wquickscreencopy_p.h
     qtquick/private/wsurfaceitem_p.h
+    qtquick/private/wquicksecuritycontextmanagerv1_p.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.h
     ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.h
