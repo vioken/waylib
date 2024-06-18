@@ -44,7 +44,7 @@ Item {
 
     OutputLayoutItem {
         anchors.fill: parent
-        layout: QmlHelper.layout
+        layout: Helper.outputLayout
 
         onEnterOutput: function(output) {
             waylandSurface.surface.enterOutput(output)

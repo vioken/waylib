@@ -8,13 +8,22 @@
 #include <WSurfaceItem>
 #include <wxdgsurface.h>
 #include <wrenderhelper.h>
-// TODO: Don't use private API
-#include <wquickbackend_p.h>
+#include <WBackend>
+#include <wxdgshell.h>
+#include <wxwayland.h>
+#include <woutputitem.h>
+#include <wquickcursor.h>
+#include <woutputrenderwindow.h>
+#include <wqmldynamiccreator.h>
 
 #include <qwbackend.h>
 #include <qwdisplay.h>
 #include <qwoutput.h>
 #include <qwlogging.h>
+#include <qwallocator.h>
+#include <qwrenderer.h>
+#include <qwcompositor.h>
+#include <qwsubcompositor.h>
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -26,6 +35,7 @@
 #include <QQuickWindow>
 #include <QLoggingCategory>
 #include <QKeySequence>
+#include <QQmlComponent>
 
 extern "C" {
 #define static
@@ -41,26 +51,104 @@ inline QPointF getItemGlobalPosition(QQuickItem *item)
 
 Helper::Helper(QObject *parent)
     : WSeatEventFilter(parent)
+    , m_outputLayout(new WQuickOutputLayout(this))
+    , m_cursor(new WQuickCursor(this))
+    , m_seat(new WSeat())
+    , m_outputCreator(new WQmlCreator(this))
 {
+    m_seat->setEventFilter(this);
+    m_seat->setCursor(m_cursor);
+    m_cursor->setThemeName(getenv("XCURSOR_THEME"));
+    m_cursor->setLayout(m_outputLayout);
+}
 
+void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEngine *qmlEngine)
+{
+    auto backend = server->attach<WBackend>();
+    m_renderer = WRenderHelper::createRenderer(backend->handle());
+
+    if (!m_renderer) {
+        qFatal("Failed to create renderer");
+    }
+
+    m_allocator = QWAllocator::autoCreate(backend->handle(), m_renderer);
+    m_renderer->initWlDisplay(server->handle());
+
+    // free follow display
+    m_compositor = QWCompositor::create(server->handle(), m_renderer, 6);
+    QWSubcompositor::create(server->handle());
+
+    server->attach<WXdgShell>();
+    server->attach(m_seat);
+
+    connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
+        if (!backend->hasDrm())
+            output->setForceSoftwareCursor(true); // Test
+        allowNonDrmOutputAutoChangeMode(output);
+
+        auto initProperties = qmlEngine->newObject();
+        initProperties.setProperty("waylandOutput", qmlEngine->toScriptValue(output));
+        initProperties.setProperty("waylandCursor", qmlEngine->toScriptValue(m_cursor));
+        initProperties.setProperty("layout", qmlEngine->toScriptValue(outputLayout()));
+        initProperties.setProperty("x", qmlEngine->toScriptValue(outputLayout()->implicitWidth()));
+
+        m_outputCreator->add(output, initProperties);
+    });
+
+    connect(backend, &WBackend::outputRemoved, this, [this] (WOutput *output) {
+        m_outputCreator->removeByOwner(output);
+    });
+
+    connect(backend, &WBackend::inputAdded, this, [this] (WInputDevice *device) {
+        m_seat->attachInputDevice(device);
+    });
+
+    connect(backend, &WBackend::inputRemoved, this, [this] (WInputDevice *device) {
+        m_seat->detachInputDevice(device);
+    });
+
+    Q_EMIT compositorChanged();
+
+    window->init(m_renderer, m_allocator);
+    backend->handle()->start();
+}
+
+WQuickOutputLayout *Helper::outputLayout() const
+{
+    return m_outputLayout;
+}
+
+WSeat *Helper::seat() const
+{
+    return m_seat;
+}
+
+QWCompositor *Helper::compositor() const
+{
+    return m_compositor;
+}
+
+WQmlCreator *Helper::outputCreator() const
+{
+    return m_outputCreator;
 }
 
 WSurfaceItem *Helper::resizingItem() const
 {
-    return m_resizingItem;
+    return moveReiszeState.resizingItem;
 }
 
 void Helper::setResizingItem(WSurfaceItem *newResizingItem)
 {
-    if (m_resizingItem == newResizingItem)
+    if (moveReiszeState.resizingItem == newResizingItem)
         return;
-    m_resizingItem = newResizingItem;
+    moveReiszeState.resizingItem = newResizingItem;
     emit resizingItemChanged();
 }
 
 WSurfaceItem *Helper::movingItem() const
 {
-    return m_movingItem;
+    return moveReiszeState.movingItem;
 }
 
 bool Helper::registerExclusiveZone(WLayerSurface *layerSurface)
@@ -244,24 +332,24 @@ std::pair<WOutput*,OutputInfo*> Helper::getFirstOutputOfSurface(WToplevelSurface
 
 void Helper::setMovingItem(WSurfaceItem *newMovingItem)
 {
-    if (m_movingItem == newMovingItem)
+    if (moveReiszeState.movingItem == newMovingItem)
         return;
-    m_movingItem = newMovingItem;
+    moveReiszeState.movingItem = newMovingItem;
     emit movingItemChanged();
 }
 
 void Helper::stopMoveResize()
 {
-    if (surface)
-        surface->setResizeing(false);
+    if (moveReiszeState.surface)
+        moveReiszeState.surface->setResizeing(false);
 
     setResizingItem(nullptr);
     setMovingItem(nullptr);
 
-    surfaceItem = nullptr;
-    surface = nullptr;
-    seat = nullptr;
-    resizeEdgets = {0};
+    moveReiszeState.surfaceItem = nullptr;
+    moveReiszeState.surface = nullptr;
+    moveReiszeState.seat = nullptr;
+    moveReiszeState.resizeEdgets = {0};
 }
 
 void Helper::startMove(WToplevelSurface *surface, WSurfaceItem *shell, WSeat *seat, int serial)
@@ -270,11 +358,11 @@ void Helper::startMove(WToplevelSurface *surface, WSurfaceItem *shell, WSeat *se
 
     Q_UNUSED(serial)
 
-    surfaceItem = shell;
-    this->surface = surface;
-    this->seat = seat;
-    resizeEdgets = {0};
-    surfacePosOfStartMoveResize = getItemGlobalPosition(surfaceItem);
+    moveReiszeState.surfaceItem = shell;
+    moveReiszeState.surface = surface;
+    moveReiszeState.seat = seat;
+    moveReiszeState.resizeEdgets = {0};
+    moveReiszeState.surfacePosOfStartMoveResize = getItemGlobalPosition(moveReiszeState.surfaceItem);
 
     setMovingItem(shell);
 }
@@ -286,12 +374,12 @@ void Helper::startResize(WToplevelSurface *surface, WSurfaceItem *shell, WSeat *
     Q_UNUSED(serial)
     Q_ASSERT(edge != 0);
 
-    surfaceItem = shell;
-    this->surface = surface;
-    this->seat = seat;
-    surfacePosOfStartMoveResize = getItemGlobalPosition(surfaceItem);
-    surfaceSizeOfStartMoveResize = surfaceItem->size();
-    resizeEdgets = edge;
+    moveReiszeState.surfaceItem = shell;
+    moveReiszeState.surface = surface;
+    moveReiszeState.seat = seat;
+    moveReiszeState.surfacePosOfStartMoveResize = getItemGlobalPosition(moveReiszeState.surfaceItem);
+    moveReiszeState.surfaceSizeOfStartMoveResize = moveReiszeState.surfaceItem->size();
+    moveReiszeState.resizeEdgets = edge;
 
     surface->setResizeing(true);
     setResizingItem(shell);
@@ -299,7 +387,7 @@ void Helper::startResize(WToplevelSurface *surface, WSurfaceItem *shell, WSeat *
 
 void Helper::cancelMoveResize(WSurfaceItem *shell)
 {
-    if (surfaceItem != shell)
+    if (moveReiszeState.surfaceItem != shell)
         return;
     stopMoveResize();
 }
@@ -366,10 +454,10 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *watched, QInputEvent *even
 
     if (watched) {
         if (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::TouchBegin) {
-            seat->setKeyboardFocusTarget(watched);
-        } else if (event->type() == QEvent::MouseMove && !seat->focusWindow()) {
+            seat->setKeyboardFocusWindow(watched);
+        } else if (event->type() == QEvent::MouseMove && !seat->keyboardFocusWindow()) {
             // TouchMove keep focus on first window
-            seat->setKeyboardFocusTarget(watched);
+            seat->setKeyboardFocusWindow(watched);
         }
     }
 
@@ -379,33 +467,33 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *watched, QInputEvent *even
         seat->cursor()->setVisible(false);
     }
 
-    if (surfaceItem && (seat == this->seat || this->seat == nullptr)) {
+    if (moveReiszeState.surfaceItem && (seat == moveReiszeState.seat || moveReiszeState.seat == nullptr)) {
         // for move resize
         if (Q_LIKELY(event->type() == QEvent::MouseMove || event->type() == QEvent::TouchUpdate)) {
             auto cursor = seat->cursor();
             Q_ASSERT(cursor);
             QMouseEvent *ev = static_cast<QMouseEvent*>(event);
 
-            if (resizeEdgets == 0) {
+            if (moveReiszeState.resizeEdgets == 0) {
                 auto increment_pos = ev->globalPosition() - cursor->lastPressedOrTouchDownPosition();
-                auto new_pos = surfacePosOfStartMoveResize + surfaceItem->parentItem()->mapFromGlobal(increment_pos);
-                surfaceItem->setPosition(new_pos);
+                auto new_pos = moveReiszeState.surfacePosOfStartMoveResize + moveReiszeState.surfaceItem->parentItem()->mapFromGlobal(increment_pos);
+                moveReiszeState.surfaceItem->setPosition(new_pos);
             } else {
-                auto increment_pos = surfaceItem->parentItem()->mapFromGlobal(ev->globalPosition() - cursor->lastPressedOrTouchDownPosition());
-                QRectF geo(surfacePosOfStartMoveResize, surfaceSizeOfStartMoveResize);
+                auto increment_pos = moveReiszeState.surfaceItem->parentItem()->mapFromGlobal(ev->globalPosition() - cursor->lastPressedOrTouchDownPosition());
+                QRectF geo(moveReiszeState.surfacePosOfStartMoveResize, moveReiszeState.surfaceSizeOfStartMoveResize);
 
-                if (resizeEdgets & Qt::LeftEdge)
+                if (moveReiszeState.resizeEdgets & Qt::LeftEdge)
                     geo.setLeft(geo.left() + increment_pos.x());
-                if (resizeEdgets & Qt::TopEdge)
+                if (moveReiszeState.resizeEdgets & Qt::TopEdge)
                     geo.setTop(geo.top() + increment_pos.y());
 
-                if (resizeEdgets & Qt::RightEdge)
+                if (moveReiszeState.resizeEdgets & Qt::RightEdge)
                     geo.setRight(geo.right() + increment_pos.x());
-                if (resizeEdgets & Qt::BottomEdge)
+                if (moveReiszeState.resizeEdgets & Qt::BottomEdge)
                     geo.setBottom(geo.bottom() + increment_pos.y());
 
-                if (surfaceItem->resizeSurface(geo.size().toSize()))
-                    surfaceItem->setPosition(geo.topLeft());
+                if (moveReiszeState.surfaceItem->resizeSurface(geo.size().toSize()))
+                    moveReiszeState.surfaceItem->setPosition(geo.topLeft());
             }
 
             return true;
@@ -518,20 +606,24 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine waylandEngine;
-    QString cursorThemeName = getenv("XCURSOR_THEME");
-    waylandEngine.rootContext()->setContextProperty("cursorThemeName", cursorThemeName);
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     waylandEngine.loadFromModule("Tinywl", "Main");
 #else
     waylandEngine.load(QUrl(u"qrc:/Tinywl/Main.qml"_qs));
 #endif
+    // TODO: direct new WServer in here
     WServer *server = waylandEngine.rootObjects().first()->findChild<WServer*>();
     Q_ASSERT(server);
     Q_ASSERT(server->isRunning());
 
-    auto backend = server->findChild<WQuickBackend*>();
-    Q_ASSERT(backend);
+    auto window = waylandEngine.rootObjects().first()->findChild<WOutputRenderWindow*>();
+    Q_ASSERT(window);
+
+    Helper *helper = waylandEngine.singletonInstance<Helper*>("Tinywl", "Helper");
+    Q_ASSERT(helper);
+
+    helper->initProtocols(server, window, &waylandEngine);
 
     // multi output
 //    qobject_cast<QWMultiBackend*>(backend->backend())->forEachBackend([] (wlr_backend *backend, void *) {

@@ -11,7 +11,7 @@
 #include <QQmlEngine>
 #include <QQuickItem>
 
-Q_MOC_INCLUDE("wquickseat_p.h")
+Q_MOC_INCLUDE("wseat.h")
 Q_MOC_INCLUDE("wquicktextinputv1_p.h")
 Q_MOC_INCLUDE("wquicktextinputv3_p.h")
 Q_MOC_INCLUDE("wquickinputmethodv2_p.h")
@@ -44,7 +44,7 @@ class WInputMethodHelper : public QObject, public WObject
     Q_OBJECT
     W_DECLARE_PRIVATE(WInputMethodHelper)
     QML_NAMED_ELEMENT(InputMethodHelper)
-    Q_PROPERTY(WQuickSeat *seat READ seat WRITE setSeat NOTIFY seatChanged FINAL REQUIRED)
+    Q_PROPERTY(WSeat *seat READ seat WRITE setSeat NOTIFY seatChanged FINAL REQUIRED)
     Q_PROPERTY(WQuickTextInputManagerV1 *textInputManagerV1 READ textInputManagerV1 WRITE setTextInputManagerV1 NOTIFY textInputManagerV1Changed FINAL)
     Q_PROPERTY(WQuickTextInputManagerV3 *textInputManagerV3 READ textInputManagerV3 WRITE setTextInputManagerV3 NOTIFY textInputManagerV3Changed FINAL)
     Q_PROPERTY(WQuickInputMethodManagerV2 *inputMethodManagerV2 READ inputMethodManagerV2 WRITE setInputMethodManagerV2 NOTIFY inputMethodManagerV2Changed FINAL REQUIRED)
@@ -57,9 +57,8 @@ class WInputMethodHelper : public QObject, public WObject
 public:
     explicit WInputMethodHelper(QObject *parent = nullptr);
 
-    WQuickSeat *seat() const;
-    void setSeat(WQuickSeat *qseat);
-    WSeat *wseat() const;
+    WSeat *seat() const;
+    void setSeat(WSeat *qseat);
     QString seatName() const;
     WQuickTextInputManagerV3 *textInputManagerV3() const;
     void setTextInputManagerV3(WQuickTextInputManagerV3 *textInputManagerV3);

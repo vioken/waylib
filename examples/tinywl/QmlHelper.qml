@@ -7,8 +7,7 @@ import QtQuick
 import Waylib.Server
 
 Item {
-    property OutputLayout layout: OutputLayout {}
-    property alias outputManager: outputManager
+    property WaylandSocket masterSocket
     property DynamicCreator xdgSurfaceManager: xdgSurfaceManager
     property DynamicCreator layerSurfaceManager: layerSurfaceManager
     property DynamicCreator xwaylandSurfaceManager: xwaylandSurfaceManager
@@ -29,19 +28,6 @@ Item {
         }
 
         return '{\n' + json + '}'
-    }
-
-    DynamicCreator {
-        id: outputManager
-        onObjectAdded: function(delegate, obj, properties) {
-            console.info(`New output item ${obj} from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
-
-        onObjectRemoved: function(delegate, obj, properties) {
-            console.info(`Output item ${obj} is removed, it's create from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
     }
 
     DynamicCreator {

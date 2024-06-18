@@ -13,6 +13,7 @@ WAYLIB_SERVER_BEGIN_NAMESPACE
 
 WAbstractCreatorComponent::WAbstractCreatorComponent(QObject *parent)
     : QObject(parent)
+    , WObject(*new WAbstractCreatorComponentPrivate(this))
 {
 
 }
@@ -34,15 +35,19 @@ QList<QSharedPointer<WQmlCreatorDelegateData>> WAbstractCreatorComponent::datas(
 
 WQmlCreator *WAbstractCreatorComponent::creator() const
 {
-    return m_creator;
+    W_DC(WAbstractCreatorComponent);
+
+    return d->creator;
 }
 
 void WAbstractCreatorComponent::setCreator(WQmlCreator *newCreator)
 {
-    if (m_creator == newCreator)
+    W_D(WAbstractCreatorComponent);
+
+    if (d->creator == newCreator)
         return;
-    auto oldCreator = m_creator;
-    m_creator = newCreator;
+    auto oldCreator = d->creator;
+    d->creator = newCreator;
     creatorChange(oldCreator, newCreator);
 
     Q_EMIT creatorChanged();
@@ -94,8 +99,8 @@ WQmlCreatorComponent::WQmlCreatorComponent(QObject *parent)
 
 WQmlCreatorComponent::~WQmlCreatorComponent()
 {
-    if (m_creator)
-        m_creator->removeDelegate(this);
+    if (creator())
+        creator()->removeDelegate(this);
 
     clear();
 }
@@ -152,7 +157,7 @@ void WQmlCreatorComponent::destroy(QSharedPointer<WQmlCreatorDelegateData> data)
         data->object.clear();
         const QJSValue p = data->data.lock()->properties;
         Q_EMIT objectRemoved(obj, p);
-        notifyCreatorObjectRemoved(m_creator, obj, p);
+        notifyCreatorObjectRemoved(creator(), obj, p);
 
         if (m_autoDestroy)
             obj->deleteLater();
@@ -180,8 +185,8 @@ void WQmlCreatorComponent::reset()
 {
     clear();
 
-    if (m_creator)
-        m_creator->createAll(this);
+    if (creator())
+        creator()->createAll(this);
 }
 
 void WQmlCreatorComponent::create(QSharedPointer<WQmlCreatorDelegateData> data)
@@ -262,7 +267,7 @@ void WQmlCreatorComponent::create(QSharedPointer<WQmlCreatorDelegateData> data, 
 
     if (data->object) {
         Q_EMIT objectAdded(data->object, initialProperties);
-        notifyCreatorObjectAdded(m_creator, data->object, initialProperties);
+        notifyCreatorObjectAdded(creator(), data->object, initialProperties);
     } else {
         qWarning() << "WQmlCreatorComponent::create failed" << "parent=" << parent << "initialProperties=" << tmp;
         for (auto e: d->state.errors)
@@ -350,6 +355,7 @@ void WQmlCreatorComponent::setAutoDestroy(bool newAutoDestroy)
 
 WQmlCreator::WQmlCreator(QObject *parent)
     : QObject{parent}
+    , WObject(*new WQmlCreatorPrivate(this))
 {
 
 }
@@ -358,7 +364,9 @@ WQmlCreator::~WQmlCreator()
 {
     clear(false);
 
-    for (auto delegate : std::as_const(m_delegates)) {
+    W_D(WQmlCreator);
+
+    for (auto delegate : std::as_const(d->delegates)) {
         Q_ASSERT(delegate->creator() == this);
         delegate->setCreator(nullptr);
     }
@@ -366,12 +374,14 @@ WQmlCreator::~WQmlCreator()
 
 QList<WAbstractCreatorComponent*> WQmlCreator::delegates() const
 {
-    return m_delegates;
+    W_DC(WQmlCreator);
+    return d->delegates;
 }
 
 int WQmlCreator::count() const
 {
-    return m_datas.size();
+    W_DC(WQmlCreator);
+    return d->datas.size();
 }
 
 void WQmlCreator::add(const QJSValue &initialProperties)
@@ -385,12 +395,14 @@ void WQmlCreator::add(QObject *owner, const QJSValue &initialProperties)
     data->owner = owner;
     data->properties = initialProperties;
 
-    for (auto delegate : m_delegates) {
+    W_D(WQmlCreator);
+
+    for (auto delegate : d->delegates) {
         if (auto d = delegate->add(data.toWeakRef()))
             data->delegateDatas.append({delegate, d});
     }
 
-    m_datas << data;
+    d->datas << data;
 
     if (owner) {
         connect(owner, &QObject::destroyed, this, [this] {
@@ -414,13 +426,15 @@ bool WQmlCreator::removeByOwner(QObject *owner)
 
 void WQmlCreator::clear(bool notify)
 {
-    if (m_datas.isEmpty())
+    W_D(WQmlCreator);
+
+    if (d->datas.isEmpty())
         return;
 
-    for (auto data : std::as_const(m_datas))
+    for (auto data : std::as_const(d->datas))
         destroy(data);
 
-    m_datas.clear();
+    d->datas.clear();
 
     if (notify)
         Q_EMIT countChanged();
@@ -428,10 +442,12 @@ void WQmlCreator::clear(bool notify)
 
 QObject *WQmlCreator::get(int index) const
 {
-    if (index < 0 || index >= m_datas.size())
+    W_DC(WQmlCreator);
+
+    if (index < 0 || index >= d->datas.size())
         return nullptr;
 
-    auto data = m_datas.at(index);
+    auto data = d->datas.at(index);
     if (data->delegateDatas.isEmpty())
         return nullptr;
     return data->delegateDatas.first().second.lock()->object.get();
@@ -439,10 +455,12 @@ QObject *WQmlCreator::get(int index) const
 
 QObject *WQmlCreator::get(WAbstractCreatorComponent *delegate, int index) const
 {
-    if (index < 0 || index >= m_datas.size())
+    W_DC(WQmlCreator);
+
+    if (index < 0 || index >= d->datas.size())
         return nullptr;
 
-    auto data = m_datas.at(index);
+    auto data = d->datas.at(index);
     for (const auto &d : std::as_const(data->delegateDatas)) {
         if (d.first != delegate)
             continue;
@@ -454,7 +472,9 @@ QObject *WQmlCreator::get(WAbstractCreatorComponent *delegate, int index) const
 
 QObject *WQmlCreator::getIf(QJSValue function) const
 {
-    for (auto delegate : m_delegates) {
+    W_DC(WQmlCreator);
+
+    for (auto delegate : d->delegates) {
         auto obj = getIf(delegate, function);
         if (obj)
             return obj;
@@ -469,7 +489,9 @@ QObject *WQmlCreator::getIf(WAbstractCreatorComponent *delegate, QJSValue functi
 
 QObject *WQmlCreator::getByOwner(QObject *owner) const
 {
-    for (auto delegate : m_delegates) {
+    W_DC(WQmlCreator);
+
+    for (auto delegate : d->delegates) {
         auto obj = getByOwner(delegate, owner);
         if (obj)
             return obj;
@@ -487,15 +509,19 @@ void WQmlCreator::destroy(QSharedPointer<WQmlCreatorData> data)
     if (data->owner)
         data->owner->disconnect(this);
 
-    for (auto delegate : m_delegates)
+    W_D(WQmlCreator);
+
+    for (auto delegate : d->delegates)
         delegate->remove(data);
 }
 
 bool WQmlCreator::remove(int index)
 {
-    if (index < 0 || index >= m_datas.size())
+    W_D(WQmlCreator);
+
+    if (index < 0 || index >= d->datas.size())
         return false;
-    auto data = m_datas.takeAt(index);
+    auto data = d->datas.takeAt(index);
     destroy(data);
 
     Q_EMIT countChanged();
@@ -505,8 +531,10 @@ bool WQmlCreator::remove(int index)
 
 int WQmlCreator::indexOfOwner(QObject *owner) const
 {
-    for (int i = 0; i < m_datas.size(); ++i) {
-        if (m_datas.at(i)->owner == owner)
+    W_DC(WQmlCreator);
+
+    for (int i = 0; i < d->datas.size(); ++i) {
+        if (d->datas.at(i)->owner == owner)
             return i;
     }
 
@@ -518,8 +546,10 @@ int WQmlCreator::indexOf(QJSValue function) const
     auto engine = qmlEngine(this);
     Q_ASSERT(engine);
 
-    for (int i = 0; i < m_datas.size(); ++i) {
-        if (function.call({engine->toScriptValue(m_datas.at(i)->properties)}).toBool())
+    W_DC(WQmlCreator);
+
+    for (int i = 0; i < d->datas.size(); ++i) {
+        if (function.call({engine->toScriptValue(d->datas.at(i)->properties)}).toBool())
             return i;
     }
 
@@ -528,14 +558,18 @@ int WQmlCreator::indexOf(QJSValue function) const
 
 void WQmlCreator::addDelegate(WAbstractCreatorComponent *delegate)
 {
-    Q_ASSERT(!m_delegates.contains(delegate));
-    m_delegates.append(delegate);
+    W_D(WQmlCreator);
+
+    Q_ASSERT(!d->delegates.contains(delegate));
+    d->delegates.append(delegate);
     createAll(delegate);
 }
 
 void WQmlCreator::createAll(WAbstractCreatorComponent *delegate)
 {
-    for (const auto &data : std::as_const(m_datas)) {
+    W_D(WQmlCreator);
+
+    for (const auto &data : std::as_const(d->datas)) {
         if (auto d = delegate->add(data))
             data->delegateDatas.append({delegate, d});
     }
@@ -543,7 +577,9 @@ void WQmlCreator::createAll(WAbstractCreatorComponent *delegate)
 
 void WQmlCreator::removeDelegate(WAbstractCreatorComponent *delegate)
 {
-    bool ok = m_delegates.removeOne(delegate);
+    W_D(WQmlCreator);
+
+    bool ok = d->delegates.removeOne(delegate);
     Q_ASSERT(ok);
 
     for (auto d : delegate->datas()) {

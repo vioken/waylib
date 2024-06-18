@@ -9,10 +9,21 @@
 #include <WOutput>
 #include <WLayerSurface>
 #include <wtoplevelsurface.h>
+#include <wquickoutputlayout.h>
 
 #include <QList>
 
 Q_DECLARE_OPAQUE_POINTER(QWindow*)
+
+WAYLIB_SERVER_BEGIN_NAMESPACE
+class WQuickCursor;
+class WOutputRenderWindow;
+class WQmlCreator;
+WAYLIB_SERVER_END_NAMESPACE
+
+QW_BEGIN_NAMESPACE
+class QWCompositor;
+QW_END_NAMESPACE
 
 struct wlr_output_event_request_state;
 QW_USE_NAMESPACE
@@ -25,11 +36,23 @@ class Helper : public WSeatEventFilter {
     Q_PROPERTY(WToplevelSurface* activatedSurface READ activatedSurface WRITE setActivateSurface NOTIFY activatedSurfaceChanged FINAL)
     Q_PROPERTY(WSurfaceItem* resizingItem READ resizingItem NOTIFY resizingItemChanged FINAL)
     Q_PROPERTY(WSurfaceItem* movingItem READ movingItem NOTIFY movingItemChanged)
+    Q_PROPERTY(WQuickOutputLayout* outputLayout READ outputLayout CONSTANT)
+    Q_PROPERTY(WSeat* seat READ seat CONSTANT)
+    Q_PROPERTY(QW_NAMESPACE::QWCompositor* compositor READ compositor NOTIFY compositorChanged FINAL)
+    Q_PROPERTY(WQmlCreator* outputCreator READ outputCreator CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
 
 public:
     explicit Helper(QObject *parent = nullptr);
+
+    void initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEngine *qmlEngine);
+    WQuickOutputLayout *outputLayout() const;
+    WSeat *seat() const;
+    QWCompositor *compositor() const;
+
+    WQmlCreator *outputCreator() const;
+
     void stopMoveResize();
 
     WToplevelSurface *activatedSurface() const;
@@ -67,6 +90,7 @@ signals:
     void bottomExclusiveMarginChanged();
     void leftExclusiveMarginChanged();
     void rightExclusiveMarginChanged();
+    void compositorChanged();
 
 private:
     bool beforeDisposeEvent(WSeat *seat, QWindow *watched, QInputEvent *event) override;
@@ -79,18 +103,29 @@ private:
     void onOutputRequeseState(wlr_output_event_request_state *newState);
     OutputInfo* getOutputInfo(WOutput *output);
 
+    QWRenderer *m_renderer = nullptr;
+    QWAllocator *m_allocator = nullptr;
+    QWCompositor *m_compositor = nullptr;
+    WQuickOutputLayout *m_outputLayout = nullptr;
+    WQuickCursor *m_cursor = nullptr;
+    QPointer<WSeat> m_seat;
+
+    WQmlCreator *m_outputCreator = nullptr;
+
     QPointer<WToplevelSurface> m_activateSurface;
+    QList<std::pair<WOutput*,OutputInfo*>> m_outputExclusiveZoneInfo;
 
     // for move resize
-    QPointer<WToplevelSurface> surface;
-    QPointer<WSurfaceItem> surfaceItem;
-    WSeat *seat = nullptr;
-    QPointF surfacePosOfStartMoveResize;
-    QSizeF surfaceSizeOfStartMoveResize;
-    Qt::Edges resizeEdgets;
-    WSurfaceItem *m_resizingItem = nullptr;
-    WSurfaceItem *m_movingItem = nullptr;
-    QList<std::pair<WOutput*,OutputInfo*>> m_outputExclusiveZoneInfo;
+    struct {
+        QPointer<WToplevelSurface> surface;
+        QPointer<WSurfaceItem> surfaceItem;
+        WSeat *seat = nullptr;
+        QPointF surfacePosOfStartMoveResize;
+        QSizeF surfaceSizeOfStartMoveResize;
+        Qt::Edges resizeEdgets;
+        WSurfaceItem *resizingItem = nullptr;
+        WSurfaceItem *movingItem = nullptr;
+    } moveReiszeState;
 };
 
 struct OutputInfo {
@@ -104,3 +139,7 @@ struct OutputInfo {
     quint32 m_rightExclusiveMargin = 0;
     QList<std::tuple<WLayerSurface*, uint32_t, WLayerSurface::AnchorType>> registeredSurfaceList;
 };
+
+Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WOutputRenderWindow*)
+Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WQmlCreator*)
+Q_DECLARE_OPAQUE_POINTER(QW_NAMESPACE::QWCompositor*)

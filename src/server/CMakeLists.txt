@@ -62,7 +62,7 @@ ws_generate(
     xdg-output-unstable-v1-protocol
 )
 
-set(KERNEL_SOURCES
+set(SOURCES
     kernel/wbackend.cpp
     kernel/wcursor.cpp
     kernel/winputdevice.cpp
@@ -76,18 +76,11 @@ set(KERNEL_SOURCES
     kernel/wtexture.cpp
     kernel/wtypes.cpp
 
-    kernel/wxdgshell.cpp
-    kernel/wxdgsurface.cpp
-    kernel/wlayersurface.cpp
     kernel/woutputlayout.cpp
     kernel/wxcursorimage.cpp
     kernel/wglobal.cpp
     kernel/wsocket.cpp
 
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
-)
-
-set(QTQUICK_SOURCES
     qtquick/wsurfaceitem.cpp
     qtquick/woutputhelper.cpp
     qtquick/wquickwaylandserver.cpp
@@ -105,14 +98,11 @@ set(QTQUICK_SOURCES
     qtquick/wrenderbufferblitter.cpp
     qtquick/wxdgsurfaceitem.cpp
     qtquick/wxwaylandsurfaceitem.cpp
+    qtquick/wqmldynamiccreator.cpp
 
     qtquick/private/wquickxdgshell.cpp
-    qtquick/private/wquickbackend.cpp
-    qtquick/private/wquickseat.cpp
-    qtquick/private/wwaylandcompositor.cpp
     qtquick/private/wquickcoordmapper.cpp
     qtquick/private/wquicksocket.cpp
-    qtquick/private/wqmldynamiccreator.cpp
     qtquick/private/wqmlhelper.cpp
     qtquick/private/wquickxdgdecorationmanager.cpp
     qtquick/private/wquickcursorshape.cpp
@@ -133,20 +123,24 @@ set(QTQUICK_SOURCES
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
     ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.c
-)
 
-set(UTILS_SOURCES
     utils/wtools.cpp
     utils/wthreadutils.cpp
     utils/wimagebuffer.cpp
-)
 
-set(QPA_SOURCES
     platformplugin/qwlrootsintegration.cpp
     platformplugin/qwlrootscreen.cpp
     platformplugin/qwlrootswindow.cpp
     platformplugin/qwlrootscursor.cpp
     platformplugin/types.cpp
+
+    protocols/wxdgshell.cpp
+    protocols/wxdgsurface.cpp
+    protocols/wxwayland.cpp
+    protocols/wxwaylandsurface.cpp
+    protocols/wlayersurface.cpp
+
+    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
 
 set(HEADERS
@@ -161,9 +155,6 @@ set(HEADERS
     kernel/wsurface.h
     kernel/wtexture.h
     kernel/wtypes.h
-    kernel/wxdgshell.h
-    kernel/wxdgsurface.h
-    kernel/wlayersurface.h
     kernel/woutputlayout.h
     kernel/wxcursorimage.h
     kernel/wsocket.h
@@ -179,10 +170,7 @@ set(HEADERS
     kernel/WEvent
     kernel/WInputEvent
     kernel/WTexture
-    kernel/WXdgShell
-    kernel/WXdgSurface
     kernel/WSurface
-    kernel/WLayerSurface
 
     qtquick/wsurfaceitem.h
     qtquick/WSurfaceItem
@@ -207,6 +195,13 @@ set(HEADERS
     utils/wthreadutils.h
     utils/WThreadUtils
     utils/wimagebuffer.h
+
+    protocols/wxdgshell.h
+    protocols/WXdgShell
+    protocols/wxdgsurface.h
+    protocols/WXdgSurface
+    protocols/wlayersurface.h
+    protocols/WLayerSurface
 )
 
 set(PRIVATE_HEADERS
@@ -245,18 +240,15 @@ set(PRIVATE_HEADERS
 )
 
 if(NOT DISABLE_XWAYLAND)
-    list(APPEND KERNEL_SOURCES
-        kernel/wxwayland.cpp
-        kernel/wxwaylandsurface.cpp
-    )
-
-    list(APPEND QTQUICK_SOURCES
+    list(APPEND SOURCES
+        protocols/wxwayland.cpp
+        protocols/wxwaylandsurface.cpp
         qtquick/private/wquickxwayland.cpp
     )
 
     list(APPEND HEADERS
-        kernel/wxwayland.h
-        kernel/wxwaylandsurface.h
+        protocols/wxwayland.h
+        protocols/wxwaylandsurface.h
     )
 
     list(APPEND PRIVATE_HEADERS
@@ -266,10 +258,7 @@ endif()
 
 add_library(${TARGET}
     SHARED
-    ${KERNEL_SOURCES}
-    ${UTILS_SOURCES}
-    ${QPA_SOURCES}
-    ${QTQUICK_SOURCES}
+    ${SOURCES}
 )
 
 add_library(Waylib::WaylibServer ALIAS ${TARGET})
@@ -281,6 +270,7 @@ qt_add_qml_module(${TARGET}
     SOURCES
         ${HEADERS}
         ${PRIVATE_HEADERS}
+        SOURCES qtquick/wqmldynamiccreator.h
 )
 
 target_compile_definitions(${TARGET}
@@ -340,6 +330,7 @@ target_include_directories(${TARGET}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/qtquick>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/qtquick/private>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/utils>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/protocols>
         $<INSTALL_INTERFACE:${WAYLIB_INCLUDE_INSTALL_DIR}>
     PRIVATE
         ${Qt6Gui_PRIVATE_INCLUDE_DIRS}

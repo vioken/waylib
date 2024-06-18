@@ -13,7 +13,7 @@ OutputItem {
 
     output: waylandOutput
     devicePixelRatio: waylandOutput.scale
-    layout: QmlHelper.layout
+
     cursorDelegate: Item {
         required property OutputCursor cursor
 
@@ -204,10 +204,10 @@ OutputItem {
         Switch {
             text: "Socket"
             onCheckedChanged: {
-                masterSocket.enabled = checked
+                QmlHelper.masterSocket.enabled = checked
             }
             Component.onCompleted: {
-                checked = masterSocket.enabled
+                checked = QmlHelper.masterSocket.enabled
             }
         }
 
@@ -277,7 +277,5 @@ OutputItem {
         onscreenViewport.setOutputScale(scale)
     }
 
-    function invalidate() {
-        onscreenViewport.invalidate()
-    }
+    Component.onDestruction: onscreenViewport.invalidate()
 }

@@ -7,7 +7,6 @@
 #include "winputmethodcommon_p.h"
 #include "wquickinputmethodv2_p.h"
 #include "wquickvirtualkeyboardv1_p.h"
-#include "wquickseat_p.h"
 #include "wseat.h"
 #include "wsurface.h"
 #include "wxdgsurface.h"
@@ -75,7 +74,7 @@ public:
         , handlerArg({.helper = qq})
     {}
 
-    WQuickSeat *seat { nullptr };
+    WSeat *seat { nullptr };
     WQuickInputMethodManagerV2 *inputMethodManagerV2 { nullptr };
     WQuickTextInputManagerV1 *textInputManagerV1 { nullptr };
     WQuickTextInputManagerV3 *textInputManagerV3 { nullptr };
@@ -100,7 +99,7 @@ WInputMethodHelper::WInputMethodHelper(QObject *parent)
     , WObject(*new WInputMethodHelperPrivate(this))
 { }
 
-WQuickSeat *WInputMethodHelper::seat() const
+WSeat *WInputMethodHelper::seat() const
 {
     W_DC(WInputMethodHelper);
     return d->seat;
@@ -286,7 +285,7 @@ void WInputMethodHelper::handleNewTI(QObject *ti)
 void WInputMethodHelper::handleNewIMV2(QWInputMethodV2 *imv2)
 {
     auto wimv2 = new WQuickInputMethodV2(imv2, this);
-    if (wseat()->name() != wimv2->seat()->name())
+    if (seat()->name() != wimv2->seat()->name())
         return;
     if (inputMethod()) {
         qCWarning(qLcInputMethod) << "Ignore second creation of input on the same seat.";
@@ -315,27 +314,27 @@ void WInputMethodHelper::handleNewKGV2(QWInputMethodKeyboardGrabV2 *kgv2)
     W_D(WInputMethodHelper);
     auto endGrab = [this](WQuickInputMethodKeyboardGrabV2 *wkgv2) {
         if (wkgv2->keyboard()) {
-            wseat()->handle()->keyboardSendModifiers(&wkgv2->handle()->handle()->keyboard->modifiers);
+            seat()->handle()->keyboardSendModifiers(&wkgv2->handle()->handle()->keyboard->modifiers);
         }
-        wseat()->handle()->keyboardEndGrab();
+        seat()->handle()->keyboardEndGrab();
     };
     if (auto activeKG = activeKeyboardGrab()) {
         endGrab(activeKG);
     }
     auto wkgv2 = new WQuickInputMethodKeyboardGrabV2(kgv2, this);
     d->activeKeyboardGrab = wkgv2;
-    wkgv2->setKeyboard(wseat()->keyboard());
-    connect(wseat(), &WSeat::keyboardChanged, wkgv2, [this, wkgv2](){
-        wkgv2->setKeyboard(wseat()->keyboard());
+    wkgv2->setKeyboard(seat()->keyboard());
+    connect(seat(), &WSeat::keyboardChanged, wkgv2, [this, wkgv2](){
+        wkgv2->setKeyboard(seat()->keyboard());
     });
-    d->grabInterface = *wseat()->nativeHandle()->keyboard_state.grab->interface;
+    d->grabInterface = *seat()->nativeHandle()->keyboard_state.grab->interface;
     d->grabInterface.key = handleKey;
     d->grabInterface.modifiers = handleModifiers;
-    d->keyboardGrab.seat = wseat()->nativeHandle();
+    d->keyboardGrab.seat = seat()->nativeHandle();
     d->handlerArg.grab = wkgv2;
     d->keyboardGrab.data = &d->handlerArg;
     d->keyboardGrab.interface = &d->grabInterface;
-    wseat()->handle()->keyboardStartGrab(&d->keyboardGrab);
+    seat()->handle()->keyboardStartGrab(&d->keyboardGrab);
     connect(kgv2, &QWInputMethodKeyboardGrabV2::beforeDestroy, wkgv2, [this, d, endGrab, wkgv2] {
         if (activeKeyboardGrab() == wkgv2) {
             endGrab(wkgv2);
@@ -371,9 +370,9 @@ void WInputMethodHelper::handleNewVKV1(QWVirtualKeyboardV1 *vkv1)
     W_D(WInputMethodHelper);
     auto wvkv1 = new WQuickVirtualKeyboardV1(vkv1, this);
     d->virtualKeyboards.append(wvkv1);
-    wseat()->attachInputDevice(wvkv1->keyboard());
+    seat()->attachInputDevice(wvkv1->keyboard());
     auto result = connect(vkv1, &QWVirtualKeyboardV1::beforeDestroy, wvkv1, [d, this, wvkv1] () {
-        wseat()->detachInputDevice(wvkv1->keyboard());
+        seat()->detachInputDevice(wvkv1->keyboard());
         d->virtualKeyboards.removeOne(wvkv1);
         wvkv1->deleteLater();
     });
@@ -384,7 +383,7 @@ void WInputMethodHelper::resendKeyboardFocus()
 {
     W_D(WInputMethodHelper);
     notifyLeave();
-    auto focus = seat()->keyboardFocus();
+    auto focus = seat()->keyboardFocusSurface();
     if (!focus)
         return;
     for (auto textInput : d->textInputs) {
@@ -396,7 +395,7 @@ void WInputMethodHelper::resendKeyboardFocus()
 
 QString WInputMethodHelper::seatName() const
 {
-    return wseat()->name();
+    return seat()->name();
 }
 
 void WInputMethodHelper::connectToTI(WQuickTextInput *ti)
@@ -439,8 +438,8 @@ void WInputMethodHelper::tryAddTextInput(WQuickTextInput *ti)
     connect(ti, &WQuickTextInput::requestFocus, this, [this, ti]{
         if (ti->seat() && seatName() == ti->seat()->name()) {
             connectToTI(ti);
-            if (seat()->keyboardFocus()) {
-                ti->sendEnter(seat()->keyboardFocus());
+            if (auto surface = seat()->keyboardFocusSurface()) {
+                ti->sendEnter(surface);
             }
         }
     });
@@ -531,23 +530,19 @@ void WInputMethodHelper::updatePopupSurface(WInputPopupV2 *popup, QRect cursorRe
     popup->handle()->send_text_input_rectangle(cursorRect);
 }
 
-void WInputMethodHelper::setSeat(WQuickSeat *seat)
+void WInputMethodHelper::setSeat(WSeat *seat)
 {
     W_D(WInputMethodHelper);
     if (d->seat == seat)
         return;
     if (d->seat) {
-        d->seat->disconnect(this);
+        d->seat->safeDisconnect(this);
     }
     d->seat = seat;
     if (seat) {
-        connect(d->seat, &WQuickSeat::keyboardFocusChanged, this, &WInputMethodHelper::resendKeyboardFocus);
+        d->seat->safeConnect(&WSeat::keyboardFocusSurfaceChanged, this, &WInputMethodHelper::resendKeyboardFocus);
     }
     Q_EMIT seatChanged();
 }
 
-WSeat *WInputMethodHelper::wseat() const
-{
-    return seat()->seat();
-}
 WAYLIB_SERVER_END_NAMESPACE
