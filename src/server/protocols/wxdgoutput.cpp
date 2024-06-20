@@ -377,10 +377,12 @@ public:
     struct way_xdg_output_manager_v1 *manager{ nullptr };
 };
 
-WXdgOutputManager::WXdgOutputManager()
+WXdgOutputManager::WXdgOutputManager(WOutputLayout *layout)
     : WObject(*new WXdgOutputManagerPrivate(this), nullptr)
 {
+    W_D(WXdgOutputManager);
 
+    d->layout = layout;
 }
 
 void WXdgOutputManager::setScaleOverride(qreal scaleOverride)
@@ -408,18 +410,6 @@ void WXdgOutputManager::resetScaleOverride()
 {
     Q_D(WXdgOutputManager);
     setScaleOverride(0.0);
-}
-
-void WXdgOutputManager::setLayout(WOutputLayout *layout)
-{
-    W_D(WXdgOutputManager);
-
-    if (d->layout) {
-        qmlWarning(this) << "Trying to set output layout for xdg output manager twice. Ignore this request";
-        return;
-    }
-
-    d->layout = layout;
 }
 
 WOutputLayout *WXdgOutputManager::layout() const

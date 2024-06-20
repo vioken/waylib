@@ -15,9 +15,8 @@ class WAYLIB_SERVER_EXPORT WXdgOutputManager : public QObject, public WObject, p
     W_DECLARE_PRIVATE(WXdgOutputManager)
 
 public:
-    explicit WXdgOutputManager();
+    explicit WXdgOutputManager(WOutputLayout *layout);
 
-    void setLayout(WOutputLayout *layout);
     WOutputLayout *layout() const;
 
     void setScaleOverride(qreal scaleOverride);

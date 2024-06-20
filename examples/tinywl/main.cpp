@@ -58,22 +58,11 @@ Helper::Helper(QObject *parent)
     , m_seat(new WSeat())
     , m_outputCreator(new WQmlCreator(this))
     , m_xdgShellCreator(new WQmlCreator(this))
-    , m_xdgoutputmanager(new WXdgOutputManager())
-    , m_xwayland_xdgoutputmanager(new WXdgOutputManager())
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
     m_cursor->setThemeName(getenv("XCURSOR_THEME"));
     m_cursor->setLayout(m_outputLayout);
-
-    m_xwayland_xdgoutputmanager->setLayout(m_outputLayout);
-    m_xwayland_xdgoutputmanager->setScaleOverride(1.0);
-
-    // tode xwayland need modify
-    m_xdgoutputmanager->setTargetClients(m_xwayland_xdgoutputmanager->targetClients(), false);
-
-    m_xdgoutputmanager->setLayout(m_outputLayout);
-    m_xdgoutputmanager->setTargetClients(m_xwayland_xdgoutputmanager->targetClients(), true);
 }
 
 void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEngine *qmlEngine)
@@ -95,6 +84,14 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     auto *xdgShell = server->attach<WXdgShell>();
     auto *foreignToplevel = server->attach<WForeignToplevel>(xdgShell);
     server->attach(m_seat);
+
+    auto *xdgOutputManager = server->attach<WXdgOutputManager>(m_outputLayout);
+    auto *xwaylandOutputManager = server->attach<WXdgOutputManager>(m_outputLayout);
+
+    xwaylandOutputManager->setScaleOverride(1.0);
+
+    xdgOutputManager->setTargetClients(xwaylandOutputManager->targetClients(), true);
+    xwaylandOutputManager->setTargetClients(xwaylandOutputManager->targetClients(), false);
 
     connect(xdgShell, &WXdgShell::surfaceAdded, this, [this, qmlEngine, foreignToplevel](WXdgSurface *surface) {
         auto initProperties = qmlEngine->newObject();
