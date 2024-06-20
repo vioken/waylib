@@ -15,6 +15,7 @@
 #include <wquickcursor.h>
 #include <woutputrenderwindow.h>
 #include <wqmldynamiccreator.h>
+#include <WForeignToplevel>
 
 #include <qwbackend.h>
 #include <qwdisplay.h>
@@ -55,6 +56,7 @@ Helper::Helper(QObject *parent)
     , m_cursor(new WQuickCursor(this))
     , m_seat(new WSeat())
     , m_outputCreator(new WQmlCreator(this))
+    , m_xdgShellCreator(new WQmlCreator(this))
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
@@ -78,8 +80,22 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     m_compositor = QWCompositor::create(server->handle(), m_renderer, 6);
     QWSubcompositor::create(server->handle());
 
-    server->attach<WXdgShell>();
+    auto *xdgShell = server->attach<WXdgShell>();
+    auto *foreignToplevel = server->attach<WForeignToplevel>(xdgShell);
     server->attach(m_seat);
+
+    connect(xdgShell, &WXdgShell::surfaceAdded, this, [this, qmlEngine, foreignToplevel](WXdgSurface *surface) {
+        auto initProperties = qmlEngine->newObject();
+        initProperties.setProperty("type", surface->isPopup() ? "popup" : "toplevel");
+        initProperties.setProperty("waylandSurface", qmlEngine->toScriptValue(surface));
+        m_xdgShellCreator->add(surface, initProperties);
+
+        if (!surface->isPopup()) {
+            foreignToplevel->addSurface(surface);
+        }
+    });
+    connect(xdgShell, &WXdgShell::surfaceRemoved, m_xdgShellCreator, &WQmlCreator::removeByOwner);
+    connect(xdgShell, &WXdgShell::surfaceRemoved, foreignToplevel, &WForeignToplevel::removeSurface);
 
     connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
         if (!backend->hasDrm())
@@ -131,6 +147,11 @@ QWCompositor *Helper::compositor() const
 WQmlCreator *Helper::outputCreator() const
 {
     return m_outputCreator;
+}
+
+WQmlCreator *Helper::xdgShellCreator() const
+{
+    return m_xdgShellCreator;
 }
 
 WSurfaceItem *Helper::resizingItem() const

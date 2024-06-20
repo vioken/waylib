@@ -13,20 +13,6 @@ Item {
     WaylandServer {
         id: server
 
-        XdgShell {
-            id: shell
-
-            onSurfaceAdded: function(surface) {
-                let type = surface.isPopup ? "popup" : "toplevel"
-                QmlHelper.xdgSurfaceManager.add({type: type, waylandSurface: surface})
-            }
-            onSurfaceRemoved: function(surface) {
-                QmlHelper.xdgSurfaceManager.removeIf(function(prop) {
-                    return prop.waylandSurface === surface
-                })
-            }
-        }
-
         LayerShell {
             id: layerShell
 

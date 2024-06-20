@@ -8,7 +8,6 @@ import Waylib.Server
 
 Item {
     property WaylandSocket masterSocket
-    property DynamicCreator xdgSurfaceManager: xdgSurfaceManager
     property DynamicCreator layerSurfaceManager: layerSurfaceManager
     property DynamicCreator xwaylandSurfaceManager: xwaylandSurfaceManager
     property DynamicCreator inputPopupSurfaceManager: inputPopupSurfaceManager
@@ -28,19 +27,6 @@ Item {
         }
 
         return '{\n' + json + '}'
-    }
-
-    DynamicCreator {
-        id: xdgSurfaceManager
-        onObjectAdded: function(delegate, obj, properties) {
-            console.info(`New Xdg surface item ${obj} from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
-
-        onObjectRemoved: function(delegate, obj, properties) {
-            console.info(`Xdg surface item ${obj} is removed, it's create from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
     }
 
     DynamicCreator {

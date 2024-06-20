@@ -18,10 +18,11 @@ public:
 
     QVector<WXdgSurface*> surfaceList() const;
 
-protected:
-    virtual void surfaceAdded(WXdgSurface *surface);
-    virtual void surfaceRemoved(WXdgSurface *surface);
+Q_SIGNALS:
+    void surfaceAdded(WXdgSurface *surface);
+    void surfaceRemoved(WXdgSurface *surface);
 
+protected:
     void create(WServer *server) override;
     void destroy(WServer *server) override;
     wl_global *global() const override;

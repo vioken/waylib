@@ -75,16 +75,6 @@ QVector<WXdgSurface*> WXdgShell::surfaceList() const
     return d->surfaceList;
 }
 
-void WXdgShell::surfaceAdded(WXdgSurface *)
-{
-
-}
-
-void WXdgShell::surfaceRemoved(WXdgSurface *)
-{
-
-}
-
 void WXdgShell::create(WServer *server)
 {
     W_D(WXdgShell);

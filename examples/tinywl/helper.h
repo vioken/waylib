@@ -40,6 +40,7 @@ class Helper : public WSeatEventFilter {
     Q_PROPERTY(WSeat* seat READ seat CONSTANT)
     Q_PROPERTY(QW_NAMESPACE::QWCompositor* compositor READ compositor NOTIFY compositorChanged FINAL)
     Q_PROPERTY(WQmlCreator* outputCreator READ outputCreator CONSTANT)
+    Q_PROPERTY(WQmlCreator* xdgShellCreator READ xdgShellCreator CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -52,6 +53,7 @@ public:
     QWCompositor *compositor() const;
 
     WQmlCreator *outputCreator() const;
+    WQmlCreator *xdgShellCreator() const;
 
     void stopMoveResize();
 
@@ -111,6 +113,7 @@ private:
     QPointer<WSeat> m_seat;
 
     WQmlCreator *m_outputCreator = nullptr;
+    WQmlCreator *m_xdgShellCreator = nullptr;
 
     QPointer<WToplevelSurface> m_activateSurface;
     QList<std::pair<WOutput*,OutputInfo*>> m_outputExclusiveZoneInfo;

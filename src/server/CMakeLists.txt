@@ -100,7 +100,6 @@ set(SOURCES
     qtquick/wxwaylandsurfaceitem.cpp
     qtquick/wqmldynamiccreator.cpp
 
-    qtquick/private/wquickxdgshell.cpp
     qtquick/private/wquickcoordmapper.cpp
     qtquick/private/wquicksocket.cpp
     qtquick/private/wqmlhelper.cpp
@@ -114,7 +113,6 @@ set(SOURCES
     qtquick/private/wquickinputmethodv2.cpp
     qtquick/private/wquickvirtualkeyboardv1.cpp
     qtquick/private/winputmethodhelper.cpp
-    qtquick/private/wquickforeigntoplevelmanagerv1.cpp
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
     qtquick/private/wquickxdgoutput.cpp
@@ -139,6 +137,7 @@ set(SOURCES
     protocols/wxwayland.cpp
     protocols/wxwaylandsurface.cpp
     protocols/wlayersurface.cpp
+    protocols/wforeigntoplevelv1.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
@@ -202,6 +201,8 @@ set(HEADERS
     protocols/WXdgSurface
     protocols/wlayersurface.h
     protocols/WLayerSurface
+    protocols/wforeigntoplevelv1.h
+    protocols/WForeignToplevel
 )
 
 set(PRIVATE_HEADERS
@@ -227,7 +228,6 @@ set(PRIVATE_HEADERS
     qtquick/private/wquickvirtualkeyboardv1_p.h
     qtquick/private/winputmethodcommon_p.h
     qtquick/private/winputmethodhelper_p.h
-    qtquick/private/wquickforeigntoplevelmanagerv1_p.h
     qtquick/private/wbufferrenderer_p.h
     qtquick/private/wrenderbuffernode_p.h
     qtquick/private/wquickxdgoutput_p.h

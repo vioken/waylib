@@ -18,7 +18,7 @@ Item {
                 return true
         }
 
-        let toplevel = QmlHelper.xdgSurfaceManager.getIf(toplevelComponent, finder)
+        let toplevel = Helper.xdgShellCreator.getIf(toplevelComponent, finder)
         if (toplevel) {
             return {
                 shell: toplevel,
@@ -27,7 +27,7 @@ Item {
             }
         }
 
-        let popup = QmlHelper.xdgSurfaceManager.getIf(popupComponent, finder)
+        let popup = Helper.xdgShellCreator.getIf(popupComponent, finder)
         if (popup) {
             return {
                 shell: popup,
@@ -70,7 +70,7 @@ Item {
 
     DynamicCreatorComponent {
         id: toplevelComponent
-        creator: QmlHelper.xdgSurfaceManager
+        creator: Helper.xdgShellCreator
         chooserRole: "type"
         chooserRoleValue: "toplevel"
         autoDestroy: false
@@ -168,7 +168,7 @@ Item {
 
     DynamicCreatorComponent {
         id: popupComponent
-        creator: QmlHelper.xdgSurfaceManager
+        creator: Helper.xdgShellCreator
         chooserRole: "type"
         chooserRoleValue: "popup"
 
