@@ -85,6 +85,7 @@ public:
 
     static WOutput *fromScreen(const QScreen *screen);
 
+    Q_INVOKABLE QString name() const;
     bool isEnabled() const;
     QPoint position() const;
     QSize size() const;
