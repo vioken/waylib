@@ -13,32 +13,6 @@ Item {
     WaylandServer {
         id: server
 
-        // WaylandBackend {
-        //     id: backend
-
-        //     onOutputAdded: function(output) {
-        //         if (!backend.hasDrm)
-        //             output.forceSoftwareCursor = true // Test
-
-        //         Helper.allowNonDrmOutputAutoChangeMode(output)
-        //         QmlHelper.outputManager.add({waylandOutput: output})
-        //         outputManagerV1.newOutput(output)
-        //     }
-        //     onOutputRemoved: function(output) {
-        //         output.OutputItem.item.invalidate()
-        //         QmlHelper.outputManager.removeIf(function(prop) {
-        //             return prop.waylandOutput === output
-        //         })
-        //         outputManagerV1.removeOutput(output)
-        //     }
-        //     onInputAdded: function(inputDevice) {
-        //         seat0.addDevice(inputDevice)
-        //     }
-        //     onInputRemoved: function(inputDevice) {
-        //         seat0.removeDevice(inputDevice)
-        //     }
-        // }
-
         XdgShell {
             id: shell
 
@@ -65,19 +39,6 @@ Item {
                 })
             }
         }
-
-        // Seat {
-        //     id: seat0
-        //     name: "seat0"
-        //     cursor: Cursor {
-        //         id: cursor1
-        //         themeName: cursorThemeName
-        //         layout: Helper.outputLayout
-        //     }
-
-        //     eventFilter: Helper
-        //     keyboardFocus: Helper.getFocusSurfaceFrom(renderWindow.activeFocusItem)
-        // }
 
         GammaControlManager {
             onGammaChanged: function(output, gamma_control, ramp_size, r, g, b) {
