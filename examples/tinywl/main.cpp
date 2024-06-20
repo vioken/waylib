@@ -135,6 +135,7 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     Q_EMIT compositorChanged();
 
     window->init(m_renderer, m_allocator);
+    m_xdgDecorationManager = server->attach<WXdgDecorationManager>();
     backend->handle()->start();
 }
 
@@ -359,6 +360,10 @@ std::pair<WOutput*,OutputInfo*> Helper::getFirstOutputOfSurface(WToplevelSurface
     return std::make_pair(nullptr, nullptr);
 }
 
+WXdgDecorationManager *Helper::xdgDecorationManager() const
+{
+    return m_xdgDecorationManager;
+}
 
 void Helper::setMovingItem(WSurfaceItem *newMovingItem)
 {

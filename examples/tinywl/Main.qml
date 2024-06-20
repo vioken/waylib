@@ -85,12 +85,6 @@ Item {
             }
         }
 
-        // TODO: add attached property for XdgSurface
-        XdgDecorationManager {
-            id: decorationManager
-            preferredMode: XdgDecorationManager.Client
-        }
-
         InputMethodManagerV2 {
             id: inputMethodManagerV2
         }
@@ -197,13 +191,13 @@ Item {
                 TabButton {
                     text: qsTr("Stack Layout")
                     onClicked: {
-                        decorationManager.preferredMode = XdgDecorationManager.Client
+                        Helper.xdgDecorationManager.preferredMode = XdgDecorationManager.Client
                     }
                 }
                 TabButton {
                     text: qsTr("Tiled Layout")
                     onClicked: {
-                        decorationManager.preferredMode = XdgDecorationManager.Server
+                        Helper.xdgDecorationManager.preferredMode = XdgDecorationManager.Server
                     }
                 }
             }

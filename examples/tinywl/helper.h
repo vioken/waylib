@@ -4,6 +4,7 @@
 #pragma once
 
 #include <WSeat>
+#include <wxdgdecorationmanager.h>
 #include <WCursor>
 #include <WSurfaceItem>
 #include <WOutput>
@@ -20,6 +21,7 @@ class WQuickCursor;
 class WOutputRenderWindow;
 class WQmlCreator;
 class WXdgOutputManager;
+class WXdgDecorationManager;
 WAYLIB_SERVER_END_NAMESPACE
 
 QW_BEGIN_NAMESPACE
@@ -39,6 +41,7 @@ class Helper : public WSeatEventFilter {
     Q_PROPERTY(WSurfaceItem* movingItem READ movingItem NOTIFY movingItemChanged)
     Q_PROPERTY(WQuickOutputLayout* outputLayout READ outputLayout CONSTANT)
     Q_PROPERTY(WSeat* seat READ seat CONSTANT)
+    Q_PROPERTY(WXdgDecorationManager* xdgDecorationManager READ xdgDecorationManager NOTIFY xdgDecorationManagerChanged)
     Q_PROPERTY(QW_NAMESPACE::QWCompositor* compositor READ compositor NOTIFY compositorChanged FINAL)
     Q_PROPERTY(WQmlCreator* outputCreator READ outputCreator CONSTANT)
     Q_PROPERTY(WQmlCreator* xdgShellCreator READ xdgShellCreator CONSTANT)
@@ -61,6 +64,7 @@ public:
     WToplevelSurface *activatedSurface() const;
     WSurfaceItem *resizingItem() const;
     WSurfaceItem *movingItem() const;
+    WXdgDecorationManager *xdgDecorationManager() const;
 
     Q_INVOKABLE bool registerExclusiveZone(WLayerSurface *layerSurface);
     Q_INVOKABLE bool unregisterExclusiveZone(WLayerSurface *layerSurface);
@@ -94,6 +98,7 @@ signals:
     void leftExclusiveMarginChanged();
     void rightExclusiveMarginChanged();
     void compositorChanged();
+    void xdgDecorationManagerChanged();
 
 private:
     bool beforeDisposeEvent(WSeat *seat, QWindow *watched, QInputEvent *event) override;
@@ -112,6 +117,7 @@ private:
     WQuickOutputLayout *m_outputLayout = nullptr;
     WQuickCursor *m_cursor = nullptr;
     QPointer<WSeat> m_seat;
+    WXdgDecorationManager *m_xdgDecorationManager = nullptr;
 
     WQmlCreator *m_outputCreator = nullptr;
     WQmlCreator *m_xdgShellCreator = nullptr;

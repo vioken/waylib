@@ -103,7 +103,6 @@ set(SOURCES
     qtquick/private/wquickcoordmapper.cpp
     qtquick/private/wquicksocket.cpp
     qtquick/private/wqmlhelper.cpp
-    qtquick/private/wquickxdgdecorationmanager.cpp
     qtquick/private/wquickcursorshape.cpp
     qtquick/private/wquickgammacontrol.cpp
     qtquick/private/wquickoutputmanager.cpp
@@ -138,6 +137,7 @@ set(SOURCES
     protocols/wlayersurface.cpp
     protocols/wforeigntoplevelv1.cpp
     protocols/wxdgoutput.cpp
+    protocols/wxdgdecorationmanager.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
@@ -200,6 +200,8 @@ set(HEADERS
     protocols/wxdgsurface.h
     protocols/WXdgSurface
     protocols/wlayersurface.h
+    protocols/wxdgdecorationmanager.h
+    protocols/private/wxdgdecorationmanager_p.h
     protocols/WLayerSurface
     protocols/wforeigntoplevelv1.h
     protocols/WForeignToplevel
@@ -218,7 +220,6 @@ set(PRIVATE_HEADERS
     qtquick/private/wquicksocket_p.h
     qtquick/private/wqmldynamiccreator_p.h
     qtquick/private/wqmlhelper_p.h
-    qtquick/private/wquickxdgdecorationmanager_p.h
     qtquick/private/wquickcursorshape_p.h
     qtquick/private/wquickgammacontrol_p.h
     qtquick/private/wquickoutputmanager_p.h
@@ -290,8 +291,6 @@ set_target_properties(${TARGET}
 	# PRIVATE_HEADER "${PRIVATE_HEADERS}"
 	# CMake Warning has PRIVATE_HEADER files but no PRIVATE_HEADER DESTINATION
 )
-
-
 if(WITH_SUBMODULE_QWLROOTS)
     target_link_libraries(${TARGET}
         PUBLIC
