@@ -1,7 +1,7 @@
 // Copyright (C) 2024 Lu YaNing <luyaning@uniontech.org>.
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#include "wquickxdgoutput_p.h"
+#include "wxdgoutput.h"
 #include "woutputlayout.h"
 #include "wsocket.h"
 #include "private/wglobal_p.h"
@@ -359,16 +359,16 @@ WAYLIB_SERVER_BEGIN_NAMESPACE
 
 using QW_NAMESPACE::QWXdgOutputManagerV1;
 
-class WQuickXdgOutputManagerPrivate : public WObjectPrivate
+class WXdgOutputManagerPrivate : public WObjectPrivate
 {
 public:
-    WQuickXdgOutputManagerPrivate(WQuickXdgOutputManager *qq)
+    WXdgOutputManagerPrivate(WXdgOutputManager *qq)
         : WObjectPrivate(qq)
     {
 
     }
 
-    W_DECLARE_PUBLIC(WQuickXdgOutputManager)
+    W_DECLARE_PUBLIC(WXdgOutputManager)
 
     static bool isOverrideClientCallback(void *data, struct wl_client *client);
 
@@ -377,16 +377,15 @@ public:
     struct way_xdg_output_manager_v1 *manager{ nullptr };
 };
 
-WQuickXdgOutputManager::WQuickXdgOutputManager(QObject *parent)
-    : WQuickWaylandServerInterface(parent)
-    , WObject(*new WQuickXdgOutputManagerPrivate(this), nullptr)
+WXdgOutputManager::WXdgOutputManager()
+    : WObject(*new WXdgOutputManagerPrivate(this), nullptr)
 {
 
 }
 
-void WQuickXdgOutputManager::setScaleOverride(qreal scaleOverride)
+void WXdgOutputManager::setScaleOverride(qreal scaleOverride)
 {
-    Q_D(WQuickXdgOutputManager);
+    Q_D(WXdgOutputManager);
     if (qFuzzyCompare(d->scaleOverride, scaleOverride))
         return;
 
@@ -399,21 +398,21 @@ void WQuickXdgOutputManager::setScaleOverride(qreal scaleOverride)
     Q_EMIT scaleOverrideChanged();
 }
 
-qreal WQuickXdgOutputManager::scaleOverride() const
+qreal WXdgOutputManager::scaleOverride() const
 {
-    Q_D(const WQuickXdgOutputManager);
+    Q_D(const WXdgOutputManager);
     return d->scaleOverride;
 }
 
-void WQuickXdgOutputManager::resetScaleOverride()
+void WXdgOutputManager::resetScaleOverride()
 {
-    Q_D(WQuickXdgOutputManager);
+    Q_D(WXdgOutputManager);
     setScaleOverride(0.0);
 }
 
-void WQuickXdgOutputManager::setLayout(WOutputLayout *layout)
+void WXdgOutputManager::setLayout(WOutputLayout *layout)
 {
-    W_D(WQuickXdgOutputManager);
+    W_D(WXdgOutputManager);
 
     if (d->layout) {
         qmlWarning(this) << "Trying to set output layout for xdg output manager twice. Ignore this request";
@@ -423,26 +422,35 @@ void WQuickXdgOutputManager::setLayout(WOutputLayout *layout)
     d->layout = layout;
 }
 
-WOutputLayout *WQuickXdgOutputManager::layout() const
+WOutputLayout *WXdgOutputManager::layout() const
 {
-    W_DC(WQuickXdgOutputManager);
+    W_DC(WXdgOutputManager);
 
     return d->layout;
 }
 
-WServerInterface *WQuickXdgOutputManager::create()
+void WXdgOutputManager::destroy(WServer *server)
 {
-    W_D(WQuickXdgOutputManager);
+    Q_UNUSED(server);
+}
+
+wl_global *WXdgOutputManager::global() const
+{
+    auto handle = nativeInterface<way_xdg_output_manager_v1>();
+    return handle->global;
+}
+
+void WXdgOutputManager::create(WServer *wserver)
+{
+    Q_UNUSED(wserver)
+    W_D(WXdgOutputManager);
     if (d->layout) {
-        d->manager = way_xdg_output_manager_v1_create(server()->handle()->handle(),
+        m_handle = way_xdg_output_manager_v1_create(server()->handle()->handle(),
                                                       d->layout->handle(),
                                                       d->scaleOverride);
-        return new WServerInterface(d->manager, d->manager->global);
     } else {
         qWarning() << "Output layout not set, xdg output manager will never be created!";
     }
-
-    return nullptr;
 }
 
 WAYLIB_SERVER_END_NAMESPACE

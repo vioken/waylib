@@ -19,6 +19,7 @@ WAYLIB_SERVER_BEGIN_NAMESPACE
 class WQuickCursor;
 class WOutputRenderWindow;
 class WQmlCreator;
+class WXdgOutputManager;
 WAYLIB_SERVER_END_NAMESPACE
 
 QW_BEGIN_NAMESPACE
@@ -111,6 +112,8 @@ private:
     WQuickOutputLayout *m_outputLayout = nullptr;
     WQuickCursor *m_cursor = nullptr;
     QPointer<WSeat> m_seat;
+    WXdgOutputManager *m_xdgoutputmanager = nullptr;
+    WXdgOutputManager *m_xwayland_xdgoutputmanager = nullptr;
 
     WQmlCreator *m_outputCreator = nullptr;
     WQmlCreator *m_xdgShellCreator = nullptr;

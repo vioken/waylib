@@ -114,7 +114,7 @@ Item {
             lazy: false
 
             onReady: function () {
-                xwaylandXdgOutputManager.targetClients.push(client())
+                // xwaylandXdgOutputManager.targetClients.push(client())
             }
 
             onSurfaceAdded: function(surface) {
@@ -125,22 +125,6 @@ Item {
                     return prop.waylandSurface === surface
                 })
             }
-        }
-
-        // for the non-xwayland clients
-        XdgOutputManager {
-            layout: Helper.outputLayout
-            exclusionTargetClients: true
-            targetClients: xwaylandXdgOutputManager.targetClients
-        }
-
-        // for the xwayland clients
-        XdgOutputManager {
-            id: xwaylandXdgOutputManager
-            layout: Helper.outputLayout
-            scaleOverride: 1.0
-            exclusionTargetClients: false
-            objectName: "XdgOutputManagerForXWayalnd"
         }
 
         ScreenCopyManager { }

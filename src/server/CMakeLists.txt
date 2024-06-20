@@ -115,7 +115,6 @@ set(SOURCES
     qtquick/private/winputmethodhelper.cpp
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
-    qtquick/private/wquickxdgoutput.cpp
     qtquick/private/wquickfractionalscalemanagerv1.cpp
     qtquick/private/wquickscreencopy.cpp
 
@@ -138,6 +137,7 @@ set(SOURCES
     protocols/wxwaylandsurface.cpp
     protocols/wlayersurface.cpp
     protocols/wforeigntoplevelv1.cpp
+    protocols/wxdgoutput.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
@@ -203,6 +203,8 @@ set(HEADERS
     protocols/WLayerSurface
     protocols/wforeigntoplevelv1.h
     protocols/WForeignToplevel
+    protocols/wxdgoutput.h
+    protocols/WXdgOutput
 )
 
 set(PRIVATE_HEADERS
@@ -230,7 +232,6 @@ set(PRIVATE_HEADERS
     qtquick/private/winputmethodhelper_p.h
     qtquick/private/wbufferrenderer_p.h
     qtquick/private/wrenderbuffernode_p.h
-    qtquick/private/wquickxdgoutput_p.h
     qtquick/private/wquickfractionalscalemanagerv1_p.h
     qtquick/private/wquickscreencopy_p.h
     qtquick/private/wsurfaceitem_p.h
