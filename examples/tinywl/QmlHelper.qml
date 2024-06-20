@@ -9,7 +9,6 @@ import Waylib.Server
 Item {
     property WaylandSocket masterSocket
     property DynamicCreator layerSurfaceManager: layerSurfaceManager
-    property DynamicCreator xwaylandSurfaceManager: xwaylandSurfaceManager
     property DynamicCreator inputPopupSurfaceManager: inputPopupSurfaceManager
 
     function printStructureObject(obj) {
@@ -43,7 +42,6 @@ Item {
     }
 
     DynamicCreator {
-        id: xwaylandSurfaceManager
         onObjectAdded: function(delegate, obj, properties) {
             console.info(`New X11 surface item ${obj} from delegate ${delegate} with initial properties:`,
                          `\n${printStructureObject(properties)}`)

@@ -11,6 +11,7 @@
 #include <WLayerSurface>
 #include <wtoplevelsurface.h>
 #include <wquickoutputlayout.h>
+#include <wxwayland.h>
 
 #include <QList>
 
@@ -45,6 +46,7 @@ class Helper : public WSeatEventFilter {
     Q_PROPERTY(QW_NAMESPACE::QWCompositor* compositor READ compositor NOTIFY compositorChanged FINAL)
     Q_PROPERTY(WQmlCreator* outputCreator READ outputCreator CONSTANT)
     Q_PROPERTY(WQmlCreator* xdgShellCreator READ xdgShellCreator CONSTANT)
+    Q_PROPERTY(WQmlCreator* xwaylandCreator READ xwaylandCreator CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -58,6 +60,7 @@ public:
 
     WQmlCreator *outputCreator() const;
     WQmlCreator *xdgShellCreator() const;
+    WQmlCreator *xwaylandCreator() const;
 
     void stopMoveResize();
 
@@ -117,10 +120,12 @@ private:
     WQuickOutputLayout *m_outputLayout = nullptr;
     WQuickCursor *m_cursor = nullptr;
     QPointer<WSeat> m_seat;
+    QPointer<WXWayland> m_xwayland;
     WXdgDecorationManager *m_xdgDecorationManager = nullptr;
 
     WQmlCreator *m_outputCreator = nullptr;
     WQmlCreator *m_xdgShellCreator = nullptr;
+    WQmlCreator *m_xwaylandCreator = nullptr;
 
     QPointer<WToplevelSurface> m_activateSurface;
     QList<std::pair<WOutput*,OutputInfo*>> m_outputExclusiveZoneInfo;

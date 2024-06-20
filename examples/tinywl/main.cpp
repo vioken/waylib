@@ -17,6 +17,7 @@
 #include <wqmldynamiccreator.h>
 #include <WForeignToplevel>
 #include <WXdgOutput>
+#include <wxwaylandsurface.h>
 
 #include <qwbackend.h>
 #include <qwdisplay.h>
@@ -26,6 +27,7 @@
 #include <qwrenderer.h>
 #include <qwcompositor.h>
 #include <qwsubcompositor.h>
+#include <qwxwaylandsurface.h>
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -58,6 +60,7 @@ Helper::Helper(QObject *parent)
     , m_seat(new WSeat())
     , m_outputCreator(new WQmlCreator(this))
     , m_xdgShellCreator(new WQmlCreator(this))
+    , m_xwaylandCreator(new WQmlCreator(this))
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
@@ -91,7 +94,6 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     xwaylandOutputManager->setScaleOverride(1.0);
 
     xdgOutputManager->setTargetClients(xwaylandOutputManager->targetClients(), true);
-    xwaylandOutputManager->setTargetClients(xwaylandOutputManager->targetClients(), false);
 
     connect(xdgShell, &WXdgShell::surfaceAdded, this, [this, qmlEngine, foreignToplevel](WXdgSurface *surface) {
         auto initProperties = qmlEngine->newObject();
@@ -105,6 +107,28 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     });
     connect(xdgShell, &WXdgShell::surfaceRemoved, m_xdgShellCreator, &WQmlCreator::removeByOwner);
     connect(xdgShell, &WXdgShell::surfaceRemoved, foreignToplevel, &WForeignToplevel::removeSurface);
+    auto xwayland_lazy = true;
+    m_xwayland = server->attach<WXWayland>(m_compositor, xwayland_lazy);
+    m_xwayland->setSeat(m_seat);
+
+    connect(m_xwayland, &WXWayland::ready, this, [this, xwaylandOutputManager] () {
+        auto clients = xwaylandOutputManager->targetClients();
+        clients.append(m_xwayland->waylandClient());
+        xwaylandOutputManager->setTargetClients(clients, true);
+    });
+
+    connect(m_xwayland, &WXWayland::surfaceAdded, this, [this, qmlEngine] (WXWaylandSurface *surface) {
+        surface->safeConnect(&QWXWaylandSurface::associate, this, [this, surface, qmlEngine] {
+            auto initProperties = qmlEngine->newObject();
+            initProperties.setProperty("waylandSurface", qmlEngine->toScriptValue(surface));
+
+            m_xwaylandCreator->add(surface, initProperties);
+        });
+        surface->safeConnect(&QWXWaylandSurface::dissociate, this, [this, surface] {
+            m_xwaylandCreator->removeByOwner(surface);
+        });
+
+    });
 
     connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
         if (!backend->hasDrm())
@@ -162,6 +186,11 @@ WQmlCreator *Helper::outputCreator() const
 WQmlCreator *Helper::xdgShellCreator() const
 {
     return m_xdgShellCreator;
+}
+
+WQmlCreator *Helper::xwaylandCreator() const
+{
+    return m_xwaylandCreator;
 }
 
 WSurfaceItem *Helper::resizingItem() const

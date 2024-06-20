@@ -18,8 +18,9 @@ WAYLIB_SERVER_BEGIN_NAMESPACE
 class WSeat;
 class WXWaylandSurface;
 class WXWaylandPrivate;
-class WAYLIB_SERVER_EXPORT WXWayland : public WServerInterface, public WWrapObject
+class WAYLIB_SERVER_EXPORT WXWayland : public WWrapObject, public WServerInterface
 {
+    Q_OBJECT
     W_DECLARE_PRIVATE(WXWayland)
 public:
     enum XcbAtom {
@@ -57,9 +58,19 @@ public:
     WSocket *ownsSocket() const;
     void setOwnsSocket(WSocket *socket);
 
+Q_SIGNALS:
+    void ready();
+    void surfaceAdded(WXWaylandSurface *surface);
+    void surfaceRemoved(WXWaylandSurface *surface);
+    void toplevelAdded(WXWaylandSurface *surface);
+    void toplevelRemoved(WXWaylandSurface *surface);
+
 protected:
-    virtual void surfaceAdded(WXWaylandSurface *surface);
-    virtual void surfaceRemoved(WXWaylandSurface *surface);
+    void addSurface(WXWaylandSurface *surface);
+    void removeSurface(WXWaylandSurface *surface);
+    void addToplevel(WXWaylandSurface *surface);
+    void removeToplevel(WXWaylandSurface *surface);
+    void onIsToplevelChanged();
 
     void create(WServer *server) override;
     void destroy(WServer *server) override;

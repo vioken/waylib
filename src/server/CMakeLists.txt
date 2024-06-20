@@ -245,16 +245,11 @@ if(NOT DISABLE_XWAYLAND)
     list(APPEND SOURCES
         protocols/wxwayland.cpp
         protocols/wxwaylandsurface.cpp
-        qtquick/private/wquickxwayland.cpp
     )
 
     list(APPEND HEADERS
         protocols/wxwayland.h
         protocols/wxwaylandsurface.h
-    )
-
-    list(APPEND PRIVATE_HEADERS
-        qtquick/private/wquickxwayland_p.h
     )
 endif()
 

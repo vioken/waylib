@@ -101,26 +101,6 @@ Item {
             id: virtualKeyboardManagerV1
         }
 
-        XWayland {
-            id: xwayland
-            compositor: Helper.compositor
-            seat: Helper.seat
-            lazy: false
-
-            onReady: function () {
-                // xwaylandXdgOutputManager.targetClients.push(client())
-            }
-
-            onSurfaceAdded: function(surface) {
-                QmlHelper.xwaylandSurfaceManager.add({waylandSurface: surface})
-            }
-            onSurfaceRemoved: function(surface) {
-                QmlHelper.xwaylandSurfaceManager.removeIf(function(prop) {
-                    return prop.waylandSurface === surface
-                })
-            }
-        }
-
         ScreenCopyManager { }
     }
 

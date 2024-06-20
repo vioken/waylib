@@ -45,7 +45,7 @@ Item {
             }
         }
 
-        let xwayland = QmlHelper.xwaylandSurfaceManager.getIf(xwaylandComponent, finder)
+        let xwayland = Helper.xwaylandCreator.getIf(xwaylandComponent, finder)
         if (xwayland) {
             return {
                 shell: xwayland,
@@ -270,7 +270,7 @@ Item {
 
     DynamicCreatorComponent {
         id: xwaylandComponent
-        creator: QmlHelper.xwaylandSurfaceManager
+        creator: Helper.xwaylandCreator
         autoDestroy: false
 
         onObjectRemoved: function (obj) {

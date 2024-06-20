@@ -57,6 +57,7 @@ public:
     QVector<WXWaylandSurface*> surfaceList;
     xcb_connection_t *xcbConnection = nullptr;
     QVector<xcb_atom_t> atoms;
+    QList<WXWaylandSurface*> toplevelSurfaces;
 
     WSocket *socket = nullptr;
 };
@@ -128,24 +129,27 @@ void WXWaylandPrivate::on_new_surface(wlr_xwayland_surface *xwl_surface)
     });
 
     surfaceList.append(surface);
-    q->surfaceAdded(surface);
+    q->addSurface(surface);
 }
 
 void WXWaylandPrivate::on_surface_destroy(QWXWaylandSurface *xwl_surface)
 {
+    W_Q(WXWayland);
+
     auto surface = WXWaylandSurface::fromHandle(xwl_surface);
     Q_ASSERT(surface);
     bool ok = surfaceList.removeOne(surface);
     Q_ASSERT(ok);
-    q_func()->surfaceRemoved(surface);
+    q->removeSurface(surface);
     surface->safeDeleteLater();
 }
 
 WXWayland::WXWayland(QWCompositor *compositor, bool lazy)
     : WWrapObject(*new WXWaylandPrivate(this, compositor, lazy))
 {
+    W_D(WXWayland);
     // TODO: Add setFreezeClientWhenDisable in WSocket
-    d_func()->socket = new WSocket(false, nullptr, this);
+    d->socket = new WSocket(false, nullptr, this);
 }
 
 QByteArray WXWayland::displayName() const
@@ -213,14 +217,52 @@ void WXWayland::setOwnsSocket(WSocket *socket)
     d->socket->setParentSocket(socket);
 }
 
-void WXWayland::surfaceAdded(WXWaylandSurface *)
+void WXWayland::addSurface(WXWaylandSurface *surface)
 {
+    surface->safeConnect(&WXWaylandSurface::isToplevelChanged,
+                        this, &WXWayland::onIsToplevelChanged);
 
+    if (surface->isToplevel())
+        addToplevel(surface);
+    Q_EMIT surfaceAdded(surface);
 }
 
-void WXWayland::surfaceRemoved(WXWaylandSurface *)
+void WXWayland::removeSurface(WXWaylandSurface *surface)
 {
+    removeToplevel(surface);
+    Q_EMIT surfaceRemoved(surface);
+}
 
+
+void WXWayland::addToplevel(WXWaylandSurface *surface)
+{
+    W_D(WXWayland);
+    if (d->toplevelSurfaces.contains(surface))
+        return;
+    d->toplevelSurfaces.append(surface);
+    Q_EMIT toplevelAdded(surface);
+}
+
+void WXWayland::removeToplevel(WXWaylandSurface *surface)
+{
+    W_D(WXWayland);
+    if (d->toplevelSurfaces.removeOne(surface))
+        Q_EMIT toplevelRemoved(surface);
+}
+
+void WXWayland::onIsToplevelChanged()
+{
+    auto surface = qobject_cast<WXWaylandSurface*>(sender());
+    Q_ASSERT(surface);
+
+    if (!surface->surface())
+        return;
+
+    if (surface->isToplevel()) {
+        addToplevel(surface);
+    } else {
+        removeToplevel(surface);
+    }
 }
 
 void WXWayland::create(WServer *server)
@@ -236,8 +278,9 @@ void WXWayland::create(WServer *server)
     QObject::connect(handle, &QWXWayland::newSurface, this, [d] (wlr_xwayland_surface *surface) {
         d->on_new_surface(surface);
     });
-    QObject::connect(handle, &QWXWayland::ready, this, [d] {
+    QObject::connect(handle, &QWXWayland::ready, this, [this, d] {
         d->init();
+        Q_EMIT ready();
     });
 }
 
@@ -250,7 +293,7 @@ void WXWayland::destroy(WServer *server)
     d->surfaceList.clear();
 
     for (auto surface : list) {
-        surfaceRemoved(surface);
+        removeSurface(surface);
         surface->safeDeleteLater();
     }
 }
