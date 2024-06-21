@@ -47,6 +47,7 @@ class Helper : public WSeatEventFilter {
     Q_PROPERTY(WQmlCreator* outputCreator READ outputCreator CONSTANT)
     Q_PROPERTY(WQmlCreator* xdgShellCreator READ xdgShellCreator CONSTANT)
     Q_PROPERTY(WQmlCreator* xwaylandCreator READ xwaylandCreator CONSTANT)
+    Q_PROPERTY(WQmlCreator* layerShellCreator READ layerShellCreator CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -61,6 +62,7 @@ public:
     WQmlCreator *outputCreator() const;
     WQmlCreator *xdgShellCreator() const;
     WQmlCreator *xwaylandCreator() const;
+    WQmlCreator *layerShellCreator() const;
 
     void stopMoveResize();
 
@@ -126,6 +128,7 @@ private:
     WQmlCreator *m_outputCreator = nullptr;
     WQmlCreator *m_xdgShellCreator = nullptr;
     WQmlCreator *m_xwaylandCreator = nullptr;
+    WQmlCreator *m_layerShellCreator = nullptr;
 
     QPointer<WToplevelSurface> m_activateSurface;
     QList<std::pair<WOutput*,OutputInfo*>> m_outputExclusiveZoneInfo;

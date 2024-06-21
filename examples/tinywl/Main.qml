@@ -13,19 +13,6 @@ Item {
     WaylandServer {
         id: server
 
-        LayerShell {
-            id: layerShell
-
-            onSurfaceAdded: function(surface) {
-                QmlHelper.layerSurfaceManager.add({waylandSurface: surface})
-            }
-            onSurfaceRemoved: function(surface) {
-                QmlHelper.layerSurfaceManager.removeIf(function(prop) {
-                    return prop.waylandSurface === surface
-                })
-            }
-        }
-
         GammaControlManager {
             onGammaChanged: function(output, gamma_control, ramp_size, r, g, b) {
                 if (!output.setGammaLut(ramp_size, r, g, b)) {

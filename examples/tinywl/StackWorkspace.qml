@@ -36,7 +36,7 @@ Item {
             }
         }
 
-        let layer = QmlHelper.layerSurfaceManager.getIf(layerComponent, finder)
+        let layer = Helper.layerShellCreator.getIf(layerComponent, finder)
         if (layer) {
             return {
                 shell: layer,
@@ -255,7 +255,7 @@ Item {
 
     DynamicCreatorComponent {
         id: layerComponent
-        creator: QmlHelper.layerSurfaceManager
+        creator: Helper.layerShellCreator
         autoDestroy: false
 
         onObjectRemoved: function (obj) {

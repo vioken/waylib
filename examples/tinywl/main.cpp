@@ -10,6 +10,7 @@
 #include <wrenderhelper.h>
 #include <WBackend>
 #include <wxdgshell.h>
+#include <wlayershell.h>
 #include <wxwayland.h>
 #include <woutputitem.h>
 #include <wquickcursor.h>
@@ -28,6 +29,7 @@
 #include <qwcompositor.h>
 #include <qwsubcompositor.h>
 #include <qwxwaylandsurface.h>
+#include <qwlayershellv1.h>
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -61,6 +63,7 @@ Helper::Helper(QObject *parent)
     , m_outputCreator(new WQmlCreator(this))
     , m_xdgShellCreator(new WQmlCreator(this))
     , m_xwaylandCreator(new WQmlCreator(this))
+    , m_layerShellCreator(new WQmlCreator(this))
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
@@ -87,6 +90,7 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
 
     auto *xdgShell = server->attach<WXdgShell>();
     auto *foreignToplevel = server->attach<WForeignToplevel>(xdgShell);
+    auto *layerShell = server->attach<WLayerShell>();
     server->attach(m_seat);
 
     auto *xdgOutputManager = server->attach<WXdgOutputManager>(m_outputLayout);
@@ -130,6 +134,14 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
         });
 
     });
+
+    connect(layerShell, &WLayerShell::surfaceAdded, this, [this, qmlEngine](WLayerSurface *surface) {
+        auto initProperties = qmlEngine->newObject();
+        initProperties.setProperty("waylandSurface", qmlEngine->toScriptValue(surface));
+        m_layerShellCreator->add(surface, initProperties);
+    });
+
+    connect(layerShell, &WLayerShell::surfaceRemoved, m_layerShellCreator, &WQmlCreator::removeByOwner);
 
     connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
         if (!backend->hasDrm())
@@ -192,6 +204,11 @@ WQmlCreator *Helper::xdgShellCreator() const
 WQmlCreator *Helper::xwaylandCreator() const
 {
     return m_xwaylandCreator;
+}
+ 
+WQmlCreator *Helper::layerShellCreator() const
+{
+    return m_layerShellCreator;
 }
 
 WSurfaceItem *Helper::resizingItem() const

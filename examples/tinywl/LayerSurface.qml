@@ -55,7 +55,6 @@ Item {
             Helper.unregisterExclusiveZone(waylandSurface)
             waylandSurface.surface.leaveOutput(output)
             Helper.onSurfaceLeaveOutput(waylandSurface, surfaceItem, output)
-            waylandSurface.closed()
         }
     }
 

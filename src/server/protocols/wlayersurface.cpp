@@ -115,8 +115,6 @@ void WLayerSurfacePrivate::init()
 void WLayerSurfacePrivate::connect()
 {
     W_Q(WLayerSurface);
-    // TODO(@rewine): Support popup surface
-    //QObject::connect(handle, &QWLayerSurfaceV1::newPopup, q, [this] (QWXdgPopup *popup) {});
 
     surface->safeConnect(&QWSurface::commit, q, [this] () {
         updateLayerProperty();

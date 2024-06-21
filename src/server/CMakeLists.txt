@@ -97,6 +97,7 @@ set(SOURCES
     qtquick/woutputlayer.cpp
     qtquick/wrenderbufferblitter.cpp
     qtquick/wxdgsurfaceitem.cpp
+    qtquick/wlayersurfaceitem.cpp
     qtquick/wxwaylandsurfaceitem.cpp
     qtquick/wqmldynamiccreator.cpp
 
@@ -106,7 +107,6 @@ set(SOURCES
     qtquick/private/wquickcursorshape.cpp
     qtquick/private/wquickgammacontrol.cpp
     qtquick/private/wquickoutputmanager.cpp
-    qtquick/private/wquicklayershell.cpp
     qtquick/private/wquicktextinputv1.cpp
     qtquick/private/wquicktextinputv3.cpp
     qtquick/private/wquickinputmethodv2.cpp
@@ -137,6 +137,7 @@ set(SOURCES
     protocols/wforeigntoplevelv1.cpp
     protocols/wxdgoutput.cpp
     protocols/wxdgdecorationmanager.cpp
+    protocols/wlayershell.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
@@ -187,6 +188,7 @@ set(HEADERS
     qtquick/woutputlayer.h
     qtquick/wrenderbufferblitter.h
     qtquick/wxdgsurfaceitem.h
+    qtquick/wlayersurfaceitem.h
     qtquick/wxwaylandsurfaceitem.h
 
     utils/wtools.h
@@ -206,13 +208,13 @@ set(HEADERS
     protocols/WForeignToplevel
     protocols/wxdgoutput.h
     protocols/WXdgOutput
+    protocols/wlayershell.cpp
 )
 
 set(PRIVATE_HEADERS
     platformplugin/types.h
     kernel/private/wglobal_p.h
     kernel/private/wsurface_p.h
-    kernel/private/wtoplevelsurface_p.h
     qtquick/private/woutputviewport_p.h
     qtquick/private/wquickcoordmapper_p.h
     qtquick/private/woutputitem_p.h
@@ -223,7 +225,6 @@ set(PRIVATE_HEADERS
     qtquick/private/wquickgammacontrol_p.h
     qtquick/private/wquickoutputmanager_p.h
     qtquick/private/wquicktextureproxy_p.h
-    qtquick/private/wquicklayershell_p.h
     qtquick/private/wquicktextinputv1_p.h
     qtquick/private/wquicktextinputv3_p.h
     qtquick/private/wquickinputmethodv2_p.h

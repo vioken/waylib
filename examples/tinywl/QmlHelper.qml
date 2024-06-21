@@ -8,7 +8,6 @@ import Waylib.Server
 
 Item {
     property WaylandSocket masterSocket
-    property DynamicCreator layerSurfaceManager: layerSurfaceManager
     property DynamicCreator inputPopupSurfaceManager: inputPopupSurfaceManager
 
     function printStructureObject(obj) {
@@ -26,31 +25,6 @@ Item {
         }
 
         return '{\n' + json + '}'
-    }
-
-    DynamicCreator {
-        id: layerSurfaceManager
-        onObjectAdded: function(delegate, obj, properties) {
-            console.info(`New Layer surface item ${obj} from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
-
-        onObjectRemoved: function(delegate, obj, properties) {
-            console.info(`Layer surface item ${obj} is removed, it's create from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
-    }
-
-    DynamicCreator {
-        onObjectAdded: function(delegate, obj, properties) {
-            console.info(`New X11 surface item ${obj} from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
-
-        onObjectRemoved: function(delegate, obj, properties) {
-            console.info(`X11 surface item ${obj} is removed, it's create from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
     }
 
     DynamicCreator {

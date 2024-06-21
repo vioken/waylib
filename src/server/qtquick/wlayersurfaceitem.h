@@ -12,23 +12,6 @@
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 class WLayerSurface;
-class WQuickLayerShellPrivate;
-class WAYLIB_SERVER_EXPORT WQuickLayerShell: public WQuickWaylandServerInterface, public WObject
-{
-    Q_OBJECT
-    W_DECLARE_PRIVATE(WQuickLayerShell)
-    QML_NAMED_ELEMENT(LayerShell)
-
-public:
-    explicit WQuickLayerShell(QObject *parent = nullptr);
-
-Q_SIGNALS:
-    void surfaceAdded(WLayerSurface *surface);
-    void surfaceRemoved(WLayerSurface *surface);
-
-private:
-    WServerInterface *create() override;
-};
 
 class WAYLIB_SERVER_EXPORT WLayerSurfaceItem : public WSurfaceItem
 {
@@ -39,7 +22,7 @@ public:
     explicit WLayerSurfaceItem(QQuickItem *parent = nullptr);
     ~WLayerSurfaceItem();
 
-    inline WLayerSurface* layerSurface() const { return qobject_cast<WLayerSurface*>(shellSurface()); }
+    WLayerSurface *layerSurface() const;
 
 private:
     Q_SLOT void onSurfaceCommit() override;
