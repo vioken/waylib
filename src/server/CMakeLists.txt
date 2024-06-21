@@ -209,6 +209,7 @@ set(HEADERS
     protocols/wxdgoutput.h
     protocols/WXdgOutput
     protocols/wlayershell.cpp
+    protocols/WInputMethodHelper
     protocols/winputmethodhelper.h
     protocols/winputpopupsurface.h
 )
