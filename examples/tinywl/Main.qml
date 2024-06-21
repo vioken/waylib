@@ -100,8 +100,6 @@ Item {
         VirtualKeyboardManagerV1 {
             id: virtualKeyboardManagerV1
         }
-
-        ScreenCopyManager { }
     }
 
     Binding {

@@ -83,6 +83,7 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     // free follow display
     m_compositor = QWCompositor::create(server->handle(), m_renderer, 6);
     QWSubcompositor::create(server->handle());
+    QWScreenCopyManagerV1::create(server->handle());
 
     auto *xdgShell = server->attach<WXdgShell>();
     auto *foreignToplevel = server->attach<WForeignToplevel>(xdgShell);

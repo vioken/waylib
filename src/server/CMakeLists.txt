@@ -115,7 +115,6 @@ set(SOURCES
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
     qtquick/private/wquickfractionalscalemanagerv1.cpp
-    qtquick/private/wquickscreencopy.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
     ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.c
@@ -234,7 +233,6 @@ set(PRIVATE_HEADERS
     qtquick/private/wbufferrenderer_p.h
     qtquick/private/wrenderbuffernode_p.h
     qtquick/private/wquickfractionalscalemanagerv1_p.h
-    qtquick/private/wquickscreencopy_p.h
     qtquick/private/wsurfaceitem_p.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.h
