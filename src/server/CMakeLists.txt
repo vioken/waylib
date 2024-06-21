@@ -100,6 +100,7 @@ set(SOURCES
     qtquick/wlayersurfaceitem.cpp
     qtquick/wxwaylandsurfaceitem.cpp
     qtquick/wqmldynamiccreator.cpp
+    qtquick/winputpopupsurfaceitem.cpp
 
     qtquick/private/wquickcoordmapper.cpp
     qtquick/private/wquicksocket.cpp
@@ -107,11 +108,6 @@ set(SOURCES
     qtquick/private/wquickcursorshape.cpp
     qtquick/private/wquickgammacontrol.cpp
     qtquick/private/wquickoutputmanager.cpp
-    qtquick/private/wquicktextinputv1.cpp
-    qtquick/private/wquicktextinputv3.cpp
-    qtquick/private/wquickinputmethodv2.cpp
-    qtquick/private/wquickvirtualkeyboardv1.cpp
-    qtquick/private/winputmethodhelper.cpp
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
     qtquick/private/wquickfractionalscalemanagerv1.cpp
@@ -138,8 +134,12 @@ set(SOURCES
     protocols/wxdgoutput.cpp
     protocols/wxdgdecorationmanager.cpp
     protocols/wlayershell.cpp
-
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
+    protocols/winputmethodhelper.cpp
+    protocols/winputpopupsurface.cpp
+    protocols/private/winputmethodv2.cpp
+    protocols/private/wtextinputv1.cpp
+    protocols/private/wtextinputv3.cpp
+    protocols/private/wvirtualkeyboardv1.cpp
 )
 
 set(HEADERS
@@ -190,6 +190,7 @@ set(HEADERS
     qtquick/wxdgsurfaceitem.h
     qtquick/wlayersurfaceitem.h
     qtquick/wxwaylandsurfaceitem.h
+    qtquick/winputpopupsurfaceitem.h
 
     utils/wtools.h
     utils/wthreadutils.h
@@ -209,6 +210,8 @@ set(HEADERS
     protocols/wxdgoutput.h
     protocols/WXdgOutput
     protocols/wlayershell.cpp
+    protocols/winputmethodhelper.h
+    protocols/winputpopupsurface.h
 )
 
 set(PRIVATE_HEADERS
@@ -225,12 +228,6 @@ set(PRIVATE_HEADERS
     qtquick/private/wquickgammacontrol_p.h
     qtquick/private/wquickoutputmanager_p.h
     qtquick/private/wquicktextureproxy_p.h
-    qtquick/private/wquicktextinputv1_p.h
-    qtquick/private/wquicktextinputv3_p.h
-    qtquick/private/wquickinputmethodv2_p.h
-    qtquick/private/wquickvirtualkeyboardv1_p.h
-    qtquick/private/winputmethodcommon_p.h
-    qtquick/private/winputmethodhelper_p.h
     qtquick/private/wbufferrenderer_p.h
     qtquick/private/wrenderbuffernode_p.h
     qtquick/private/wquickfractionalscalemanagerv1_p.h
@@ -238,6 +235,12 @@ set(PRIVATE_HEADERS
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.h
     ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.h
+
+    protocols/private/winputmethodv2_p.h
+    protocols/private/wtextinput_p.h
+    protocols/private/wtextinputv1_p.h
+    protocols/private/wtextinputv3_p.h
+    protocols/private/wvirtualkeyboardv1_p.h
 )
 
 if(NOT DISABLE_XWAYLAND)
@@ -325,6 +328,7 @@ target_include_directories(${TARGET}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/qtquick/private>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/utils>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/protocols>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/protocols/private>
         $<INSTALL_INTERFACE:${WAYLIB_INCLUDE_INSTALL_DIR}>
     PRIVATE
         ${Qt6Gui_PRIVATE_INCLUDE_DIRS}

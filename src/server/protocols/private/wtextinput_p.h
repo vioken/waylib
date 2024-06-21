@@ -10,7 +10,7 @@
 #include <QQmlEngine>
 
 Q_MOC_INCLUDE("wsurface.h")
-Q_MOC_INCLUDE("wquickinputmethodv2_p.h")
+Q_MOC_INCLUDE("winputmethodv2_p.h")
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
@@ -81,12 +81,12 @@ Q_ENUM_NS(KeyboardModifier)
 
 class WSeat;
 class WSurface;
-class WQuickInputMethodV2;
-class WQuickTextInputPrivate;
-class WQuickTextInput : public QObject, public WObject
+class WInputMethodV2;
+class WTextInputPrivate;
+class WTextInput : public QObject, public WObject
 {
     Q_OBJECT
-    W_DECLARE_PRIVATE(WQuickTextInput)
+    W_DECLARE_PRIVATE(WTextInput)
 public:
     virtual WSeat *seat() const = 0;
     virtual WSurface *focusedSurface() const = 0;
@@ -98,8 +98,8 @@ public:
     virtual IME::ContentPurpose contentPurpose() const { return IME::CP_Normal; }
     virtual QRect cursorRect() const = 0;
     virtual IME::Features features() const = 0;
-    inline explicit WQuickTextInput(QObject *parent = nullptr);
-    inline explicit WQuickTextInput(WQuickTextInputPrivate& d, QObject *parent = nullptr);
+    inline explicit WTextInput(QObject *parent = nullptr);
+    inline explicit WTextInput(WTextInputPrivate& d, QObject *parent = nullptr);
 
 Q_SIGNALS:
     void entityAboutToDestroy();
@@ -113,22 +113,22 @@ public Q_SLOTS:
     virtual void sendEnter(WSurface *surface) = 0;
     virtual void sendLeave() = 0;
     virtual void sendDone() = 0;
-    virtual void handleIMCommitted(WQuickInputMethodV2 *im) = 0;
+    virtual void handleIMCommitted(WInputMethodV2 *im) = 0;
 };
 
-class WQuickTextInputPrivate : public WObjectPrivate {
+class WTextInputPrivate : public WObjectPrivate {
 public:
-    W_DECLARE_PUBLIC(WQuickTextInput)
-    explicit WQuickTextInputPrivate(WQuickTextInput *qq)
+    W_DECLARE_PUBLIC(WTextInput)
+    explicit WTextInputPrivate(WTextInput *qq)
         : WObjectPrivate(qq)
     {}
 };
 
-WQuickTextInput::WQuickTextInput(QObject *parent)
-    : WQuickTextInput(*new WQuickTextInputPrivate(this), parent)
+WTextInput::WTextInput(QObject *parent)
+    : WTextInput(*new WTextInputPrivate(this), parent)
 { }
 
-inline WQuickTextInput::WQuickTextInput(WQuickTextInputPrivate &d, QObject *parent)
+inline WTextInput::WTextInput(WTextInputPrivate &d, QObject *parent)
     : QObject(parent)
     , WObject(d)
 { }

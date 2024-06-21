@@ -408,15 +408,14 @@ Item {
 
     DynamicCreatorComponent {
         id: inputPopupComponent
-        creator: QmlHelper.inputPopupSurfaceManager
+        creator: Helper.inputPopupCreator
 
         InputPopupSurface {
-            required property InputMethodHelper inputMethodHelper
             required property WaylandInputPopupSurface popupSurface
 
+            parent: getSurfaceItemFromWaylandSurface(popupSurface.parentSurface)
             id: inputPopupSurface
             shellSurface: popupSurface
-            helper: inputMethodHelper
         }
     }
 }

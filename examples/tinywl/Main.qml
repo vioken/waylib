@@ -71,22 +71,6 @@ Item {
                 Helper.startDemoClient(socketFile)
             }
         }
-
-        InputMethodManagerV2 {
-            id: inputMethodManagerV2
-        }
-
-        TextInputManagerV1 {
-            id: textInputManagerV1
-        }
-
-        TextInputManagerV3 {
-            id: textInputManagerV3
-        }
-
-        VirtualKeyboardManagerV1 {
-            id: virtualKeyboardManagerV1
-        }
     }
 
     Binding {
@@ -99,24 +83,6 @@ Item {
         target: QmlHelper
         property: "masterSocket"
         value: masterSocket
-    }
-
-    InputMethodHelper {
-        id: inputMethodHelperSeat0
-        seat: Helper.seat
-        textInputManagerV1: textInputManagerV1
-        textInputManagerV3: textInputManagerV3
-        inputMethodManagerV2: inputMethodManagerV2
-        virtualKeyboardManagerV1: virtualKeyboardManagerV1
-        activeFocusItem: renderWindow.activeFocusItem.parent
-        onInputPopupSurfaceV2Added: function (surface) {
-            QmlHelper.inputPopupSurfaceManager.add({ popupSurface: surface, inputMethodHelper: inputMethodHelperSeat0 })
-        }
-        onInputPopupSurfaceV2Removed: function (surface) {
-            QmlHelper.inputPopupSurfaceManager.removeIf(function (prop) {
-                return prop.popupSurface === surface
-            })
-        }
     }
 
     OutputRenderWindow {

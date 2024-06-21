@@ -7,6 +7,7 @@
 #include <WOutput>
 #include <WSurfaceItem>
 #include <wxdgsurface.h>
+#include <winputpopupsurface.h>
 #include <wrenderhelper.h>
 #include <WBackend>
 #include <wxdgshell.h>
@@ -16,6 +17,7 @@
 #include <wquickcursor.h>
 #include <woutputrenderwindow.h>
 #include <wqmldynamiccreator.h>
+#include <winputmethodhelper.h>
 #include <WForeignToplevel>
 #include <WXdgOutput>
 #include <wxwaylandsurface.h>
@@ -64,6 +66,7 @@ Helper::Helper(QObject *parent)
     , m_xdgShellCreator(new WQmlCreator(this))
     , m_xwaylandCreator(new WQmlCreator(this))
     , m_layerShellCreator(new WQmlCreator(this))
+    , m_inputPopupCreator(new WQmlCreator(this))
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
@@ -169,6 +172,16 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
         m_seat->detachInputDevice(device);
     });
 
+    m_inputMethodHelper = new WInputMethodHelper(server, m_seat);
+
+    connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Added, this, [this, qmlEngine](WInputPopupSurface *inputPopup) {
+        auto initProperties = qmlEngine->newObject();
+        initProperties.setProperty("popupSurface", qmlEngine->toScriptValue(inputPopup));
+        m_inputPopupCreator->add(inputPopup, initProperties);
+    });
+
+    connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Removed, m_inputPopupCreator, &WQmlCreator::removeByOwner);
+
     Q_EMIT compositorChanged();
 
     window->init(m_renderer, m_allocator);
@@ -205,10 +218,15 @@ WQmlCreator *Helper::xwaylandCreator() const
 {
     return m_xwaylandCreator;
 }
- 
+
 WQmlCreator *Helper::layerShellCreator() const
 {
     return m_layerShellCreator;
+}
+
+WQmlCreator *Helper::inputPopupCreator() const
+{
+    return m_inputPopupCreator;
 }
 
 WSurfaceItem *Helper::resizingItem() const
