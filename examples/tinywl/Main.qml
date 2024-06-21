@@ -60,29 +60,12 @@ Item {
         }
 
         CursorShapeManager { }
-
-        WaylandSocket {
-            id: masterSocket
-
-            freezeClientWhenDisable: false
-
-            Component.onCompleted: {
-                console.info("Listing on:", socketFile)
-                Helper.startDemoClient(socketFile)
-            }
-        }
     }
 
     Binding {
         target: Helper.seat
         property: "keyboardFocus"
         value: Helper.getFocusSurfaceFrom(renderWindow.activeFocusItem)
-    }
-
-    Binding {
-        target: QmlHelper
-        property: "masterSocket"
-        value: masterSocket
     }
 
     OutputRenderWindow {

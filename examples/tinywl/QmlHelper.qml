@@ -7,7 +7,6 @@ import QtQuick
 import Waylib.Server
 
 Item {
-    property WaylandSocket masterSocket
     property DynamicCreator inputPopupSurfaceManager: inputPopupSurfaceManager
 
     function printStructureObject(obj) {

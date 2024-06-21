@@ -103,7 +103,7 @@ set(SOURCES
     qtquick/winputpopupsurfaceitem.cpp
 
     qtquick/private/wquickcoordmapper.cpp
-    qtquick/private/wquicksocket.cpp
+    qtquick/private/wquicksocketmapper.cpp
     qtquick/private/wqmlhelper.cpp
     qtquick/private/wquickcursorshape.cpp
     qtquick/private/wquickgammacontrol.cpp
@@ -220,7 +220,7 @@ set(PRIVATE_HEADERS
     qtquick/private/woutputviewport_p.h
     qtquick/private/wquickcoordmapper_p.h
     qtquick/private/woutputitem_p.h
-    qtquick/private/wquicksocket_p.h
+    qtquick/private/wquicksocketmapper_p.h
     qtquick/private/wqmldynamiccreator_p.h
     qtquick/private/wqmlhelper_p.h
     qtquick/private/wquickcursorshape_p.h

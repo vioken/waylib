@@ -13,6 +13,7 @@
 #include <wquickoutputlayout.h>
 #include <wxwayland.h>
 #include <winputmethodhelper.h>
+#include <wsocket.h>
 
 #include <QList>
 
@@ -88,6 +89,8 @@ public:
     Q_INVOKABLE void onSurfaceLeaveOutput(WToplevelSurface *surface, WSurfaceItem *surfaceItem, WOutput *output);
     std::pair<WOutput*,OutputInfo*> getFirstOutputOfSurface(WToplevelSurface *surface);
 
+    // Socket
+    Q_INVOKABLE void setSocketEnabled(bool newEnabled);
 public Q_SLOTS:
     void startMove(WToplevelSurface *surface, WSurfaceItem *shell, WSeat *seat, int serial);
     void startResize(WToplevelSurface *surface, WSurfaceItem *shell, WSeat *seat, Qt::Edges edge, int serial);
@@ -129,6 +132,7 @@ private:
     QPointer<WXWayland> m_xwayland;
     WXdgDecorationManager *m_xdgDecorationManager = nullptr;
     WInputMethodHelper *m_inputMethodHelper = nullptr;
+    QPointer<WSocket> m_socket;
 
     WQmlCreator *m_outputCreator = nullptr;
     WQmlCreator *m_xdgShellCreator = nullptr;

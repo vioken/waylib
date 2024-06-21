@@ -4,6 +4,7 @@
 import QtQuick
 import QtQuick.Controls
 import Waylib.Server
+import Tinywl
 
 OutputItem {
     id: rootOutputItem
@@ -203,11 +204,9 @@ OutputItem {
 
         Switch {
             text: "Socket"
+            checked: true
             onCheckedChanged: {
-                QmlHelper.masterSocket.enabled = checked
-            }
-            Component.onCompleted: {
-                checked = QmlHelper.masterSocket.enabled
+                Helper.setSocketEnabled(checked)
             }
         }
 

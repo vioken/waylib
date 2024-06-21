@@ -195,6 +195,16 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
 
     window->init(m_renderer, m_allocator);
     m_xdgDecorationManager = server->attach<WXdgDecorationManager>();
+
+    bool freezeClientWhenDisable = false;
+    m_socket = new WSocket(freezeClientWhenDisable);
+    if (m_socket->autoCreate()) {
+        server->addSocket(m_socket);
+    } else {
+        delete m_socket;
+        qCritical("Failed to create socket");
+    }
+
     backend->handle()->start();
 }
 
@@ -432,6 +442,14 @@ std::pair<WOutput*,OutputInfo*> Helper::getFirstOutputOfSurface(WToplevelSurface
             return zoneInfo;
     }
     return std::make_pair(nullptr, nullptr);
+}
+
+void Helper::setSocketEnabled(bool newEnabled)
+{
+    if (m_socket)
+        m_socket->setEnabled(newEnabled);
+    else
+        qWarning() << "Can't set enabled for empty socket!";
 }
 
 WXdgDecorationManager *Helper::xdgDecorationManager() const
