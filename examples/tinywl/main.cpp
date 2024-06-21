@@ -32,6 +32,7 @@
 #include <qwsubcompositor.h>
 #include <qwxwaylandsurface.h>
 #include <qwlayershellv1.h>
+#include <qwscreencopyv1.h>
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -114,7 +115,15 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
         }
     });
     connect(xdgShell, &WXdgShell::surfaceRemoved, m_xdgShellCreator, &WQmlCreator::removeByOwner);
-    connect(xdgShell, &WXdgShell::surfaceRemoved, foreignToplevel, &WForeignToplevel::removeSurface);
+    connect(xdgShell,
+            &WXdgShell::surfaceRemoved,
+            foreignToplevel,
+            [foreignToplevel](WXdgSurface *surface) {
+                if (!surface->isPopup()) {
+                    foreignToplevel->removeSurface(surface);
+                }
+            });
+
     auto xwayland_lazy = true;
     m_xwayland = server->attach<WXWayland>(m_compositor, xwayland_lazy);
     m_xwayland->setSeat(m_seat);
