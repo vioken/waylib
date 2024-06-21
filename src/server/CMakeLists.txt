@@ -203,7 +203,6 @@ set(HEADERS
     protocols/WXdgSurface
     protocols/wlayersurface.h
     protocols/wxdgdecorationmanager.h
-    protocols/private/wxdgdecorationmanager_p.h
     protocols/WLayerSurface
     protocols/wforeigntoplevelv1.h
     protocols/WForeignToplevel

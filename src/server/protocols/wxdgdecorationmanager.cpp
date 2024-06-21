@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "wxdgdecorationmanager.h"
-#include "private/wxdgdecorationmanager_p.h"
 #include "wsurface.h"
 #include "wxdgsurface.h"
 #include "private/wglobal_p.h"
@@ -201,30 +200,6 @@ WXdgDecorationManager::DecorationMode WXdgDecorationManager::modeBySurface(WSurf
 {
     W_DC(WXdgDecorationManager);
     return d->modeBySurface(surface);
-}
-
-WXdgDecorationManagerAttached::WXdgDecorationManagerAttached(WSurface *target, WXdgDecorationManager *manager)
-    : m_target(target)
-    , m_manager(manager)
-{
-    QObject::connect(m_manager, &WXdgDecorationManager::surfaceModeChanged, this, [this] (WSurface *surface, auto mode) {
-        if (m_target == surface) {
-            Q_EMIT serverDecorationEnabledChanged();
-        }
-    });
-}
-
-bool WXdgDecorationManagerAttached::serverDecorationEnabled() const {
-    return m_manager->modeBySurface(m_target) == WXdgDecorationManager::Server;
-}
-
-WXdgDecorationManagerAttached *WXdgDecorationManager::qmlAttachedProperties(QObject *target)
-{
-    if (auto *surface = qobject_cast<WXdgSurface*>(target)) {
-        return new WXdgDecorationManagerAttached(surface->surface(), XDG_DECORATION_MANAGER);
-    }
-
-    return nullptr;
 }
 
 WAYLIB_SERVER_END_NAMESPACE

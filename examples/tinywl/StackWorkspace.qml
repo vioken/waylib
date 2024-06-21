@@ -85,7 +85,6 @@ Item {
             property var doDestroy: helper.doDestroy
             property var cancelMinimize: helper.cancelMinimize
             property int outputCounter: 0
-            property var surfaceDecorationMapper: toplevelSurfaceItem.waylandSurface.XdgDecorationManager
 
             topPadding: decoration.enable ? decoration.topMargin : 0
             bottomPadding: decoration.enable ? decoration.bottomMargin : 0
@@ -94,11 +93,23 @@ Item {
 
             WindowDecoration {
                 id: decoration
-                property var enable: surfaceDecorationMapper.serverDecorationEnabled
+                property var enable
                 anchors.fill: parent
                 z: SurfaceItem.ZOrder.ContentItem - 1
                 visible: enable
                 surface: waylandSurface
+
+                Connections {
+                    target: QmlHelper.xdgDecorationManager
+                    onSurfaceModeChanged: {
+                        if (waylandSurface === surface)
+                            enable = mode === XdgDecorationManager.Client
+                    }
+                }
+
+                Component.onCompleted: {
+                    enable = QmlHelper.xdgDecorationManager.modeBySurface(waylandSurface) === XdgDecorationManager.Client
+                }
             }
 
             OutputLayoutItem {

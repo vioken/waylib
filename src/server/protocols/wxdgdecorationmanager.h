@@ -12,7 +12,6 @@ WAYLIB_SERVER_BEGIN_NAMESPACE
 
 class WSurface;
 class WXdgDecorationManagerPrivate;
-class WXdgDecorationManagerAttached;
 class WAYLIB_SERVER_EXPORT WXdgDecorationManager : public QObject, public WObject, public WServerInterface
 {
     Q_OBJECT
@@ -38,8 +37,6 @@ public:
     void setModeBySurface(WSurface *surface, DecorationMode mode);
 
     DecorationMode modeBySurface(WSurface* surface) const;
-
-    static WXdgDecorationManagerAttached *qmlAttachedProperties(QObject *target);
 
 Q_SIGNALS:
     void surfaceModeChanged(WSurface *surface, DecorationMode mode);
