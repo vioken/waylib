@@ -94,6 +94,32 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
         qFatal("Failed to create renderer");
     }
 
+    connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
+        if (!backend->hasDrm())
+            output->setForceSoftwareCursor(true); // Test
+        allowNonDrmOutputAutoChangeMode(output);
+
+        auto initProperties = qmlEngine->newObject();
+        initProperties.setProperty("waylandOutput", qmlEngine->toScriptValue(output));
+        initProperties.setProperty("waylandCursor", qmlEngine->toScriptValue(m_cursor));
+        initProperties.setProperty("layout", qmlEngine->toScriptValue(outputLayout()));
+        initProperties.setProperty("x", qmlEngine->toScriptValue(outputLayout()->implicitWidth()));
+
+        m_outputCreator->add(output, initProperties);
+    });
+
+    connect(backend, &WBackend::outputRemoved, this, [this] (WOutput *output) {
+        m_outputCreator->removeByOwner(output);
+    });
+
+    connect(backend, &WBackend::inputAdded, this, [this] (WInputDevice *device) {
+        m_seat->attachInputDevice(device);
+    });
+
+    connect(backend, &WBackend::inputRemoved, this, [this] (WInputDevice *device) {
+        m_seat->detachInputDevice(device);
+    });
+
     m_allocator = QWAllocator::autoCreate(backend->handle(), m_renderer);
     m_renderer->initWlDisplay(server->handle());
 
@@ -164,32 +190,6 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     });
 
     connect(layerShell, &WLayerShell::surfaceRemoved, m_layerShellCreator, &WQmlCreator::removeByOwner);
-
-    connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
-        if (!backend->hasDrm())
-            output->setForceSoftwareCursor(true); // Test
-        allowNonDrmOutputAutoChangeMode(output);
-
-        auto initProperties = qmlEngine->newObject();
-        initProperties.setProperty("waylandOutput", qmlEngine->toScriptValue(output));
-        initProperties.setProperty("waylandCursor", qmlEngine->toScriptValue(m_cursor));
-        initProperties.setProperty("layout", qmlEngine->toScriptValue(outputLayout()));
-        initProperties.setProperty("x", qmlEngine->toScriptValue(outputLayout()->implicitWidth()));
-
-        m_outputCreator->add(output, initProperties);
-    });
-
-    connect(backend, &WBackend::outputRemoved, this, [this] (WOutput *output) {
-        m_outputCreator->removeByOwner(output);
-    });
-
-    connect(backend, &WBackend::inputAdded, this, [this] (WInputDevice *device) {
-        m_seat->attachInputDevice(device);
-    });
-
-    connect(backend, &WBackend::inputRemoved, this, [this] (WInputDevice *device) {
-        m_seat->detachInputDevice(device);
-    });
 
     m_inputMethodHelper = new WInputMethodHelper(server, m_seat);
 

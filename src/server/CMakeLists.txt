@@ -83,7 +83,6 @@ set(SOURCES
 
     qtquick/wsurfaceitem.cpp
     qtquick/woutputhelper.cpp
-    qtquick/wquickwaylandserver.cpp
     qtquick/woutputrenderwindow.cpp
     qtquick/woutputviewport.cpp
     qtquick/woutputitem.cpp
@@ -176,7 +175,6 @@ set(HEADERS
     qtquick/woutputhelper.h
     qtquick/woutputlayoutitem.h
     qtquick/wquickoutputlayout.h
-    qtquick/wquickwaylandserver.h
     qtquick/woutputrenderwindow.h
     qtquick/woutputviewport.h
     qtquick/woutputitem.h

@@ -120,7 +120,7 @@ QQmlComponent *WQmlCreatorComponent::delegate() const
 void WQmlCreatorComponent::setDelegate(QQmlComponent *component)
 {
     if (m_delegate) {
-        qmlEngine(this)->throwError(QJSValue::GenericError, "Property 'delegate' can only be assigned once.");
+        component->engine()->throwError(QJSValue::GenericError, "Property 'delegate' can only be assigned once.");
         return;
     }
 
@@ -543,13 +543,10 @@ int WQmlCreator::indexOfOwner(QObject *owner) const
 
 int WQmlCreator::indexOf(QJSValue function) const
 {
-    auto engine = qmlEngine(this);
-    Q_ASSERT(engine);
-
     W_DC(WQmlCreator);
 
     for (int i = 0; i < d->datas.size(); ++i) {
-        if (function.call({engine->toScriptValue(d->datas.at(i)->properties)}).toBool())
+        if (function.call({d->datas.at(i)->properties}).toBool())
             return i;
     }
 

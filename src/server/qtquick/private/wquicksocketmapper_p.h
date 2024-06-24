@@ -19,6 +19,7 @@ class WAYLIB_SERVER_EXPORT WQuickSocketAttached : public QObject
     Q_PROPERTY(WSocket* socket READ socket CONSTANT)
     Q_PROPERTY(WSocket* rootSocket READ rootSocket CONSTANT)
     QML_NAMED_ELEMENT(WaylandSocket)
+    QML_UNCREATABLE("Only use for the attached properties.")
     QML_ATTACHED(WQuickSocketAttached)
 
 public:
