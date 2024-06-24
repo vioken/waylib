@@ -21,6 +21,8 @@
 #include <WForeignToplevel>
 #include <WXdgOutput>
 #include <wxwaylandsurface.h>
+#include <woutputmanagerv1.h>
+#include <wcursorshapemanagerv1.h>
 
 #include <qwbackend.h>
 #include <qwdisplay.h>
@@ -33,6 +35,10 @@
 #include <qwxwaylandsurface.h>
 #include <qwlayershellv1.h>
 #include <qwscreencopyv1.h>
+#include <qwfractionalscalemanagerv1.h>
+#include <qwgammacontorlv1.h>
+#include <woutputitem.h>
+#include <woutputviewport.h>
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -45,12 +51,16 @@
 #include <QLoggingCategory>
 #include <QKeySequence>
 #include <QQmlComponent>
+#include <QVariant>
 
 extern "C" {
 #define static
 #include <wlr/types/wlr_output.h>
 #undef static
+#include <wlr/types/wlr_gamma_control_v1.h>
 }
+
+#define WLR_FRACTIONAL_SCALE_V1_VERSION 1
 
 inline QPointF getItemGlobalPosition(QQuickItem *item)
 {
@@ -204,6 +214,64 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
         delete m_socket;
         qCritical("Failed to create socket");
     }
+
+    m_gammaControlManager = QWGammaControlManagerV1::create(server->handle());
+    connect(m_gammaControlManager, &QWGammaControlManagerV1::gammaChanged, this, [this]
+            (wlr_gamma_control_manager_v1_set_gamma_event *event) {
+        auto *qwOutput = QWOutput::from(event->output);
+        auto *wOutput = WOutput::fromHandle(qwOutput);
+        size_t ramp_size = 0;
+        uint16_t *r = nullptr, *g = nullptr, *b = nullptr;
+        wlr_gamma_control_v1 *gamma_control = event->control;
+        if (gamma_control) {
+            ramp_size = gamma_control->ramp_size;
+            r = gamma_control->table;
+            g = gamma_control->table + gamma_control->ramp_size;
+            b = gamma_control->table + 2 * gamma_control->ramp_size;
+            if (!wOutput->setGammaLut(ramp_size, r, g, b)) {
+                QWGammaControl::from(gamma_control)->sendFailedAndDestroy();
+            }
+        }
+    });
+    m_wOutputManager = server->attach<WOutputManagerV1>();
+    connect(m_wOutputManager, &WOutputManagerV1::requestTestOrApply, this, [this]
+            (QWOutputConfigurationV1 *config, bool onlyTest) {
+        QList<WOutputState> states = m_wOutputManager->stateListPending();
+        bool ok = true;
+        for (auto state : states) {
+            WOutput *output = state.output;
+            output->enable(state.enabled);
+            if (state.enabled) {
+                if (state.mode)
+                    output->setMode(state.mode);
+                else
+                    output->setCustomMode(state.customModeSize, state.customModeRefresh);
+
+                output->enableAdaptiveSync(state.adaptiveSyncEnabled);
+                if (!onlyTest) {
+                    WOutputItem *item = WOutputItem::getOutputItem(output);
+                    if (item) {
+                        WOutputViewport *viewport = item->property("onscreenViewport").value<WOutputViewport *>();
+                        if (viewport) {
+                                    viewport->rotateOutput(state.transform);
+                                    viewport->setOutputScale(state.scale);
+                                    viewport->setX(state.x);
+                                    viewport->setY(state.y);
+                        }
+                    }
+                }
+            }
+
+            if (onlyTest)
+                ok &= output->test();
+            else
+                ok &= output->commit();
+        }
+        m_wOutputManager->sendResult(config, ok);
+    });
+
+    m_cursorShapeManager = server->attach<WCursorShapeManagerV1>();
+    m_fractionalScaleManagerV1 = QWFractionalScaleManagerV1::create(server->handle(), WLR_FRACTIONAL_SCALE_V1_VERSION);
 
     backend->handle()->start();
 }

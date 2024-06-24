@@ -469,9 +469,14 @@ WOutputItemAttached *WOutputItem::qmlAttachedProperties(QObject *target)
     if (!output)
         return nullptr;
     auto attached = new WOutputItemAttached(output);
-    attached->setItem(qvariant_cast<WOutputItem*>(output->property(DATA_OF_WOUPTUT)));
+    attached->setItem(getOutputItem(output));
 
     return attached;
+}
+
+WOutputItem *WOutputItem::getOutputItem(WOutput *output)
+{
+    return qvariant_cast<WOutputItem*>(output->property(DATA_OF_WOUPTUT)) ;
 }
 
 WOutput *WOutputItem::output() const

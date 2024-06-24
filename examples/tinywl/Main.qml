@@ -12,54 +12,6 @@ Item {
 
     WaylandServer {
         id: server
-
-        GammaControlManager {
-            onGammaChanged: function(output, gamma_control, ramp_size, r, g, b) {
-                if (!output.setGammaLut(ramp_size, r, g, b)) {
-                    sendFailedAndDestroy(gamma_control);
-                };
-            }
-        }
-
-        OutputManager {
-            id: outputManagerV1
-
-            onRequestTestOrApply: function(config, onlyTest) {
-                var states = outputManagerV1.stateListPending()
-                var ok = true
-
-                for (const i in states) {
-                    let output = states[i].output
-                    output.enable(states[i].enabled)
-                    if (states[i].enabled) {
-                        if (states[i].mode)
-                            output.setMode(states[i].mode)
-                        else
-                            output.setCustomMode(states[i].custom_mode_size,
-                                                  states[i].custom_mode_refresh)
-
-                        output.enableAdaptiveSync(states[i].adaptive_sync_enabled)
-                        if (!onlyTest) {
-                            let outputDelegate = output.OutputItem.item
-                            outputDelegate.setTransform(states[i].transform)
-                            outputDelegate.setScale(states[i].scale)
-                            outputDelegate.x = states[i].x
-                            outputDelegate.y = states[i].y
-                        }
-                    }
-
-                    if (onlyTest) {
-                        ok &= output.test()
-                        output.rollback()
-                    } else {
-                        ok &= output.commit()
-                    }
-                }
-                outputManagerV1.sendResult(config, ok)
-            }
-        }
-
-        CursorShapeManager { }
     }
 
     Binding {

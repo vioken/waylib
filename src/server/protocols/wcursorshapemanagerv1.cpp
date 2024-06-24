@@ -1,7 +1,7 @@
 // Copyright (C) 2023 rewine <luhongxu@deepin.org>.
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
-#include "wquickcursorshape_p.h"
+#include "wcursorshapemanagerv1.h"
 #include "wcursor.h"
 #include "wseat.h"
 #include "private/wglobal_p.h"
@@ -14,22 +14,31 @@ extern "C" {
 #include <wlr/types/wlr_seat.h>
 }
 
+#define CURSOR_SHAPE_MANAGER_V1_VERSION 1
+
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 using QW_NAMESPACE::QWCursorShapeManagerV1;
 
-class WQuickCursorShapeManagerPrivate : public WObjectPrivate
+class WCursorShapeManagerV1Private : public WObjectPrivate
 {
 public:
-    WQuickCursorShapeManagerPrivate(WQuickCursorShapeManager *qq)
+    WCursorShapeManagerV1Private(WCursorShapeManagerV1 *qq)
         : WObjectPrivate(qq)
     {
 
     }
 
-    W_DECLARE_PUBLIC(WQuickCursorShapeManager)
+    inline QWCursorShapeManagerV1 *handle() const {
+        return q_func()->nativeInterface<QWCursorShapeManagerV1>();
+    }
 
-    QWCursorShapeManagerV1 *manager = nullptr;
+    inline wlr_cursor_shape_manager_v1 *nativeHandle() const {
+        Q_ASSERT(handle());
+        return handle()->handle();
+    }
+
+    W_DECLARE_PUBLIC(WCursorShapeManagerV1)
 };
 
 static inline auto wpToWCursorShape(wp_cursor_shape_device_v1_shape shape) {
@@ -106,27 +115,40 @@ static inline auto wpToWCursorShape(wp_cursor_shape_device_v1_shape shape) {
     return WCursor::Invalid;
 }
 
-WQuickCursorShapeManager::WQuickCursorShapeManager(QObject *parent):
-    WQuickWaylandServerInterface(parent)
-  , WObject(*new WQuickCursorShapeManagerPrivate(this), nullptr)
+WCursorShapeManagerV1::WCursorShapeManagerV1()
+    : WObject(*new WCursorShapeManagerV1Private(this))
 {
 
 }
 
-WServerInterface *WQuickCursorShapeManager::create()
+QWCursorShapeManagerV1 *WCursorShapeManagerV1::handle() const
 {
-    W_D(WQuickCursorShapeManager);
+    return nativeInterface<QWCursorShapeManagerV1>();
+}
 
-    d->manager = QWCursorShapeManagerV1::create(server()->handle(), 1u);
-    connect(d->manager, &QWCursorShapeManagerV1::requestSetShape, this,
-            [d] (wlr_cursor_shape_manager_v1_request_set_shape_event *event) {
-        if (auto *seat = WSeat::fromHandle(QW_NAMESPACE::QWSeat::from(event->seat_client->seat))) {
-            if (seat->cursor())
-                seat->cursor()->setCursorShape(wpToWCursorShape(event->shape));
-        }
-    });
+void WCursorShapeManagerV1::create(WServer *server)
+{
+    W_D(WCursorShapeManagerV1);
 
-    return new WServerInterface(d->manager, d->manager->handle()->global);
+    if (!m_handle) {
+        m_handle = QWCursorShapeManagerV1::create(server->handle(), CURSOR_SHAPE_MANAGER_V1_VERSION);
+        QObject::connect(handle(), &QWCursorShapeManagerV1::requestSetShape, this, [this]
+                         (wlr_cursor_shape_manager_v1_request_set_shape_event *event) {
+            if (auto *seat = WSeat::fromHandle(QW_NAMESPACE::QWSeat::from(event->seat_client->seat))) {
+                if (seat->cursor())
+                    seat->cursor()->setCursorShape(wpToWCursorShape(event->shape));
+            }
+        });
+    }
+}
+
+wl_global *WCursorShapeManagerV1::global() const
+{
+    W_D(const WCursorShapeManagerV1);
+    if (m_handle)
+        return d->nativeHandle()->global;
+
+    return nullptr;
 }
 
 WAYLIB_SERVER_END_NAMESPACE

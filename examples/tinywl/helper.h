@@ -26,10 +26,14 @@ class WQmlCreator;
 class WXdgOutputManager;
 class WXdgDecorationManager;
 class WInputMethodHelper;
+class WCursorShapeManagerV1;
+class WOutputManagerV1;
 WAYLIB_SERVER_END_NAMESPACE
 
 QW_BEGIN_NAMESPACE
 class QWCompositor;
+class QWGammaControlManagerV1;
+class QWFractionalScaleManagerV1;
 QW_END_NAMESPACE
 
 struct wlr_output_event_request_state;
@@ -133,6 +137,10 @@ private:
     WXdgDecorationManager *m_xdgDecorationManager = nullptr;
     WInputMethodHelper *m_inputMethodHelper = nullptr;
     QPointer<WSocket> m_socket;
+    QWFractionalScaleManagerV1 *m_fractionalScaleManagerV1 = nullptr;
+    WCursorShapeManagerV1 *m_cursorShapeManager = nullptr;
+    QWGammaControlManagerV1 *m_gammaControlManager = nullptr;
+    WOutputManagerV1 *m_wOutputManager = nullptr;
 
     WQmlCreator *m_outputCreator = nullptr;
     WQmlCreator *m_xdgShellCreator = nullptr;

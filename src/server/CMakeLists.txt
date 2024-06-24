@@ -105,12 +105,8 @@ set(SOURCES
     qtquick/private/wquickcoordmapper.cpp
     qtquick/private/wquicksocketmapper.cpp
     qtquick/private/wqmlhelper.cpp
-    qtquick/private/wquickcursorshape.cpp
-    qtquick/private/wquickgammacontrol.cpp
-    qtquick/private/wquickoutputmanager.cpp
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
-    qtquick/private/wquickfractionalscalemanagerv1.cpp
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
     ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.c
@@ -140,6 +136,10 @@ set(SOURCES
     protocols/private/wtextinputv1.cpp
     protocols/private/wtextinputv3.cpp
     protocols/private/wvirtualkeyboardv1.cpp
+    protocols/wcursorshapemanagerv1.cpp
+    protocols/woutputmanagerv1.cpp
+
+    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
 )
 
 set(HEADERS
@@ -212,6 +212,10 @@ set(HEADERS
     protocols/WInputMethodHelper
     protocols/winputmethodhelper.h
     protocols/winputpopupsurface.h
+    protocols/wcursorshapemanagerv1.h
+    protocols/WCursorShapeManagerV1
+    protocols/woutputmanagerv1.h
+    protocols/WOutputManagerV1
 )
 
 set(PRIVATE_HEADERS
@@ -224,13 +228,9 @@ set(PRIVATE_HEADERS
     qtquick/private/wquicksocketmapper_p.h
     qtquick/private/wqmldynamiccreator_p.h
     qtquick/private/wqmlhelper_p.h
-    qtquick/private/wquickcursorshape_p.h
-    qtquick/private/wquickgammacontrol_p.h
-    qtquick/private/wquickoutputmanager_p.h
     qtquick/private/wquicktextureproxy_p.h
     qtquick/private/wbufferrenderer_p.h
     qtquick/private/wrenderbuffernode_p.h
-    qtquick/private/wquickfractionalscalemanagerv1_p.h
     qtquick/private/wsurfaceitem_p.h
 
     ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.h

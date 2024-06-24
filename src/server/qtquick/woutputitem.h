@@ -35,6 +35,7 @@ public:
     ~WOutputItem();
 
     static WOutputItemAttached *qmlAttachedProperties(QObject *target);
+    static WOutputItem *getOutputItem(WOutput *output);
 
     WOutput *output() const;
     void setOutput(WOutput *newOutput);
