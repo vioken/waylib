@@ -5,7 +5,6 @@
 
 #include <WServer>
 #include <WOutput>
-#include <wqmldynamiccreator.h>
 #include <WSeat>
 #include <WBackend>
 #include <wquickcursor.h>

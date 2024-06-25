@@ -98,7 +98,7 @@ set(SOURCES
     qtquick/wxdgsurfaceitem.cpp
     qtquick/wlayersurfaceitem.cpp
     qtquick/wxwaylandsurfaceitem.cpp
-    qtquick/wqmldynamiccreator.cpp
+    qtquick/wqmlcreator.cpp
     qtquick/winputpopupsurfaceitem.cpp
 
     qtquick/private/wquickcoordmapper.cpp
@@ -189,7 +189,7 @@ set(HEADERS
     qtquick/wlayersurfaceitem.h
     qtquick/wxwaylandsurfaceitem.h
     qtquick/winputpopupsurfaceitem.h
-    qtquick/wqmldynamiccreator.h
+    qtquick/wqmlcreator.h
 
     utils/wtools.h
     utils/wthreadutils.h
@@ -232,7 +232,7 @@ set(PRIVATE_HEADERS
     qtquick/private/wquickcoordmapper_p.h
     qtquick/private/woutputitem_p.h
     qtquick/private/wquicksocketattached_p.h
-    qtquick/private/wqmldynamiccreator_p.h
+    qtquick/private/wqmlcreator_p.h
     qtquick/private/wqmlhelper_p.h
     qtquick/private/wquicktextureproxy_p.h
     qtquick/private/wbufferrenderer_p.h

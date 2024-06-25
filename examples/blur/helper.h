@@ -4,7 +4,7 @@
 #pragma once
 
 #include <wglobal.h>
-#include <wqmldynamiccreator.h>
+#include <wqmlcreator.h>
 
 #include <QObject>
 #include <QQmlEngine>
@@ -12,7 +12,6 @@
 WAYLIB_SERVER_BEGIN_NAMESPACE
 class WServer;
 class WOutputRenderWindow;
-class WQmlCreator;
 class WQuickOutputLayout;
 class WQuickCursor;
 class WSeat;

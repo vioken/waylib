@@ -16,7 +16,7 @@
 #include <woutputitem.h>
 #include <wquickcursor.h>
 #include <woutputrenderwindow.h>
-#include <wqmldynamiccreator.h>
+#include <wqmlcreator.h>
 #include <winputmethodhelper.h>
 #include <WForeignToplevel>
 #include <WXdgOutput>

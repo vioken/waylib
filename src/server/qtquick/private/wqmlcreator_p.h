@@ -4,7 +4,7 @@
 #pragma once
 
 #include <wglobal.h>
-#include <wqmldynamiccreator.h>
+#include <wqmlcreator.h>
 #include <private/wglobal_p.h>
 
 #include <QList>
