@@ -86,29 +86,28 @@ Item {
             property var cancelMinimize: helper.cancelMinimize
             property int outputCounter: 0
 
-            topPadding: decoration.enable ? decoration.topMargin : 0
-            bottomPadding: decoration.enable ? decoration.bottomMargin : 0
-            leftPadding: decoration.enable ? decoration.leftMargin : 0
-            rightPadding: decoration.enable ? decoration.rightMargin : 0
+            topPadding: decoration.visible ? decoration.topMargin : 0
+            bottomPadding: decoration.visible ? decoration.bottomMargin : 0
+            leftPadding: decoration.visible ? decoration.leftMargin : 0
+            rightPadding: decoration.visible ? decoration.rightMargin : 0
 
             WindowDecoration {
                 id: decoration
-                property var enable
                 anchors.fill: parent
                 z: SurfaceItem.ZOrder.ContentItem - 1
-                visible: enable
                 surface: waylandSurface
 
                 Connections {
-                    target: QmlHelper.xdgDecorationManager
-                    onSurfaceModeChanged: {
+                    target: Helper.xdgDecorationManager
+
+                    function onSurfaceModeChanged(surface, mode) {
                         if (waylandSurface === surface)
-                            enable = mode === XdgDecorationManager.Client
+                            visible = (mode !== XdgDecorationManager.Client)
                     }
                 }
 
                 Component.onCompleted: {
-                    enable = QmlHelper.xdgDecorationManager.modeBySurface(waylandSurface) === XdgDecorationManager.Client
+                    visible = Helper.xdgDecorationManager.modeBySurface(surface.surface) !== XdgDecorationManager.Client
                 }
             }
 

@@ -34,12 +34,11 @@ public:
     DecorationMode preferredMode() const;
     void setPreferredMode(DecorationMode mode);
 
-    void setModeBySurface(WSurface *surface, DecorationMode mode);
-
-    DecorationMode modeBySurface(WSurface* surface) const;
+    Q_INVOKABLE void setModeBySurface(WAYLIB_SERVER_NAMESPACE::WSurface *surface, DecorationMode mode);
+    Q_INVOKABLE DecorationMode modeBySurface(WAYLIB_SERVER_NAMESPACE::WSurface* surface) const;
 
 Q_SIGNALS:
-    void surfaceModeChanged(WSurface *surface, DecorationMode mode);
+    void surfaceModeChanged(WAYLIB_SERVER_NAMESPACE::WSurface *surface, DecorationMode mode);
     void preferredModeChanged(DecorationMode mode);
 
 protected:

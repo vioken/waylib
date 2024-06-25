@@ -276,6 +276,9 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
     m_fractionalScaleManagerV1 = QWFractionalScaleManagerV1::create(m_server->handle(), WLR_FRACTIONAL_SCALE_V1_VERSION);
 
     backend->handle()->start();
+
+    qInfo() << "Listing on:" << m_socket->fullServerName();
+    startDemoClient(m_socket->fullServerName());
 }
 
 WQuickOutputLayout *Helper::outputLayout() const
