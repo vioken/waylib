@@ -25,12 +25,6 @@ Item {
         width: outputsContainer.implicitWidth
         height: outputsContainer.implicitHeight
 
-        onOutputViewportInitialized: function (viewport) {
-            // Trigger QWOutput::frame signal in order to ensure WOutputHelper::renderable
-            // property is true, OutputRenderWindow when will render this output in next frame.
-            Helper.enableOutput(viewport.output)
-        }
-
         Row {
             id: outputsContainer
 
