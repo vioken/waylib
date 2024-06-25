@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "wqmlcreator_p.h"
-#include "wxdgsurface.h"
 
 #include <QJSValue>
 #include <QQuickItem>
@@ -353,9 +352,10 @@ void WQmlCreatorComponent::setAutoDestroy(bool newAutoDestroy)
     Q_EMIT autoDestroyChanged();
 }
 
-WQmlCreator::WQmlCreator(QObject *parent)
+WQmlCreator::WQmlCreator(QQmlEngine *engine, QObject *parent)
     : QObject{parent}
     , WObject(*new WQmlCreatorPrivate(this))
+    , m_engine(engine)
 {
 
 }

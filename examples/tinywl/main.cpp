@@ -68,17 +68,17 @@ inline QPointF getItemGlobalPosition(QQuickItem *item)
     return parent ? parent->mapToGlobal(item->position()) : item->position();
 }
 
-Helper::Helper(QObject *parent)
+Helper::Helper(QQmlEngine *engine, QObject *parent)
     : WSeatEventFilter(parent)
     , m_server(new WServer(this))
     , m_outputLayout(new WQuickOutputLayout(this))
     , m_cursor(new WQuickCursor(this))
     , m_seat(new WSeat())
-    , m_outputCreator(new WQmlCreator(this))
-    , m_xdgShellCreator(new WQmlCreator(this))
-    , m_xwaylandCreator(new WQmlCreator(this))
-    , m_layerShellCreator(new WQmlCreator(this))
-    , m_inputPopupCreator(new WQmlCreator(this))
+    , m_outputCreator(new WQmlCreator(engine, this))
+    , m_xdgShellCreator(new WQmlCreator(engine, this))
+    , m_xwaylandCreator(new WQmlCreator(engine, this))
+    , m_layerShellCreator(new WQmlCreator(engine, this))
+    , m_inputPopupCreator(new WQmlCreator(engine, this))
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
@@ -804,6 +804,16 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QGuiApplication::setQuitOnLastWindowClosed(false);
     QGuiApplication app(argc, argv);
+
+    qmlRegisterSingletonType<Helper>(
+        "Tinywl",
+        1,
+        0,
+        "Helper",
+        [](QQmlEngine *engine, [[maybe_unused]] QJSEngine *scriptEngine) -> QObject * {
+            Helper *helper = new Helper(engine);
+            return helper;
+        });
 
     QQmlApplicationEngine waylandEngine;
 

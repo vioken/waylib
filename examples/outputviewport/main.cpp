@@ -34,10 +34,10 @@
 
 QW_USE_NAMESPACE
 
-Helper::Helper(QObject *parent)
+Helper::Helper(QQmlEngine *engine, QObject *parent)
     : QObject(parent)
     , m_server(new WServer(this))
-    , m_outputCreator(new WQmlCreator(this))
+    , m_outputCreator(new WQmlCreator(engine,this))
     , m_outputLayout(new WQuickOutputLayout(this))
     , m_cursor(new WQuickCursor(this))
 {
@@ -128,6 +128,16 @@ int main(int argc, char *argv[]) {
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QGuiApplication::setQuitOnLastWindowClosed(false);
     QGuiApplication app(argc, argv);
+
+    qmlRegisterSingletonType<Helper>(
+        "OutputViewport",
+        1,
+        0,
+        "Helper",
+        [](QQmlEngine *engine, [[maybe_unused]] QJSEngine *scriptEngine) -> QObject * {
+            Helper *helper = new Helper(engine);
+            return helper;
+        });
 
     QQmlApplicationEngine waylandEngine;
     waylandEngine.loadFromModule("OutputViewport", "Main");

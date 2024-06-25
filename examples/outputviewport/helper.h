@@ -35,7 +35,7 @@ class Helper : public QObject
     QML_SINGLETON
 
 public:
-    explicit Helper(QObject *parent = nullptr);
+    explicit Helper(QQmlEngine *engine, QObject *parent = nullptr);
 
     void initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine);
 

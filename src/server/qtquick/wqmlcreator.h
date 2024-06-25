@@ -58,9 +58,10 @@ class WAYLIB_SERVER_EXPORT WQmlCreator : public QObject, public WObject
     Q_OBJECT
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
     QML_NAMED_ELEMENT(DynamicCreator)
+    QML_UNCREATABLE("Can't create in QML")
 
 public:
-    explicit WQmlCreator(QObject *parent = nullptr);
+    explicit WQmlCreator(QQmlEngine *entine, QObject *parent = nullptr);
     ~WQmlCreator();
 
     QList<WAbstractCreatorComponent *> delegates() const;
@@ -103,6 +104,8 @@ private:
     void removeDelegate(WAbstractCreatorComponent *delegate);
 
     friend class WAbstractCreatorComponent;
+
+    QQmlEngine *m_engine;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

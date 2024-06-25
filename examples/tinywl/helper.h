@@ -17,6 +17,10 @@
 
 #include <QList>
 
+Q_MOC_INCLUDE(<woutputrenderwindow.h>)
+Q_MOC_INCLUDE(<wqmlcreator.h>)
+Q_MOC_INCLUDE(<qwcompositor.h>)
+
 Q_DECLARE_OPAQUE_POINTER(QWindow*)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -60,7 +64,7 @@ class Helper : public WSeatEventFilter {
     QML_SINGLETON
 
 public:
-    explicit Helper(QObject *parent = nullptr);
+    explicit Helper(QQmlEngine *engine, QObject *parent = nullptr);
 
     void initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine);
     WQuickOutputLayout *outputLayout() const;
@@ -177,7 +181,3 @@ struct OutputInfo {
     quint32 m_rightExclusiveMargin = 0;
     QList<std::tuple<WLayerSurface*, uint32_t, WLayerSurface::AnchorType>> registeredSurfaceList;
 };
-
-Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WOutputRenderWindow*)
-Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WQmlCreator*)
-Q_DECLARE_OPAQUE_POINTER(QW_NAMESPACE::QWCompositor*)

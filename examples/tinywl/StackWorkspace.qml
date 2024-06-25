@@ -99,15 +99,14 @@ Item {
 
                 Connections {
                     target: Helper.xdgDecorationManager
-
                     function onSurfaceModeChanged(surface, mode) {
-                        if (waylandSurface === surface)
-                            visible = (mode !== XdgDecorationManager.Client)
+                        if (waylandSurface.surface === surface)
+                            decoration.visible = mode === XdgDecorationManager.Server
                     }
                 }
 
                 Component.onCompleted: {
-                    visible = Helper.xdgDecorationManager.modeBySurface(surface.surface) !== XdgDecorationManager.Client
+                    decoration.visible = Helper.xdgDecorationManager.modeBySurface(waylandSurface.surface) === XdgDecorationManager.Server
                 }
             }
 
