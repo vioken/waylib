@@ -68,6 +68,11 @@ files: src/server/protocols/WCursorShapeManagerV1
        src/server/protocols/WXdgOutput
        src/server/protocols/WXdgShell
        src/server/protocols/WXdgSurface
+       src/server/protocols/WLayerShell
+       src/server/protocols/WInputPopupSurface
+       src/server/protocols/WXWayland
+       src/server/protocols/WXWaylandSurface
+       src/server/protocols/WXdgDecorationManager
 Copyright: UnionTech Software Technology Co., Ltd.
 License: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 

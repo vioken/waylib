@@ -189,6 +189,7 @@ set(HEADERS
     qtquick/wlayersurfaceitem.h
     qtquick/wxwaylandsurfaceitem.h
     qtquick/winputpopupsurfaceitem.h
+    qtquick/wqmldynamiccreator.h
 
     utils/wtools.h
     utils/wthreadutils.h
@@ -201,19 +202,26 @@ set(HEADERS
     protocols/WXdgSurface
     protocols/wlayersurface.h
     protocols/wxdgdecorationmanager.h
+    protocols/WXdgDecorationManager
     protocols/WLayerSurface
     protocols/wforeigntoplevelv1.h
     protocols/WForeignToplevel
     protocols/wxdgoutput.h
     protocols/WXdgOutput
-    protocols/wlayershell.cpp
     protocols/WInputMethodHelper
     protocols/winputmethodhelper.h
     protocols/winputpopupsurface.h
+    protocols/WInputPopupSurface
     protocols/wcursorshapemanagerv1.h
     protocols/WCursorShapeManagerV1
     protocols/woutputmanagerv1.h
     protocols/WOutputManagerV1
+    protocols/wlayershell.h
+    protocols/WLayerShell
+    protocols/wxwayland.h
+    protocols/WXWayland
+    protocols/wxwaylandsurface.h
+    protocols/WXWaylandSurface
 )
 
 set(PRIVATE_HEADERS
