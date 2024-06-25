@@ -102,7 +102,7 @@ set(SOURCES
     qtquick/winputpopupsurfaceitem.cpp
 
     qtquick/private/wquickcoordmapper.cpp
-    qtquick/private/wquicksocketmapper.cpp
+    qtquick/private/wquicksocketattached.cpp
     qtquick/private/wqmlhelper.cpp
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
@@ -231,7 +231,7 @@ set(PRIVATE_HEADERS
     qtquick/private/woutputviewport_p.h
     qtquick/private/wquickcoordmapper_p.h
     qtquick/private/woutputitem_p.h
-    qtquick/private/wquicksocketmapper_p.h
+    qtquick/private/wquicksocketattached_p.h
     qtquick/private/wqmldynamiccreator_p.h
     qtquick/private/wqmlhelper_p.h
     qtquick/private/wquicktextureproxy_p.h
@@ -275,7 +275,6 @@ qt_add_qml_module(${TARGET}
     SOURCES
         ${HEADERS}
         ${PRIVATE_HEADERS}
-        SOURCES qtquick/wqmldynamiccreator.h
 )
 
 target_compile_definitions(${TARGET}

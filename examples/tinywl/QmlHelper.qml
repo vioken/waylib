@@ -7,8 +7,6 @@ import QtQuick
 import Waylib.Server
 
 Item {
-    property DynamicCreator inputPopupSurfaceManager: inputPopupSurfaceManager
-
     function printStructureObject(obj) {
         var json = ""
         for (var prop in obj){
@@ -24,18 +22,5 @@ Item {
         }
 
         return '{\n' + json + '}'
-    }
-
-    DynamicCreator {
-        id: inputPopupSurfaceManager
-        onObjectAdded: function (delegate, obj, properties) {
-            console.info(`New input popup surface item ${obj} from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
-
-        onObjectRemoved: function (delegate, obj, properties) {
-            console.info(`Input popup surface item ${obj} is removed, it's create from delegate ${delegate} with initial properties:`,
-                         `\n${printStructureObject(properties)}`)
-        }
     }
 }
