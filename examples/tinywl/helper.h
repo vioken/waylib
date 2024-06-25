@@ -127,17 +127,18 @@ private:
     void onOutputRequeseState(wlr_output_event_request_state *newState);
     OutputInfo* getOutputInfo(WOutput *output);
 
+    WQuickOutputLayout *m_outputLayout = nullptr;
+    WQuickCursor *m_cursor = nullptr;
+
     WServer *m_server = nullptr;
     QWRenderer *m_renderer = nullptr;
     QWAllocator *m_allocator = nullptr;
     QWCompositor *m_compositor = nullptr;
-    WQuickOutputLayout *m_outputLayout = nullptr;
-    WQuickCursor *m_cursor = nullptr;
-    QPointer<WSeat> m_seat;
-    QPointer<WXWayland> m_xwayland;
+    WSeat *m_seat = nullptr;
+    WXWayland *m_xwayland = nullptr;
     WXdgDecorationManager *m_xdgDecorationManager = nullptr;
     WInputMethodHelper *m_inputMethodHelper = nullptr;
-    QPointer<WSocket> m_socket;
+    WSocket *m_socket = nullptr;
     QWFractionalScaleManagerV1 *m_fractionalScaleManagerV1 = nullptr;
     WCursorShapeManagerV1 *m_cursorShapeManager = nullptr;
     QWGammaControlManagerV1 *m_gammaControlManager = nullptr;
