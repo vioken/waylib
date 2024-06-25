@@ -32,12 +32,6 @@
 #include <QQuickItem>
 #include <QQuickWindow>
 
-extern "C" {
-#define static
-#include <wlr/types/wlr_output.h>
-#undef static
-}
-
 QW_USE_NAMESPACE
 
 Helper::Helper(QObject *parent)
