@@ -62,7 +62,7 @@ class Helper : public WSeatEventFilter {
 public:
     explicit Helper(QObject *parent = nullptr);
 
-    void initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEngine *qmlEngine);
+    void initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine);
     WQuickOutputLayout *outputLayout() const;
     WSeat *seat() const;
     QWCompositor *compositor() const;
@@ -127,6 +127,7 @@ private:
     void onOutputRequeseState(wlr_output_event_request_state *newState);
     OutputInfo* getOutputInfo(WOutput *output);
 
+    WServer *m_server = nullptr;
     QWRenderer *m_renderer = nullptr;
     QWAllocator *m_allocator = nullptr;
     QWCompositor *m_compositor = nullptr;

@@ -70,6 +70,7 @@ inline QPointF getItemGlobalPosition(QQuickItem *item)
 
 Helper::Helper(QObject *parent)
     : WSeatEventFilter(parent)
+    , m_server(new WServer(this))
     , m_outputLayout(new WQuickOutputLayout(this))
     , m_cursor(new WQuickCursor(this))
     , m_seat(new WSeat())
@@ -85,9 +86,10 @@ Helper::Helper(QObject *parent)
     m_cursor->setLayout(m_outputLayout);
 }
 
-void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEngine *qmlEngine)
+void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
 {
-    auto backend = server->attach<WBackend>();
+    auto backend = m_server->attach<WBackend>();
+    m_server->start();
     m_renderer = WRenderHelper::createRenderer(backend->handle());
 
     if (!m_renderer) {
@@ -121,20 +123,20 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     });
 
     m_allocator = QWAllocator::autoCreate(backend->handle(), m_renderer);
-    m_renderer->initWlDisplay(server->handle());
+    m_renderer->initWlDisplay(m_server->handle());
 
     // free follow display
-    m_compositor = QWCompositor::create(server->handle(), m_renderer, 6);
-    QWSubcompositor::create(server->handle());
-    QWScreenCopyManagerV1::create(server->handle());
+    m_compositor = QWCompositor::create(m_server->handle(), m_renderer, 6);
+    QWSubcompositor::create(m_server->handle());
+    QWScreenCopyManagerV1::create(m_server->handle());
 
-    auto *xdgShell = server->attach<WXdgShell>();
-    auto *foreignToplevel = server->attach<WForeignToplevel>(xdgShell);
-    auto *layerShell = server->attach<WLayerShell>();
-    server->attach(m_seat);
+    auto *xdgShell = m_server->attach<WXdgShell>();
+    auto *foreignToplevel = m_server->attach<WForeignToplevel>(xdgShell);
+    auto *layerShell = m_server->attach<WLayerShell>();
+    m_server->attach(m_seat);
 
-    auto *xdgOutputManager = server->attach<WXdgOutputManager>(m_outputLayout);
-    auto *xwaylandOutputManager = server->attach<WXdgOutputManager>(m_outputLayout);
+    auto *xdgOutputManager = m_server->attach<WXdgOutputManager>(m_outputLayout);
+    auto *xwaylandOutputManager = m_server->attach<WXdgOutputManager>(m_outputLayout);
 
     xwaylandOutputManager->setScaleOverride(1.0);
 
@@ -161,7 +163,7 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
             });
 
     auto xwayland_lazy = true;
-    m_xwayland = server->attach<WXWayland>(m_compositor, xwayland_lazy);
+    m_xwayland = m_server->attach<WXWayland>(m_compositor, xwayland_lazy);
     m_xwayland->setSeat(m_seat);
 
     connect(m_xwayland, &WXWayland::ready, this, [this, xwaylandOutputManager] () {
@@ -191,7 +193,7 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
 
     connect(layerShell, &WLayerShell::surfaceRemoved, m_layerShellCreator, &WQmlCreator::removeByOwner);
 
-    m_inputMethodHelper = new WInputMethodHelper(server, m_seat);
+    m_inputMethodHelper = new WInputMethodHelper(m_server, m_seat);
 
     connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Added, this, [this, qmlEngine](WInputPopupSurface *inputPopup) {
         auto initProperties = qmlEngine->newObject();
@@ -204,18 +206,18 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
     Q_EMIT compositorChanged();
 
     window->init(m_renderer, m_allocator);
-    m_xdgDecorationManager = server->attach<WXdgDecorationManager>();
+    m_xdgDecorationManager = m_server->attach<WXdgDecorationManager>();
 
     bool freezeClientWhenDisable = false;
     m_socket = new WSocket(freezeClientWhenDisable);
     if (m_socket->autoCreate()) {
-        server->addSocket(m_socket);
+        m_server->addSocket(m_socket);
     } else {
         delete m_socket;
         qCritical("Failed to create socket");
     }
 
-    m_gammaControlManager = QWGammaControlManagerV1::create(server->handle());
+    m_gammaControlManager = QWGammaControlManagerV1::create(m_server->handle());
     connect(m_gammaControlManager, &QWGammaControlManagerV1::gammaChanged, this, [this]
             (wlr_gamma_control_manager_v1_set_gamma_event *event) {
         auto *qwOutput = QWOutput::from(event->output);
@@ -233,7 +235,7 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
             }
         }
     });
-    m_wOutputManager = server->attach<WOutputManagerV1>();
+    m_wOutputManager = m_server->attach<WOutputManagerV1>();
     connect(m_wOutputManager, &WOutputManagerV1::requestTestOrApply, this, [this]
             (QWOutputConfigurationV1 *config, bool onlyTest) {
         QList<WOutputState> states = m_wOutputManager->stateListPending();
@@ -270,8 +272,8 @@ void Helper::initProtocols(WServer *server, WOutputRenderWindow *window, QQmlEng
         m_wOutputManager->sendResult(config, ok);
     });
 
-    m_cursorShapeManager = server->attach<WCursorShapeManagerV1>();
-    m_fractionalScaleManagerV1 = QWFractionalScaleManagerV1::create(server->handle(), WLR_FRACTIONAL_SCALE_V1_VERSION);
+    m_cursorShapeManager = m_server->attach<WCursorShapeManagerV1>();
+    m_fractionalScaleManagerV1 = QWFractionalScaleManagerV1::create(m_server->handle(), WLR_FRACTIONAL_SCALE_V1_VERSION);
 
     backend->handle()->start();
 }
@@ -807,10 +809,6 @@ int main(int argc, char *argv[]) {
 #else
     waylandEngine.load(QUrl(u"qrc:/Tinywl/Main.qml"_qs));
 #endif
-    // TODO: direct new WServer in here
-    WServer *server = waylandEngine.rootObjects().first()->findChild<WServer*>();
-    Q_ASSERT(server);
-    Q_ASSERT(server->isRunning());
 
     auto window = waylandEngine.rootObjects().first()->findChild<WOutputRenderWindow*>();
     Q_ASSERT(window);
@@ -818,7 +816,7 @@ int main(int argc, char *argv[]) {
     Helper *helper = waylandEngine.singletonInstance<Helper*>("Tinywl", "Helper");
     Q_ASSERT(helper);
 
-    helper->initProtocols(server, window, &waylandEngine);
+    helper->initProtocols(window, &waylandEngine);
 
     // multi output
 //    qobject_cast<QWMultiBackend*>(backend->backend())->forEachBackend([] (wlr_backend *backend, void *) {

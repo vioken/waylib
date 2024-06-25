@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <wserver.h>
 #include <wglobal.h>
-#include <wquickwaylandserver.h>
 #include <qwglobal.h>
 
 #include <QObject>

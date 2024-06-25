@@ -6,51 +6,10 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
 import Waylib.Server
+import OutputViewport
 
 Item {
     id :root
-
-    WaylandServer {
-        id: server
-
-        WaylandBackend {
-            id: backend
-
-            onOutputAdded: function(output) {
-                if (!backend.hasDrm)
-                    output.forceSoftwareCursor = true // Test
-                outputManager.add({waylandOutput: output})
-            }
-            onOutputRemoved: function(output) {
-                output.OutputItem.item.invalidate()
-                outputManager.removeIf(function(prop) {
-                    return prop.waylandOutput === output
-                })
-            }
-            onInputAdded: function(inputDevice) {
-                seat0.addDevice(inputDevice)
-            }
-            onInputRemoved: function(inputDevice) {
-                seat0.removeDevice(inputDevice)
-            }
-        }
-
-        WaylandCompositor {
-            id: compositor
-
-            backend: backend
-        }
-
-        Seat {
-            id: seat0
-            name: "seat0"
-            cursor: Cursor {
-                id: cursor
-
-                layout: outputLayout
-            }
-        }
-    }
 
     Shortcut {
         sequences: [StandardKey.Quit]
@@ -60,18 +19,9 @@ Item {
         }
     }
 
-    DynamicCreator {
-        id: outputManager
-    }
-
-    OutputLayout {
-        id: outputLayout
-    }
-
     OutputRenderWindow {
         id: renderWindow
 
-        compositor: compositor
         width: outputsContainer.implicitWidth
         height: outputsContainer.implicitHeight
 
@@ -88,7 +38,7 @@ Item {
 
             DynamicCreatorComponent {
                 id: outputDelegateCreator
-                creator: outputManager
+                creator: Helper.outputCreator
 
                 OutputItem {
                     id: rootOutputItem

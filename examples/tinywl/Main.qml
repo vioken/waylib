@@ -10,10 +10,6 @@ import Tinywl
 Item {
     id :root
 
-    WaylandServer {
-        id: server
-    }
-
     Binding {
         target: Helper.seat
         property: "keyboardFocus"

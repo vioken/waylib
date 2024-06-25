@@ -3,7 +3,10 @@
 
 #pragma once
 
-#include <wquickwaylandserver.h>
+#include <wglobal.h>
+
+#include <QObject>
+#include <QtQmlIntegration>
 
 QT_BEGIN_NAMESPACE
 class QLocalServer;
@@ -12,6 +15,8 @@ QT_END_NAMESPACE
 Q_DECLARE_OPAQUE_POINTER(wl_client*)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
+
+class WSocket;
 
 class WAYLIB_SERVER_EXPORT WQuickSocketAttached : public QObject
 {

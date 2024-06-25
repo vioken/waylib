@@ -4,7 +4,6 @@
 #pragma once
 
 #include <wglobal.h>
-#include <wquickwaylandserver.h>
 #include <wsurfaceitem.h>
 
 #include <QQmlEngine>

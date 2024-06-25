@@ -3,19 +3,56 @@
 
 #pragma once
 
-#include <WOutput>
+#include <wglobal.h>
+#include <wqmldynamiccreator.h>
 
 #include <QObject>
 #include <QQmlEngine>
 
+WAYLIB_SERVER_BEGIN_NAMESPACE
+class WServer;
+class WOutputRenderWindow;
+class WQmlCreator;
+class WQuickOutputLayout;
+class WQuickCursor;
+class WSeat;
+class WBackend;
+WAYLIB_SERVER_END_NAMESPACE
+
+QW_BEGIN_NAMESPACE
+class QWRenderer;
+class QWAllocator;
+class QWCompositor;
+QW_END_NAMESPACE
+
 WAYLIB_SERVER_USE_NAMESPACE
+QW_USE_NAMESPACE
 
 class Helper : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(WQmlCreator* outputCreator MEMBER m_outputCreator CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
 
 public:
-    Q_INVOKABLE void enableOutput(WOutput *output);
+    explicit Helper(QObject *parent = nullptr);
+
+    void initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine);
+
+    inline WBackend *backend() const {
+        return m_backend;
+    }
+
+private:
+    WServer *m_server = nullptr;
+    WQmlCreator *m_outputCreator = nullptr;
+
+    WBackend *m_backend = nullptr;
+    QWRenderer *m_renderer = nullptr;
+    QWAllocator *m_allocator = nullptr;
+    QWCompositor *m_compositor = nullptr;
+    WQuickOutputLayout *m_outputLayout = nullptr;
+    WQuickCursor *m_cursor = nullptr;
+    QPointer<WSeat> m_seat;
 };
