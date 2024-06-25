@@ -23,6 +23,8 @@
 #include <wxwaylandsurface.h>
 #include <woutputmanagerv1.h>
 #include <wcursorshapemanagerv1.h>
+#include <woutputitem.h>
+#include <woutputviewport.h>
 
 #include <qwbackend.h>
 #include <qwdisplay.h>
@@ -37,8 +39,6 @@
 #include <qwscreencopyv1.h>
 #include <qwfractionalscalemanagerv1.h>
 #include <qwgammacontorlv1.h>
-#include <woutputitem.h>
-#include <woutputviewport.h>
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
