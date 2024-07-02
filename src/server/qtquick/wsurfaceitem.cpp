@@ -9,6 +9,7 @@
 #include "wcursor.h"
 #include "woutput.h"
 #include "woutputviewport.h"
+#include "wtextureprovider.h"
 
 #include <qwcompositor.h>
 #include <qwsubcompositor.h>
@@ -30,7 +31,7 @@ extern "C" {
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
-class WSGTextureProvider : public QSGTextureProvider
+class WSGTextureProvider : public WTextureProvider
 {
     friend class WSurfaceItemContent;
 public:
@@ -39,6 +40,7 @@ public:
 
 public:
     QSGTexture *texture() const override;
+    QWTexture *qwTexture() const override;
     void updateTexture(); // in render thread
     void maybeUpdateTextureOnSurfacePrrimaryOutputChanged();
     void reset();
@@ -431,6 +433,13 @@ QSGTexture *WSGTextureProvider::texture() const
         return nullptr;
 
     return dwtexture->getSGTexture(item->window());
+}
+
+QWTexture *WSGTextureProvider::qwTexture() const
+{
+    if (!buffer)
+        return nullptr;
+    return qwtexture.get();
 }
 
 void WSGTextureProvider::updateTexture()
