@@ -16,6 +16,7 @@ QT_END_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 class WSurfaceItemContentPrivate;
+class WTextureProvider;
 class WAYLIB_SERVER_EXPORT WSurfaceItemContent : public QQuickItem
 {
     Q_OBJECT
@@ -32,6 +33,7 @@ public:
 
     bool isTextureProvider() const override;
     QSGTextureProvider *textureProvider() const override;
+    WTextureProvider *wTextureProvider() const;
 
     bool cacheLastBuffer() const;
     void setCacheLastBuffer(bool newCacheLastBuffer);
@@ -149,7 +151,7 @@ public:
 
     QQmlComponent *delegate() const;
     void setDelegate(QQmlComponent *newDelegate);
-    
+
     // resize internal surface, should be in SizeFromSurface mode
     bool resizeSurface(const QSizeF &newSize);
 

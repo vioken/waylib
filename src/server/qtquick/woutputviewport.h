@@ -12,6 +12,7 @@
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 class WOutputViewportPrivate;
+class WTextureProvider;
 class WAYLIB_SERVER_EXPORT WOutputViewport : public QQuickItem
 {
     Q_OBJECT
@@ -42,6 +43,7 @@ public:
 
     bool isTextureProvider() const override;
     QSGTextureProvider *textureProvider() const override;
+    WTextureProvider *wTextureProvider() const;
 
     QQuickItem *input() const;
     void setInput(QQuickItem *item);
