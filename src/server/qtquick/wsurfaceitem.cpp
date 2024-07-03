@@ -40,16 +40,19 @@ public:
 public:
     QSGTexture *texture() const override;
     void updateTexture(); // in render thread
+    void tryUpdateTexture();
     void maybeUpdateTextureOnSurfacePrrimaryOutputChanged();
     void reset();
 
     QWTexture *ensureTexture();
 
 private:
+    void doUpdateTexture();
     WSurfaceItemContent *item;
     QWBuffer *buffer = nullptr;
     std::unique_ptr<QWTexture> qwtexture;
     std::unique_ptr<WTexture> dwtexture;
+    bool textureDirty = false;
 };
 
 class EventItem : public QQuickItem
@@ -211,7 +214,7 @@ public:
 
         // wayland protocol job should not run in rendering thread, so set context qobject to contentItem
         frameDoneConnection = QObject::connect(q->window(), &QQuickWindow::afterRendering, q, [this, q](){
-            if (q->rendered) {
+            if (q->rendered && live) {
                 surface->notifyFrameDone();
                 q->rendered = false;
             }
@@ -235,6 +238,7 @@ public:
     mutable WSGTextureProvider *textureProvider = nullptr;
     mutable QMetaObject::Connection updateTextureConnection;
     bool dontCacheLastBuffer = false;
+    bool live = true;
 };
 
 
@@ -304,6 +308,23 @@ void WSurfaceItemContent::setCacheLastBuffer(bool newCacheLastBuffer)
         return;
     d->dontCacheLastBuffer = !newCacheLastBuffer;
     Q_EMIT cacheLastBufferChanged();
+}
+
+bool WSurfaceItemContent::live() const
+{
+    W_DC(WSurfaceItemContent);
+    return d->live;
+}
+
+void WSurfaceItemContent::setLive(bool live)
+{
+    W_D(WSurfaceItemContent);
+    if (d->live == live)
+        return;
+    d->live = live;
+    if (live && d->textureProvider)
+        d->textureProvider->tryUpdateTexture();
+    Q_EMIT liveChanged();
 }
 
 void WSurfaceItemContent::componentComplete()
@@ -435,6 +456,15 @@ QSGTexture *WSGTextureProvider::texture() const
 
 void WSGTextureProvider::updateTexture()
 {
+    if (!item->live()) {
+        textureDirty = true;
+        return;
+    }
+    doUpdateTexture();
+}
+
+void WSGTextureProvider::doUpdateTexture()
+{
     if (qwtexture)
         qwtexture.reset();
 
@@ -448,6 +478,14 @@ void WSGTextureProvider::updateTexture()
     dwtexture->setHandle(ensureTexture());
     Q_EMIT textureChanged();
     item->update();
+}
+
+void WSGTextureProvider::tryUpdateTexture()
+{
+    if (textureDirty) {
+        textureDirty = false;
+        doUpdateTexture();
+    }
 }
 
 void WSGTextureProvider::maybeUpdateTextureOnSurfacePrrimaryOutputChanged()
