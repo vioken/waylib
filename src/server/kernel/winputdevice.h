@@ -7,6 +7,8 @@
 #include <QObject>
 #include <qwglobal.h>
 
+#include <libinput.h>
+
 QW_BEGIN_NAMESPACE
 class QWInputDevice;
 QW_END_NAMESPACE
@@ -50,6 +52,27 @@ public:
     Type type() const;
     void setSeat(WSeat *seat);
     WSeat *seat() const;
+
+    libinput_device *libinput_device_handle();
+
+    bool setSendEventsMode(uint32_t mode);
+    bool setTapEnabled(enum libinput_config_tap_state tap);
+    bool setTapButtonMap(enum libinput_config_tap_button_map map);
+    bool setTapDragEnabled(enum libinput_config_drag_state drag);
+    bool setTapDragLock(enum libinput_config_drag_lock_state lock);
+    bool setAccelSpeed(qreal speed);
+    bool setRotationAngle(qreal angle);
+    bool setAccelProfile(enum libinput_config_accel_profile profile);
+    bool setNaturalScroll(bool natural);
+    bool setLeftHanded(bool left);
+    bool setClickMethod(enum libinput_config_click_method method);
+    bool setMiddleEmulation(enum libinput_config_middle_emulation_state mid);
+    bool setScrollMethod(enum libinput_config_scroll_method method);
+    bool setScrollButton(uint32_t button);
+    bool setScrollButtonLock(enum libinput_config_scroll_button_lock_state lock);
+    bool setDwt(enum libinput_config_dwt_state enable);
+    bool setDwtp(enum libinput_config_dwtp_state enable);
+    bool setCalibrationMatrix(float mat[6]);
 
 private:
     friend class QWlrootsIntegration;

@@ -14,7 +14,8 @@ Build-Depends: debhelper (>= 9),
  libpixman-1-dev,
  libxcb-ewmh-dev,
  wayland-protocols,
- wlr-protocols
+ wlr-protocols,
+ libinput-dev
 Standards-Version: 3.9.8
 
 Package: libwaylib
