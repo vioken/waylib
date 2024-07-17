@@ -19,6 +19,7 @@ Item {
     readonly property real leftMargin: 0
     readonly property real rightMargin: 0
     required property ToplevelSurface surface
+    required property bool enable
 
     MouseArea {
         property int edges: 0

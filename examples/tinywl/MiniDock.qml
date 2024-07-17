@@ -18,9 +18,9 @@ Item {
 
         model: ListModel {
             id: dockModel
-            function removeSurface(surface) {
+            function removeSurface(topLevelHelper) {
                 for (var i = 0; i < dockModel.count; i++) {
-                    if (dockModel.get(i).source === surface) {
+                    if (dockModel.get(i).source === topLevelHelper) {
                         dockModel.remove(i);
                         break;
                     }
@@ -31,13 +31,13 @@ Item {
         delegate: ShaderEffectSource {
             id: dockitem
             width: 100; height: 100
-            sourceItem: source
+            sourceItem: source.surface
             smooth: true
 
             MouseArea {
                 anchors.fill: parent;
                 onClicked: {
-                    dockitem.sourceItem.cancelMinimize();
+                    source.cancelMinimize();
                 }
             }
         }

@@ -152,7 +152,7 @@ Item {
         if (mapped) {
             if (waylandSurface.isMinimized) {
                 surface.visible = false;
-                dockModel.append({ source: surface });
+                dockModel.append({ source: root });
             } else {
                 surface.visible = true;
 
@@ -162,7 +162,7 @@ Item {
         } else { // if not mapped
             if (waylandSurface.isMinimized) {
                 // mapped becomes false but not pendingDestroy
-                dockModel.removeSurface(surface)
+                dockModel.removeSurface(root)
             }
 
             if (!waylandSurface.WaylandSocket.rootSocket.enabled) {
@@ -183,7 +183,7 @@ Item {
         if (!surface.visible || !closeAnimation.active) {
             if (waylandSurface.isMinimized) {
                 // mapped becomes false and pendingDestroy
-                dockModel.removeSurface(surface)
+                dockModel.removeSurface(root)
             }
 
             creator.destroyObject(surface)
@@ -223,7 +223,7 @@ Item {
 
         surface.visible = true;
 
-        dockModel.removeSurface(surface)
+        dockModel.removeSurface(root)
         waylandSurface.setMinimize(false)
     }
 
@@ -313,7 +313,7 @@ Item {
                 Helper.activeSurface = null;
 
             surface.visible = false;
-            dockModel.append({ source: surface });
+            dockModel.append({ source: root });
             waylandSurface.setMinimize(true)
         }
 

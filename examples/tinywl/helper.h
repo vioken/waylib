@@ -17,6 +17,7 @@
 
 #include <QList>
 
+Q_MOC_INCLUDE(<wqmlcreator.h>)
 Q_DECLARE_OPAQUE_POINTER(QWindow*)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -52,10 +53,7 @@ class Helper : public WSeatEventFilter {
     Q_PROPERTY(WXdgDecorationManager* xdgDecorationManager READ xdgDecorationManager NOTIFY xdgDecorationManagerChanged)
     Q_PROPERTY(QW_NAMESPACE::QWCompositor* compositor READ compositor NOTIFY compositorChanged FINAL)
     Q_PROPERTY(WQmlCreator* outputCreator READ outputCreator CONSTANT)
-    Q_PROPERTY(WQmlCreator* xdgShellCreator READ xdgShellCreator CONSTANT)
-    Q_PROPERTY(WQmlCreator* xwaylandCreator READ xwaylandCreator CONSTANT)
-    Q_PROPERTY(WQmlCreator* layerShellCreator READ layerShellCreator CONSTANT)
-    Q_PROPERTY(WQmlCreator* inputPopupCreator READ inputPopupCreator CONSTANT)
+    Q_PROPERTY(WQmlCreator* surfaceCreator READ surfaceCreator CONSTANT)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -69,10 +67,7 @@ public:
     QWCompositor *compositor() const;
 
     WQmlCreator *outputCreator() const;
-    WQmlCreator *xdgShellCreator() const;
-    WQmlCreator *xwaylandCreator() const;
-    WQmlCreator *layerShellCreator() const;
-    WQmlCreator *inputPopupCreator() const;
+    WQmlCreator *surfaceCreator() const;
 
     void stopMoveResize();
 
@@ -146,10 +141,7 @@ private:
     WOutputManagerV1 *m_wOutputManager = nullptr;
 
     WQmlCreator *m_outputCreator = nullptr;
-    WQmlCreator *m_xdgShellCreator = nullptr;
-    WQmlCreator *m_xwaylandCreator = nullptr;
-    WQmlCreator *m_layerShellCreator = nullptr;
-    WQmlCreator *m_inputPopupCreator = nullptr;
+    WQmlCreator *m_surfaceCreator = nullptr;
 
     QPointer<WToplevelSurface> m_activateSurface;
     QList<std::pair<WOutput*,OutputInfo*>> m_outputExclusiveZoneInfo;

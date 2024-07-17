@@ -143,7 +143,7 @@ WXWaylandSurfaceItem::WXWaylandSurfaceItem(QQuickItem *parent)
 
 WXWaylandSurfaceItem::~WXWaylandSurfaceItem()
 {
-
+    disconnect(this);
 }
 
 bool WXWaylandSurfaceItem::setShellSurface(WToplevelSurface *surface)

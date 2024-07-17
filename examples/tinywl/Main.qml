@@ -72,11 +72,6 @@ Item {
                     visible: topbar.currentIndex === 0
                     anchors.fill: parent
                 }
-
-                TiledWorkspace {
-                    visible: topbar.currentIndex === 1
-                    anchors.fill: parent
-                }
             }
         }
     }

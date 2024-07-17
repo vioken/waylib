@@ -68,6 +68,9 @@ ApplicationWindow {
 
         MenuItem {
             text: "Test 1"
+            onTriggered: {
+                console.log("Test 1")
+            }
         }
 
         Menu {

@@ -19,6 +19,7 @@ pkg_search_module(WAYLAND REQUIRED IMPORTED_TARGET wayland-server)
 
 add_executable(tinywl-qtquick
     main.cpp
+    surfaceitemfactory.cpp
 )
 
 set_source_files_properties(QmlHelper.qml
@@ -34,17 +35,14 @@ qt_add_qml_module(tinywl-qtquick
     QML_FILES
         Main.qml
         StackWorkspace.qml
-        XdgSurface.qml
         LayerSurface.qml
-        TiledWorkspace.qml
         QmlHelper.qml
         OutputDelegate.qml
         StackToplevelHelper.qml
-        TiledToplevelHelper.qml
         WindowDecoration.qml
         CloseAnimation.qml
         MiniDock.qml
-        InputPopupSurface.qml
+        SurfaceWrapper.qml
 )
 
 target_compile_definitions(tinywl-qtquick

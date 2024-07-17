@@ -75,10 +75,7 @@ Helper::Helper(QObject *parent)
     , m_cursor(new WQuickCursor(this))
     , m_seat(new WSeat())
     , m_outputCreator(new WQmlCreator(this))
-    , m_xdgShellCreator(new WQmlCreator(this))
-    , m_xwaylandCreator(new WQmlCreator(this))
-    , m_layerShellCreator(new WQmlCreator(this))
-    , m_inputPopupCreator(new WQmlCreator(this))
+    , m_surfaceCreator(new WQmlCreator(this))
 {
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);
@@ -152,14 +149,14 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
     connect(xdgShell, &WXdgShell::surfaceAdded, this, [this, qmlEngine, foreignToplevel](WXdgSurface *surface) {
         auto initProperties = qmlEngine->newObject();
         initProperties.setProperty("type", surface->isPopup() ? "popup" : "toplevel");
-        initProperties.setProperty("waylandSurface", qmlEngine->toScriptValue(surface));
-        m_xdgShellCreator->add(surface, initProperties);
+        initProperties.setProperty("wSurface", qmlEngine->toScriptValue(surface));
+        m_surfaceCreator->add(surface, initProperties);
 
         if (!surface->isPopup()) {
             foreignToplevel->addSurface(surface);
         }
     });
-    connect(xdgShell, &WXdgShell::surfaceRemoved, m_xdgShellCreator, &WQmlCreator::removeByOwner);
+    connect(xdgShell, &WXdgShell::surfaceRemoved, m_surfaceCreator, &WQmlCreator::removeByOwner);
     connect(xdgShell,
             &WXdgShell::surfaceRemoved,
             foreignToplevel,
@@ -183,33 +180,36 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
     connect(m_xwayland, &WXWayland::surfaceAdded, this, [this, qmlEngine] (WXWaylandSurface *surface) {
         surface->safeConnect(&QWXWaylandSurface::associate, this, [this, surface, qmlEngine] {
             auto initProperties = qmlEngine->newObject();
-            initProperties.setProperty("waylandSurface", qmlEngine->toScriptValue(surface));
+            initProperties.setProperty("type", "xwayland");
+            initProperties.setProperty("wSurface", qmlEngine->toScriptValue(surface));
 
-            m_xwaylandCreator->add(surface, initProperties);
+            m_surfaceCreator->add(surface, initProperties);
         });
         surface->safeConnect(&QWXWaylandSurface::dissociate, this, [this, surface] {
-            m_xwaylandCreator->removeByOwner(surface);
+            m_surfaceCreator->removeByOwner(surface);
         });
 
     });
 
     connect(layerShell, &WLayerShell::surfaceAdded, this, [this, qmlEngine](WLayerSurface *surface) {
         auto initProperties = qmlEngine->newObject();
-        initProperties.setProperty("waylandSurface", qmlEngine->toScriptValue(surface));
-        m_layerShellCreator->add(surface, initProperties);
+        initProperties.setProperty("type", "layerShell");
+        initProperties.setProperty("wSurface", qmlEngine->toScriptValue(surface));
+        m_surfaceCreator->add(surface, initProperties);
     });
 
-    connect(layerShell, &WLayerShell::surfaceRemoved, m_layerShellCreator, &WQmlCreator::removeByOwner);
+    connect(layerShell, &WLayerShell::surfaceRemoved, m_surfaceCreator, &WQmlCreator::removeByOwner);
 
     m_inputMethodHelper = new WInputMethodHelper(m_server, m_seat);
 
     connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Added, this, [this, qmlEngine](WInputPopupSurface *inputPopup) {
         auto initProperties = qmlEngine->newObject();
-        initProperties.setProperty("popupSurface", qmlEngine->toScriptValue(inputPopup));
-        m_inputPopupCreator->add(inputPopup, initProperties);
+        initProperties.setProperty("type", "inputPopup");
+        initProperties.setProperty("wSurface", qmlEngine->toScriptValue(inputPopup));
+        m_surfaceCreator->add(inputPopup, initProperties);
     });
 
-    connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Removed, m_inputPopupCreator, &WQmlCreator::removeByOwner);
+    connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Removed, m_surfaceCreator, &WQmlCreator::removeByOwner);
 
     Q_EMIT compositorChanged();
 
@@ -309,24 +309,9 @@ WQmlCreator *Helper::outputCreator() const
     return m_outputCreator;
 }
 
-WQmlCreator *Helper::xdgShellCreator() const
+WQmlCreator *Helper::surfaceCreator() const
 {
-    return m_xdgShellCreator;
-}
-
-WQmlCreator *Helper::xwaylandCreator() const
-{
-    return m_xwaylandCreator;
-}
-
-WQmlCreator *Helper::layerShellCreator() const
-{
-    return m_layerShellCreator;
-}
-
-WQmlCreator *Helper::inputPopupCreator() const
-{
-    return m_inputPopupCreator;
+    return m_surfaceCreator;
 }
 
 WSurfaceItem *Helper::resizingItem() const
@@ -609,6 +594,7 @@ bool Helper::startDemoClient(const QString &socket)
     waylandClientDemo.setArguments({"-platform", "wayland"});
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert("WAYLAND_DISPLAY", socket);
+    env.insert("DISPLAY", m_xwayland->displayName());
 
     waylandClientDemo.setProcessEnvironment(env);
     return waylandClientDemo.startDetached();
