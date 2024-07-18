@@ -182,7 +182,7 @@ void handle_manager_get_text_input(wl_client *client,
     }
     text_input->d_func()->resource = text_input_resource;
     auto wClient = WClient::get(client);
-    auto wSeat = WSeat::fromHandle(QWSeat::from(seat_client->seat));
+    auto wSeat = WSeat::fromHandle(qw_seat::from(seat_client->seat));
     Q_ASSERT(wClient);
     Q_ASSERT(wSeat);
     text_input->d_func()->client = wClient;
@@ -224,7 +224,7 @@ void handle_text_input_enable(wl_client *client, wl_resource *resource, wl_resou
         d->enabledSurface->safeDisconnect(text_input);
     }
     d->enabledSurface = wSurface;
-    wSurface->safeConnect(&QWSurface::beforeDestroy, text_input, [d, text_input]{
+    wSurface->safeConnect(&qw_surface::before_destroy, text_input, [d, text_input]{
         Q_EMIT text_input->disableOnSurface(d->enabledSurface);
         d->enabledSurface->safeDisconnect(text_input);
         d->enabledSurface = nullptr;

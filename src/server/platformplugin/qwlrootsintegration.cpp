@@ -16,7 +16,6 @@
 #include <qwoutput.h>
 #include <qwrenderer.h>
 #include <qwinputdevice.h>
-#include <qwdisplay.h>
 
 #include <QOffscreenSurface>
 #include <QGuiApplication>

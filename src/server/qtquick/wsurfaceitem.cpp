@@ -15,6 +15,8 @@
 #include <qwsubcompositor.h>
 #include <qwtexture.h>
 #include <qwbuffer.h>
+#include <qwrenderer.h>
+#include <qwbox.h>
 
 #include <QQuickWindow>
 #include <QSGImageNode>
@@ -40,20 +42,20 @@ public:
 
 public:
     QSGTexture *texture() const override;
-    QWTexture *qwTexture() const override;
-    QWBuffer *qwBuffer() const override;
+    qw_texture *qwTexture() const override;
+    qw_buffer *qwBuffer() const override;
     void updateTexture(); // in render thread
     void tryUpdateTexture();
     void maybeUpdateTextureOnSurfacePrrimaryOutputChanged();
     void reset();
 
-    QWTexture *ensureTexture();
+    qw_texture *ensureTexture();
 
 private:
     void doUpdateTexture();
     WSurfaceItemContent *item;
-    QWBuffer *buffer = nullptr;
-    std::unique_ptr<QWTexture> qwtexture;
+    qw_buffer *buffer = nullptr;
+    std::unique_ptr<qw_texture> qwtexture;
     std::unique_ptr<WTexture> dwtexture;
     bool textureDirty = false;
 };
@@ -186,7 +188,7 @@ public:
     void init() {
         W_Q(WSurfaceItemContent);
 
-        surface->safeConnect(&QWSurface::commit, q, [this] {
+        surface->safeConnect(&qw_surface::notify_commit, q, [this] {
             updateSurfaceState();
         });
         surface->safeConnect(&WSurface::primaryOutputChanged, q, [this] {
@@ -228,7 +230,9 @@ public:
         if (!surface)
             return;
 
-        bufferSourceBox = surface->handle()->getBufferSourceBox();
+        wlr_fbox tmp;
+        surface->handle()->get_buffer_source_box(&tmp);
+        bufferSourceBox = qw_fbox(tmp);
         bufferOffset = surface->bufferOffset();
     }
 
@@ -463,14 +467,14 @@ QSGTexture *WSGTextureProvider::texture() const
     return dwtexture->getSGTexture(item->window());
 }
 
-QWTexture *WSGTextureProvider::qwTexture() const
+qw_texture *WSGTextureProvider::qwTexture() const
 {
     if (!buffer)
         return nullptr;
     return qwtexture.get();
 }
 
-QWBuffer *WSGTextureProvider::qwBuffer() const
+qw_buffer *WSGTextureProvider::qwBuffer() const
 {
     return buffer;
 }
@@ -534,11 +538,11 @@ void WSGTextureProvider::reset()
     item->update();
 }
 
-QWTexture *WSGTextureProvider::ensureTexture()
+qw_texture *WSGTextureProvider::ensureTexture()
 {
-    auto textureHandle = item->d_func()->surface->handle()->getTexture();
+    auto textureHandle = item->d_func()->surface->handle()->get_texture();
     if (textureHandle)
-        return textureHandle;
+        return qw_texture::from(textureHandle);
 
     if (qwtexture)
         return qwtexture.get();
@@ -554,7 +558,7 @@ QWTexture *WSGTextureProvider::ensureTexture()
     if (!renderer)
         return nullptr;
 
-    qwtexture.reset(QWTexture::fromBuffer(renderer, buffer));
+    qwtexture.reset(qw_texture::from_buffer(*renderer, *buffer));
     return qwtexture.get();
 }
 
@@ -1067,7 +1071,7 @@ void WSurfaceItemPrivate::initForSurface()
     QObject::connect(surface, &WWrapObject::aboutToBeInvalidated, q,
                      &WSurfaceItem::releaseResources, Qt::DirectConnection);
     surface->safeConnect(&WSurface::hasSubsurfaceChanged, q, [this]{ onHasSubsurfaceChanged(); });
-    surface->safeConnect(&QWSurface::commit, q, &WSurfaceItem::onSurfaceCommit);
+    surface->safeConnect(&qw_surface::notify_commit, q, &WSurfaceItem::onSurfaceCommit);
 
     onHasSubsurfaceChanged();
     updateEventItem(false);
@@ -1137,8 +1141,8 @@ void WSurfaceItemPrivate::initForDelegate()
 
 void WSurfaceItemPrivate::onHasSubsurfaceChanged()
 {
-    auto qwsurface = surface->handle();
-    Q_ASSERT(qwsurface);
+    auto qw_surface = surface->handle();
+    Q_ASSERT(qw_surface);
     if (surface->hasSubsurface())
         updateSubsurfaceItem();
 }

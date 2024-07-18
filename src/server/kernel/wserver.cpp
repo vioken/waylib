@@ -104,12 +104,12 @@ void WServerPrivate::init()
 {
     Q_ASSERT(!display);
 
-    display = new QWDisplay(q_func());
+    display.reset(new qw_display());
     wl_display_set_global_filter(display->handle(), globalFilter, this);
 
     // free follow display
-    Q_UNUSED(QWDataDeviceManager::create(display));
-    Q_UNUSED(QWPrimarySelectionV1DeviceManager::create(display));
+    Q_UNUSED(qw_data_device_manager::create(*display));
+    Q_UNUSED(qw_primary_selection_v1_device_manager::create(*display));
 
     W_Q(WServer);
 
@@ -157,8 +157,7 @@ void WServerPrivate::stop()
     QThread::currentThread()->eventDispatcher()->disconnect(q);
 
     if (display) {
-        display->deleteLater();
-        display = nullptr;
+        display.reset(nullptr);
     }
 }
 
@@ -180,10 +179,10 @@ WServer::WServer(WServerPrivate &dd, QObject *parent)
 {
 }
 
-QWDisplay *WServer::handle() const
+qw_display *WServer::handle() const
 {
     W_DC(WServer);
-    return d->display;
+    return d->display.data();
 }
 
 void WServer::stop()
@@ -363,12 +362,7 @@ void WServer::initializeProxyQPA(int &argc, char **argv, const QStringList &prox
             break;
     }
     if (!proxy) {
-        // QTBUG-8298(Make a stream version of qFatal), fix in 6.5.0
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         qFatal() << "Can't create the proxy platform plugin:" << proxyPlatformPlugins;
-#else
-        qFatal("Can't create the proxy platform plugin:%s", qPrintable(proxyPlatformPlugins.join(' ')));
-#endif
     }
     proxy->initialize();
     QWlrootsIntegration::instance()->setProxy(proxy);
@@ -377,7 +371,7 @@ void WServer::initializeProxyQPA(int &argc, char **argv, const QStringList &prox
 bool WServer::isRunning() const
 {
     W_DC(WServer);
-    return d->display;
+    return !!d->display;
 }
 
 void WServer::addSocket(WSocket *socket)

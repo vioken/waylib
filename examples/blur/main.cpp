@@ -14,7 +14,7 @@
 #include <woutputviewport.h>
 
 #include <qwbackend.h>
-#include <qwdisplay.h>
+#include <QWDisplay.h>
 #include <qwoutput.h>
 #include <qwlogging.h>
 #include <qwcompositor.h>
@@ -22,7 +22,7 @@
 #include <qwcompositor.h>
 #include <qwrenderer.h>
 #include <qwallocator.h>
-
+#include <wl_array>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>

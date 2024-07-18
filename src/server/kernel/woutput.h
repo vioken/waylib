@@ -25,10 +25,10 @@ class QQuickWindow;
 QT_END_NAMESPACE
 
 QW_BEGIN_NAMESPACE
-class QWRenderer;
-class QWSwapchain;
-class QWAllocator;
-class QWOutput;
+class qw_renderer;
+class qw_swapchain;
+class qw_allocator;
+class qw_output;
 QW_END_NAMESPACE
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -67,22 +67,22 @@ public:
     };
     Q_ENUM(Transform)
 
-    explicit WOutput(QW_NAMESPACE::QWOutput *handle, WBackend *backend);
+    explicit WOutput(QW_NAMESPACE::qw_output *handle, WBackend *backend);
     ~WOutput();
 
     WBackend *backend() const;
     WServer *server() const;
-    QW_NAMESPACE::QWRenderer *renderer() const;
-    QW_NAMESPACE::QWSwapchain *swapchain() const;
-    QW_NAMESPACE::QWAllocator *allocator() const;
+    QW_NAMESPACE::qw_renderer *renderer() const;
+    QW_NAMESPACE::qw_swapchain *swapchain() const;
+    QW_NAMESPACE::qw_allocator *allocator() const;
     bool configureSwapchain(const QSize &size, uint32_t format,
-                            QW_NAMESPACE::QWSwapchain **swapchain,
+                            QW_NAMESPACE::qw_swapchain **swapchain,
                             bool doTest = true);
 
-    QW_NAMESPACE::QWOutput *handle() const;
+    QW_NAMESPACE::qw_output *handle() const;
     wlr_output *nativeHandle() const;
 
-    static WOutput *fromHandle(const QW_NAMESPACE::QWOutput *handle);
+    static WOutput *fromHandle(const QW_NAMESPACE::qw_output *handle);
 
     static WOutput *fromScreen(const QScreen *screen);
 

@@ -9,7 +9,6 @@
 #include "wseat.h"
 #include "wcursor.h"
 
-#include <qwbuffer.h>
 #include <qwrenderer.h>
 #include <qwoutput.h>
 

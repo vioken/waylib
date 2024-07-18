@@ -14,7 +14,7 @@
 #include <woutputviewport.h>
 
 #include <qwbackend.h>
-#include <qwdisplay.h>
+#include <QWDisplay.h>
 #include <qwoutput.h>
 #include <qwlogging.h>
 #include <qwcompositor.h>
