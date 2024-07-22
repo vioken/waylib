@@ -140,10 +140,11 @@ int main(int argc, char *argv[]) {
     helper->initProtocols(window, &waylandEngine);
 
     // multi output
-    // qobject_cast<qw_multi_backend*>(helper->backend()->handle())->for_each_backend([] (wlr_backend *backend, void *) {
-    //    if (auto x11 = qw_x11_backend::from(backend))
-    //         x11->qw_x11_backend::output_create();
-    // }, nullptr);
+    qobject_cast<qw_multi_backend*>(helper->backend()->handle())->for_each_backend([] (wlr_backend *backend, void *) {
+        if (auto x11 = qw_x11_backend::from(backend)) {
+            x11->output_create();
+        }
+    }, nullptr);
 
     return app.exec();
 }
