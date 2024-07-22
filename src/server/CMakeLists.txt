@@ -114,9 +114,9 @@ set(SOURCES
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
 
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v2-protocol.c
-    ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.c
+    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v1-protocol.c
+    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v2-protocol.c
+    ${CMAKE_BINARY_DIR}/protocols/xdg-output-unstable-v1-protocol.c
 
     utils/wtools.cpp
     utils/wthreadutils.cpp
@@ -147,7 +147,7 @@ set(SOURCES
     protocols/wcursorshapemanagerv1.cpp
     protocols/woutputmanagerv1.cpp
 
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.c
+    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v1-protocol.c
 )
 
 set(HEADERS
@@ -253,9 +253,9 @@ set(PRIVATE_HEADERS
     qtquick/private/wrenderbuffernode_p.h
     qtquick/private/wsurfaceitem_p.h
 
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v1-protocol.h
-    ${CMAKE_CURRENT_BINARY_DIR}/text-input-unstable-v2-protocol.h
-    ${CMAKE_CURRENT_BINARY_DIR}/xdg-output-unstable-v1-protocol.h
+    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v1-protocol.h
+    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v2-protocol.h
+    ${CMAKE_BINARY_DIR}/protocols/xdg-output-unstable-v1-protocol.h
 
     protocols/private/winputmethodv2_p.h
     protocols/private/wtextinput_p.h
@@ -356,6 +356,7 @@ target_include_directories(${TARGET}
         ${Qt6Quick_PRIVATE_INCLUDE_DIRS}
         ${Qt6EglSupport_PRIVATE_INCLUDE_DIRS}
         ${Qt6InputSupport_PRIVATE_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}/protocols
 )
 
 target_link_directories(${TARGET}

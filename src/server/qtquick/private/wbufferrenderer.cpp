@@ -115,7 +115,9 @@ class Q_DECL_HIDDEN TextureProvider : public WBufferTextureProvider
 {
 public:
     explicit TextureProvider(WBufferRenderer *item)
-        : item(item) {}
+        : item(item) {
+
+    }
     ~TextureProvider() {
         if (m_texture)
             cleanTexture();
@@ -347,6 +349,7 @@ qw_buffer *WBufferRenderer::beginRender(const QSize &pixelSize, qreal devicePixe
 {
     Q_ASSERT(!state.buffer);
     Q_ASSERT(m_output);
+    Q_ASSERT(m_textureProvider);
 
     if (pixelSize.isEmpty())
         return nullptr;
@@ -354,6 +357,8 @@ qw_buffer *WBufferRenderer::beginRender(const QSize &pixelSize, qreal devicePixe
     Q_EMIT beforeRendering();
 
     m_damageRing.set_bounds(pixelSize.width(), pixelSize.height());
+    Q_ASSERT(m_textureProvider);
+
     // configure swapchain
     if (flags.testFlag(RenderFlag::DontConfigureSwapchain)) {
         auto renderFormat = pickFormat(m_output->renderer(), format);
@@ -361,16 +366,22 @@ qw_buffer *WBufferRenderer::beginRender(const QSize &pixelSize, qreal devicePixe
             qWarning("wlr_renderer doesn't support format 0x%s", drmGetFormatName(format));
             return nullptr;
         }
+        Q_ASSERT(m_textureProvider);
+
         if (!m_swapchain || QSize(m_swapchain->handle()->width, m_swapchain->handle()->height) != pixelSize
             || m_swapchain->handle()->format.format != renderFormat->format) {
             if (m_swapchain)
                 delete m_swapchain;
             m_swapchain = qw_swapchain::create(m_output->allocator()->handle(), pixelSize.width(), pixelSize.height(), renderFormat);
         }
+        Q_ASSERT(m_textureProvider);
+
     } else {
         bool ok = m_output->configureSwapchain(pixelSize, format, &m_swapchain, !flags.testFlag(DontTestSwapchain));
         if (!ok)
             return nullptr;
+        Q_ASSERT(m_textureProvider);
+
     }
 
     if (!shouldCacheBuffer())

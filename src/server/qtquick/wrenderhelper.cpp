@@ -311,7 +311,6 @@ QSGRendererInterface::GraphicsApi WRenderHelper::getGraphicsApi()
     return api;
 }
 
-// rewinee
 class Q_DECL_HIDDEN GLTextureBuffer : public qw_buffer_interface<GLTextureBuffer>
 {
 public:
@@ -462,7 +461,6 @@ void QImageBuffer::end_data_ptr_access()
 
 }
 
-// rewinee
 qw_buffer *WRenderHelper::toBuffer(qw_renderer *renderer, QSGTexture *texture, QSGRendererInterface::GraphicsApi api)
 {
     const QSize size = texture->textureSize();
@@ -471,18 +469,16 @@ qw_buffer *WRenderHelper::toBuffer(qw_renderer *renderer, QSGTexture *texture, Q
     case QSGRendererInterface::OpenGL: {
         Q_ASSERT(wlr_renderer_is_gles2(renderer->handle()));
         auto egl = wlr_gles2_renderer_get_egl(renderer->handle());
-        return nullptr;
 
-        //return qw_buffer::create(new GLTextureBuffer(egl, texture), size.width(), size.height());
+        return qw_buffer::create(new GLTextureBuffer(egl, texture), size.width(), size.height());
     }
 #ifdef ENABLE_VULKAN_RENDER
     case QSGRendererInterface::Vulkan: {
         Q_ASSERT(wlr_renderer_is_vk(renderer->handle()));
         auto instance = wlr_vk_renderer_get_instance(renderer->handle());
         auto device = wlr_vk_renderer_get_device(renderer->handle());
-        return nullptr;
 
-        //return qw_buffer::create(new VkTextureBuffer(instance, device, texture), size.width(), size.height());
+        return qw_buffer::create(new VkTextureBuffer(instance, device, texture), size.width(), size.height());
     }
 #endif
     case QSGRendererInterface::Software: {
@@ -502,8 +498,7 @@ qw_buffer *WRenderHelper::toBuffer(qw_renderer *renderer, QSGTexture *texture, Q
         if (image.isNull())
             return nullptr;
 
-        return nullptr;
-      //  return qw_buffer::create(new QImageBuffer(image), image.width(), image.height());
+        return qw_buffer::create(new QImageBuffer(image), image.width(), image.height());
     }
     default:
         qFatal("Can't get qw_buffer from QSGTexture, Not supported graphics API.");
@@ -572,7 +567,7 @@ QQuickRenderTarget WRenderHelper::acquireRenderTarget(QQuickRenderControl *rc, q
             return {};
     }
 
-    connect(buffer, SIGNAL(beforeDestroy()),
+    connect(buffer, SIGNAL(before_destroy()),
             this, SLOT(onBufferDestroy()), Qt::UniqueConnection);
 
     d->buffers.append(bufferData.release());

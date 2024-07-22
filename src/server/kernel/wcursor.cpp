@@ -38,9 +38,7 @@ Q_LOGGING_CATEGORY(qLcWlrCursor, "waylib.server.cursor", QtWarningMsg)
 inline qw_buffer* createImageBuffer(QImage image)
 {
     auto *bufferImpl = new WImageBufferImpl(image);
-    //return qw_buffer::create(bufferImpl, image.width(), image.height());
-
-    // TODO: rewinee
+    return qw_buffer::create(bufferImpl, image.width(), image.height());
 }
 
 WCursorPrivate::WCursorPrivate(WCursor *qq)

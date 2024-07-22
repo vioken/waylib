@@ -47,7 +47,7 @@ public:
 };
 
 int main(int argc, char *argv[]) {
-    QWLog::init();
+    qw_log::init();
     WServer::initializeQPA();
 //    QQuickStyle::setStyle("Material");
 

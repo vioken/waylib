@@ -7,15 +7,17 @@ function(ws_generate type protocols input_file output_name)
         set(input_file ${WAYLAND_PROTOCOLS}/${input_file})
     endif()
 
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/protocols)
+
     execute_process(COMMAND ${WAYLAND_SCANNER}
         ${type}-header
         ${input_file}
-        ${CMAKE_CURRENT_BINARY_DIR}/${output_name}.h
+        ${CMAKE_BINARY_DIR}/protocols/${output_name}.h
     )
 
     execute_process(COMMAND ${WAYLAND_SCANNER}
         public-code
         ${input_file}
-        ${CMAKE_CURRENT_BINARY_DIR}/${output_name}.c
+        ${CMAKE_BINARY_DIR}/protocols/${output_name}.c
     )
 endfunction()

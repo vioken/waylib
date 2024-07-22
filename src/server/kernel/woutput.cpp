@@ -134,6 +134,15 @@ qw_swapchain *WOutput::swapchain() const
 qw_allocator *WOutput::allocator() const
 {
     W_DC(WOutput);
+
+    auto hh = d->nativeHandle()->allocator;
+
+    auto a = qw_allocator::get(hh);
+
+    if(!a) {
+        Q_ASSERT(!qw::map().contains(hh));
+    }
+
     return qw_allocator::from(d->nativeHandle()->allocator);
 }
 
