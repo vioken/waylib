@@ -19,7 +19,7 @@ if(QT_KNOWN_POLICY_QTP0001) # this policy was introduced in Qt 6.5
     # the RESOURCE_PREFIX argument for qt_add_qml_module() defaults to ":/qt/qml/"
 endif()
 
-find_package(PkgConfig)
+find_package(PkgConfig REQUIRED)
 pkg_search_module(LIBDRM REQUIRED IMPORTED_TARGET libdrm)
 pkg_search_module(WLROOTS REQUIRED IMPORTED_TARGET wlroots)
 pkg_search_module(WAYLAND REQUIRED IMPORTED_TARGET wayland-server)
@@ -29,10 +29,6 @@ pkg_search_module(PIXMAN REQUIRED IMPORTED_TARGET pixman-1)
 pkg_search_module(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
 pkg_search_module(XCB REQUIRED IMPORTED_TARGET xcb)
 pkg_search_module(EGL REQUIRED IMPORTED_TARGET egl)
-
-if(NOT WITH_SUBMODULE_QWLROOTS)
-    find_package(QWlroots)
-endif()
 
 ws_generate(
     server
