@@ -55,7 +55,6 @@
 #include <private/qpainter_p.h>
 #include <private/qsgdefaultrendercontext_p.h>
 #include <private/qquickitem_p.h>
-#include <private/qquickrectangle_p.h>
 
 extern "C" {
 #ifdef ENABLE_VULKAN_RENDER
@@ -214,11 +213,6 @@ public:
     inline void render(WBufferRenderer *renderer, int sourceIndex, const QMatrix4x4 &renderMatrix,
                        const QRectF &sourceRect, const QRectF &viewportRect, bool preserveColorContents);
 
-    static bool visualizeLayers() {
-        static bool on = qEnvironmentVariableIsSet("WAYLIB_VISUALIZE_LAYERS");
-        return on;
-    }
-
     qw_buffer *renderLayer(LayerData *layer, bool *dontEndRenderAndReturnNeedsEndRender,
                           bool isCursor,
                           const QSize &forcePixelSize = QSize(),
@@ -304,10 +298,10 @@ public:
             Q_ASSERT(layer->isAccepted());
         return layer->isAccepted();
     }
-    inline bool forceLayer() const {
+    inline bool forceShadowBuffer() const {
         return layer->force();
     }
-    inline bool keepLayer() const {
+    inline bool forceLayer() const {
         return layer->keepLayer();
     }
 
@@ -577,33 +571,13 @@ void OutputHelper::render(WBufferRenderer *renderer, int sourceIndex, const QMat
     renderer->render(sourceIndex, renderMatrix, sourceRect, targetRect, preserveColorContents);
 }
 
-static QQuickItem *createVisualRectangle(QQuickItem *target, const QColor &color) {
-    auto rectangle = new QQuickRectangle(target);
-    rectangle->border()->setColor(color);
-    rectangle->border()->setWidth(1);
-    rectangle->setColor(Qt::transparent);
-    QQuickItemPrivate::get(rectangle)->anchors()->setFill(target);
-
-    return rectangle;
-}
-
 qw_buffer *OutputHelper::renderLayer(LayerData *layer, bool *dontEndRenderAndReturnNeedsEndRender,
                                     bool isCursor, const QSize &forcePixelSize, const QRectF &targetRect)
 {
     auto source = layer->layer->layer->parent();
     if (!layer->renderer) {
         layer->renderer = new WBufferRenderer(source);
-
-        QList<QQuickItem*> sourceList {source};
-        if (visualizeLayers()) {
-            auto rectangle = createVisualRectangle(source, Qt::green);
-            QQuickItemPrivate::get(rectangle)->refFromEffectItem(true);
-            // Ensure QSGRootNode for this item
-            renderWindowD()->updateDirtyNode(rectangle);
-            sourceList << rectangle;
-        }
-
-        layer->renderer->setSourceList(sourceList, false);
+        layer->renderer->setSourceList({source}, false);
         layer->renderer->setOutput(output()->output());
 
         connect(layer->renderer, &WBufferRenderer::sceneGraphChanged, this, [layer] {
@@ -687,10 +661,6 @@ qw_buffer *OutputHelper::renderLayer(LayerData *layer, bool *dontEndRenderAndRet
         if (buffer) {
             render(layer->renderer, 0, renderMatrix, {}, targetRect,
                    layer->layer->layer->flags().testFlag(WOutputLayer::PreserveColorContents));
-
-            if (visualizeLayers())
-                render(layer->renderer, 1, renderMatrix, {}, targetRect, true);
-
             if (dontEndRenderAndReturnNeedsEndRender) {
                 *dontEndRenderAndReturnNeedsEndRender = true;
             } else {
@@ -795,15 +765,6 @@ WBufferRenderer *OutputHelper::afterRender()
         if (layer->layer->flags().testFlag(WOutputLayer::Cursor))
             hasCursorLayer = true;
 
-        // If hardware layers is disabled on this output viewport
-        // and this layer doesn't want force layer, should fallback
-        // to software composite.
-        if (needsSoftwareCompositeEndIndex == -1
-            && output()->disableHardwareLayers()
-            && !layer->forceLayer()) {
-            needsSoftwareCompositeEndIndex = i;
-        }
-
         if (needsSoftwareCompositeEndIndex == -1) {
             if (ok && state.accepted) {
                 bool ok = layer->accept(output(), true);
@@ -825,17 +786,17 @@ WBufferRenderer *OutputHelper::afterRender()
             }
         }
 
-        if (layer->forceLayer() || layer->keepLayer()
+        if (layer->forceShadowBuffer() || layer->forceLayer()
             // current layer can't reject, because the layes behind current layer
             // requset force composite.
             || i >= firstCantRejectLayerIndex) {
             Q_ASSERT(layer->needsComposite());
             bool ok = layer->accept(output(), false);
             Q_ASSERT(ok);
-            if (layer->forceLayer())
+            if (layer->forceShadowBuffer())
                 forceShadowRender = true;
             needsSoftwareCompositeBeginIndex = i;
-        } else if (!output()->ignoreSoftwareLayers()) {
+        } else {
             bool ok = layer->reject(output());
             Q_ASSERT(ok);
         }
@@ -852,14 +813,11 @@ WBufferRenderer *OutputHelper::afterRender()
         m_cursorLayer.reset();
     }
 
-    if (needsSoftwareCompositeEndIndex == -1) // All layers need software composite
-        needsSoftwareCompositeEndIndex = needsCompositeLayers.size() - 1;
     const int needsCompositeCount = needsSoftwareCompositeBeginIndex >= 0
                                         ? needsSoftwareCompositeEndIndex - needsSoftwareCompositeBeginIndex + 1
                                         : 0;
     if (needsCompositeCount > 0) {
         Q_ASSERT(layers.size() == needsCompositeLayers.size());
-        // Don't use needsCompositeCount, rejected layers also should remove
         layers.remove(0, needsSoftwareCompositeEndIndex + 1);
 
         needsCompositeLayers = needsCompositeLayers.mid(needsSoftwareCompositeBeginIndex,
@@ -870,9 +828,7 @@ WBufferRenderer *OutputHelper::afterRender()
 
     setLayers(layers);
 
-    if (needsCompositeLayers.isEmpty()
-        // Don't do anyting if this output viewport wants ignore software layers
-        || output()->ignoreSoftwareLayers()) {
+    if (needsCompositeLayers.isEmpty()) {
         Q_ASSERT(!forceShadowRender);
         cleanLayerCompositor();
         return bufferRenderer();
@@ -936,8 +892,6 @@ WBufferRenderer *OutputHelper::compositeLayers(const QList<LayerData*> layers, b
             proxy = m_layerProxys.at(j);
         } else {
             proxy = new WQuickTextureProxy(m_layerPorxyContainer);
-            if (visualizeLayers())
-                createVisualRectangle(proxy, Qt::red);
             m_layerProxys.append(proxy);
         }
 
