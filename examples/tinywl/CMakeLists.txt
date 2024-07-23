@@ -54,11 +54,6 @@ target_compile_definitions(tinywl-qtquick
     WLR_USE_UNSTABLE
 )
 
-target_include_directories(tinywl-qtquick
-    PRIVATE
-    ${CMAKE_BINARY_DIR}/protocols
-)
-
 target_link_libraries(tinywl-qtquick
     PRIVATE
     Qt6::Quick

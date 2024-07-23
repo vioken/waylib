@@ -239,9 +239,9 @@ set(PRIVATE_HEADERS
     qtquick/private/wrenderbuffernode_p.h
     qtquick/private/wsurfaceitem_p.h
 
-    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v1-protocol.h
-    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v2-protocol.h
-    ${CMAKE_BINARY_DIR}/protocols/xdg-output-unstable-v1-protocol.h
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/text-input-unstable-v1-protocol.h
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/text-input-unstable-v2-protocol.h
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/xdg-output-unstable-v1-protocol.h
 
     protocols/private/winputmethodv2_p.h
     protocols/private/wtextinput_p.h
@@ -335,7 +335,6 @@ target_include_directories(${TARGET}
         ${Qt6Quick_PRIVATE_INCLUDE_DIRS}
         ${Qt6EglSupport_PRIVATE_INCLUDE_DIRS}
         ${Qt6InputSupport_PRIVATE_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}/protocols
 )
 
 target_link_directories(${TARGET}
