@@ -278,10 +278,9 @@ bool WXdgSurface::isFullScreen() const
 QRect WXdgSurface::getContentGeometry() const
 {
     W_DC(WXdgSurface);
-    wlr_box tmp;
-    d->handle()->get_geometry(&tmp);
-    qw_box ret(tmp);
-    return ret;
+    qw_box tmp;
+    d->handle()->get_geometry(tmp);
+    return tmp.toQRect();
 }
 
 QSize WXdgSurface::minSize() const

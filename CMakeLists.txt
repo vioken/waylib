@@ -17,6 +17,7 @@ option(INSTALL_TINYWL "A minimum viable product Wayland compositor based on wayl
 option(ADDRESS_SANITIZER "Enable address sanitize" OFF)
 
 if(WITH_SUBMODULE_QWLROOTS)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/qwlroots/cmake/WaylandScannerHelpers.cmake)
     add_subdirectory(qwlroots)
     message("Using QWlroots from submodule")
 endif()
@@ -35,7 +36,6 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 include(PackageVersionHelper)
-include(WaylandScannerHelpers)
 
 add_subdirectory(src)
 if(BUILD_EXAMPLES)

@@ -92,11 +92,11 @@ QRect WInputPopupSurface::cursorRect() const
 void WInputPopupSurface::sendCursorRect(QRect rect)
 {
     W_D(WInputPopupSurface);
-    wlr_box tmp = qw_box::toWlrBox(rect);
-    d->handle()->send_text_input_rectangle(&tmp);
     if (d->cursorRect == rect)
         return;
     d->cursorRect = rect;
+    d->handle()->send_text_input_rectangle(qw_box(rect));
+
     Q_EMIT cursorRectChanged();
 }
 WAYLIB_SERVER_END_NAMESPACE

@@ -30,24 +30,10 @@ pkg_search_module(XKBCOMMON REQUIRED IMPORTED_TARGET xkbcommon)
 pkg_search_module(XCB REQUIRED IMPORTED_TARGET xcb)
 pkg_search_module(EGL REQUIRED IMPORTED_TARGET egl)
 
-ws_generate(
-    server
-    wayland-protocols
-    stable/xdg-shell/xdg-shell.xml
-    xdg-shell-protocol
-)
-ws_generate(
-    server
-    wayland-protocols
-    staging/cursor-shape/cursor-shape-v1.xml
-    cursor-shape-v1-protocol
-)
-ws_generate(
-    server
-    wlr-protocols
-    unstable/wlr-layer-shell-unstable-v1.xml
-    wlr-layer-shell-unstable-v1-protocol
-)
+if(NOT WITH_SUBMODULE_QWLROOTS)
+    find_package(QWlroots)
+endif()
+
 ws_generate(
     server
     wayland-protocols
@@ -114,9 +100,9 @@ set(SOURCES
     qtquick/private/wbufferrenderer.cpp
     qtquick/private/wrenderbuffernode.cpp
 
-    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v1-protocol.c
-    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v2-protocol.c
-    ${CMAKE_BINARY_DIR}/protocols/xdg-output-unstable-v1-protocol.c
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/text-input-unstable-v1-protocol.c
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/text-input-unstable-v2-protocol.c
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/xdg-output-unstable-v1-protocol.c
 
     utils/wtools.cpp
     utils/wthreadutils.cpp
@@ -147,7 +133,7 @@ set(SOURCES
     protocols/wcursorshapemanagerv1.cpp
     protocols/woutputmanagerv1.cpp
 
-    ${CMAKE_BINARY_DIR}/protocols/text-input-unstable-v1-protocol.c
+    ${WAYLAND_PROTOCOLS_OUTPUTDIR}/text-input-unstable-v1-protocol.c
 )
 
 set(HEADERS
@@ -309,18 +295,6 @@ set_target_properties(${TARGET}
 	# PRIVATE_HEADER "${PRIVATE_HEADERS}"
 	# CMake Warning has PRIVATE_HEADER files but no PRIVATE_HEADER DESTINATION
 )
-if(WITH_SUBMODULE_QWLROOTS)
-    target_link_libraries(${TARGET}
-        PUBLIC
-        qwlroots
-    )
-else()
-    find_package(QWlroots)
-    target_link_libraries(${TARGET}
-        PUBLIC
-        QWlroots::QWlroots
-    )
-endif()
 
 set(QT_LIBRARIES "")
 foreach(temp ${QT_COMPONENTS})
@@ -338,6 +312,11 @@ target_link_libraries(${TARGET}
     PkgConfig::XKBCOMMON
     PkgConfig::XCB
     PkgConfig::EGL
+)
+
+target_link_libraries(${TARGET}
+    PUBLIC
+        QWlroots::QWlroots
 )
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

@@ -352,7 +352,7 @@ bool OutputHelper::attachLayer(OutputLayer *layer)
     auto qwlayer = qw_output_layer::create(*qwoutput());
     if (!qwlayer)
         return false;
-   // qwlayer->setParent(this); rewineeee
+    qwlayer->setParent(this);
 
     m_layers.append(new LayerData(layer, qwlayer));
     connect(layer->layer, &WOutputLayer::zChanged, this, &OutputHelper::sortLayers);

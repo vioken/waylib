@@ -24,7 +24,7 @@ void WOutputLayoutPrivate::updateImplicitSize()
 
     wlr_box tmp_box;
     q->get_box(nullptr, &tmp_box);
-    qw_box newSize { tmp_box };
+    auto newSize = qw_box(tmp_box).toQRect();
 
     if (implicitWidth != newSize.x() + newSize.width()) {
         implicitWidth = newSize.x() + newSize.width();
@@ -109,7 +109,7 @@ QList<WOutput*> WOutputLayout::getIntersectedOutputs(const QRect &geometry) cons
     for (auto o : std::as_const(d->outputs)) {
         wlr_box tmp;
         get_box(o->nativeHandle(), &tmp);
-        const qw_box og { tmp };
+        const QRect og = qw_box(tmp).toQRect();
         if (og.intersects(geometry))
             outputs << o;
     }

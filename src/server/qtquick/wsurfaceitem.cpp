@@ -230,9 +230,9 @@ public:
         if (!surface)
             return;
 
-        wlr_fbox tmp;
-        surface->handle()->get_buffer_source_box(&tmp);
-        bufferSourceBox = qw_fbox(tmp);
+        qw_fbox tmp;
+        surface->handle()->get_buffer_source_box(tmp);
+        bufferSourceBox = tmp.toQRectF();
         bufferOffset = surface->bufferOffset();
     }
 
