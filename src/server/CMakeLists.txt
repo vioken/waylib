@@ -339,6 +339,11 @@ target_link_directories(${TARGET}
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}>
 )
 
+target_precompile_headers(${TARGET}
+    PRIVATE
+    "$<$<COMPILE_LANGUAGE:CXX>:pch/pch.hxx>"
+)
+
 install(TARGETS ${TARGET}
     EXPORT
         WaylibServerTargets
