@@ -7,10 +7,6 @@
 #include <qwbufferinterface.h>
 #include <QImage>
 
-extern "C" {
-#include <wlr/types/wlr_buffer.h>
-}
-
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 class WImageBufferImpl : public QW_NAMESPACE::qw_buffer_interface<WImageBufferImpl>

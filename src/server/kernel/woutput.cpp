@@ -15,12 +15,6 @@
 #include <qwswapchain.h>
 #include <qwallocator.h>
 
-extern "C" {
-#define static
-#include <wlr/render/interface.h>
-#undef static
-}
-
 #include <QLoggingCategory>
 #include <QCoreApplication>
 #include <QQuickWindow>

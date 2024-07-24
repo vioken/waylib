@@ -16,10 +16,6 @@
 
 #include <xcb/xcb.h>
 
-extern "C" {
-#include <wlr/xwayland/server.h>
-}
-
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 

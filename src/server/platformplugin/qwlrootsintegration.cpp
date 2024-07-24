@@ -49,12 +49,6 @@ extern "C" {
 
 #endif // QT_NO_OPENGL
 
-extern "C" {
-#include <wlr/types/wlr_output.h>
-#include <wlr/types/wlr_input_device.h>
-#include <wlr/types/wlr_tablet_pad.h>
-}
-
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 #define CALL_PROXY2(FunName, fallbackValue, ...) m_proxyIntegration ? m_proxyIntegration->FunName(__VA_ARGS__) : fallbackValue

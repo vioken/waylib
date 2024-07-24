@@ -18,12 +18,6 @@
 #include <QQuickWindow>
 #include <QProcess>
 
-extern "C" {
-#define static
-#include <wlr/types/wlr_output.h>
-#undef static
-}
-
 WAYLIB_SERVER_USE_NAMESPACE
 QW_USE_NAMESPACE
 

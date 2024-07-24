@@ -53,13 +53,6 @@
 #include <QQmlComponent>
 #include <QVariant>
 
-extern "C" {
-#define static
-#include <wlr/types/wlr_output.h>
-#undef static
-#include <wlr/types/wlr_gamma_control_v1.h>
-}
-
 #define WLR_FRACTIONAL_SCALE_V1_VERSION 1
 
 inline QPointF getItemGlobalPosition(QQuickItem *item)

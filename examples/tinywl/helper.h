@@ -106,7 +106,7 @@ public Q_SLOTS:
     void allowNonDrmOutputAutoChangeMode(WOutput *output);
     void enableOutput(WOutput *output);
 
-signals:
+Q_SIGNALS:
     void activatedSurfaceChanged();
     void resizingItemChanged();
     void movingItemChanged();

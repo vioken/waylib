@@ -25,23 +25,13 @@
 
 extern "C" {
 #define static
-#include <wlr/render/wlr_renderer.h>
 #include <wlr/render/gles2.h>
 #undef static
-#include <wlr/render/egl.h>
 #include <wlr/render/pixman.h>
 #ifdef ENABLE_VULKAN_RENDER
 #include <wlr/render/vulkan.h>
 #endif
-#include <wlr/util/region.h>
-#include <wlr/backend.h>
-#include <wlr/backend/interface.h>
-#include <wlr/types/wlr_buffer.h>
-#include <wlr/render/drm_format_set.h>
-#include <wlr/render/allocator.h>
-#include <wlr/render/swapchain.h>
 }
-
 #include <drm_fourcc.h>
 #include <dlfcn.h>
 

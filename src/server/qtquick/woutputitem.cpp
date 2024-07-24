@@ -3,11 +3,9 @@
 
 #include "woutputitem.h"
 #include "woutputitem_p.h"
-#include "woutputrenderwindow.h"
 #include "woutput.h"
 #include "woutputlayout.h"
 #include "wquickoutputlayout.h"
-#include "wseat.h"
 #include "wtools.h"
 #include "wtexture.h"
 #include "wquickcursor.h"
@@ -20,7 +18,6 @@
 #include <private/qsgplaintexture_p.h>
 
 extern "C" {
-#include <wlr/render/wlr_texture.h>
 #define static
 #include <wlr/render/gles2.h>
 #undef static

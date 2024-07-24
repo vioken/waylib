@@ -19,17 +19,6 @@
 #include <QLoggingCategory>
 #include <QRect>
 
-extern "C" {
-#define delete delete_c
-#include <wlr/types/wlr_input_method_v2.h>
-#undef delete
-#include <wlr/types/wlr_keyboard.h>
-#define static
-#include <wlr/types/wlr_compositor.h>
-#undef static
-#include <wlr/types/wlr_virtual_keyboard_v1.h>
-}
-
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 Q_DECLARE_LOGGING_CATEGORY(qLcInputMethod)

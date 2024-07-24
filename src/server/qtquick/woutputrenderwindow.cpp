@@ -8,7 +8,6 @@
 #include "wbackend.h"
 #include "woutputviewport.h"
 #include "woutputviewport_p.h"
-#include "wtools.h"
 #include "wqmlhelper_p.h"
 #include "woutputlayer.h"
 #include "wbufferrenderer_p.h"
@@ -56,20 +55,12 @@
 
 extern "C" {
 #define static
-#include <wlr/render/wlr_renderer.h>
-#include <wlr/render/interface.h>
 #include <wlr/render/gles2.h>
-#include <wlr/types/wlr_output_layer.h>
 #undef static
-#include <wlr/render/pixman.h>
-#include <wlr/render/egl.h>
 #include <wlr/render/pixman.h>
 #ifdef ENABLE_VULKAN_RENDER
 #include <wlr/render/vulkan.h>
 #endif
-#include <wlr/util/region.h>
-#include <wlr/types/wlr_output.h>
-#include <wlr/types/wlr_damage_ring.h>
 }
 
 #include <drm_fourcc.h>

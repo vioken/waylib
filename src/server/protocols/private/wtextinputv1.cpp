@@ -16,12 +16,7 @@
 #include <QRect>
 
 extern "C" {
-#include <wlr/types/wlr_seat.h>
-#define static
-#include <wlr/types/wlr_compositor.h>
-#undef static
-#include <wlr/util/box.h>
-#include <text-input-unstable-v1-protocol.h>
+#include "text-input-unstable-v1-protocol.h"
 }
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE

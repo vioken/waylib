@@ -30,11 +30,6 @@
 #include <private/qquickwindow_p.h>
 #include <private/qquickdeliveryagent_p_p.h>
 
-extern "C" {
-#include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_primary_selection.h>
-}
-
 QT_BEGIN_NAMESPACE
 Q_GUI_EXPORT bool qt_sendShortcutOverrideEvent(QObject *o, ulong timestamp, int k, Qt::KeyboardModifiers mods, const QString &text = QString(), bool autorep = false, ushort count = 1);
 QT_END_NAMESPACE

@@ -16,13 +16,6 @@
 #include <QLoggingCategory>
 #include <QQmlInfo>
 
-extern "C" {
-#include <wlr/types/wlr_text_input_v3.h>
-#define static
-#include <wlr/types/wlr_compositor.h>
-#undef static
-}
-
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 Q_DECLARE_LOGGING_CATEGORY(qLcInputMethod)

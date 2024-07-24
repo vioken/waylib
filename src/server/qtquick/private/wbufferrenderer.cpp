@@ -34,19 +34,6 @@
 #include <private/qopenglcontext_p.h>
 #endif
 
-extern "C" {
-#include <wlr/types/wlr_damage_ring.h>
-#include <wlr/render/drm_format_set.h>
-#define static
-#include <wlr/render/wlr_renderer.h>
-#include <wlr/render/interface.h>
-#undef static
-#ifdef slots
-#undef slots // using at swapchain.h
-#endif
-#include <wlr/render/swapchain.h>
-}
-
 #include <pixman.h>
 #include <drm_fourcc.h>
 #include <xf86drm.h>

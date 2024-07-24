@@ -15,10 +15,6 @@
 
 extern "C" {
 #include "text-input-unstable-v2-protocol.h"
-#define static
-#include <wlr/types/wlr_compositor.h>
-#undef static
-#include <wlr/types/wlr_seat.h>
 }
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE

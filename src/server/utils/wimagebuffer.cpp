@@ -7,12 +7,6 @@
 #include <QImage>
 #include <QColorSpace>
 
-extern "C" {
-#include <pixman.h>
-#include <wlr/types/wlr_buffer.h>
-#include <wlr/xcursor.h>
-}
-
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
 WImageBufferImpl::WImageBufferImpl(const QImage &bufferImage)

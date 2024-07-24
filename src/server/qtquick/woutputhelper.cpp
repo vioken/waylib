@@ -22,13 +22,6 @@
 #endif
 #include <private/qquickwindow_p.h>
 
-extern "C" {
-#define static
-#include <wlr/types/wlr_output.h>
-#undef static
-#include <wlr/types/wlr_output_layer.h>
-}
-
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 

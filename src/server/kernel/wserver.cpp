@@ -34,22 +34,6 @@
 #include <qpa/qplatformintegrationfactory_p.h>
 #include <qpa/qplatformtheme.h>
 
-extern "C" {
-#include <wlr/backend.h>
-#define static
-#include <wlr/render/wlr_renderer.h>
-#undef static
-#include <wlr/types/wlr_compositor.h>
-#include <wlr/types/wlr_data_device.h>
-#include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_xdg_shell.h>
-#include <wlr/types/wlr_cursor.h>
-#include <wlr/types/wlr_xcursor_manager.h>
-#ifndef DISABLE_XWAYLAND
-#include <wlr/xwayland/shell.h>
-#endif
-}
-
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
@@ -182,7 +166,7 @@ WServer::WServer(WServerPrivate &dd, QObject *parent)
 qw_display *WServer::handle() const
 {
     W_DC(WServer);
-    return d->display.data();
+    return d->display.get();
 }
 
 void WServer::stop()
@@ -371,7 +355,7 @@ void WServer::initializeProxyQPA(int &argc, char **argv, const QStringList &prox
 bool WServer::isRunning() const
 {
     W_DC(WServer);
-    return !!d->display;
+    return d->display.get();
 }
 
 void WServer::addSocket(WSocket *socket)

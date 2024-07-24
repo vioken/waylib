@@ -5,19 +5,13 @@
 
 #include <wglobal.h>
 #include <wtypes.h>
-#include <qwglobal.h>
+#include <qwoutput.h>
 
 #include <QObject>
 #include <QSize>
 #include <QPoint>
 #include <QQmlEngine>
 #include <QImage>
-
-extern "C" {
-#define static
-#include <wlr/types/wlr_output.h>
-#undef static
-}
 
 QT_BEGIN_NAMESPACE
 class QScreen;
@@ -28,7 +22,6 @@ QW_BEGIN_NAMESPACE
 class qw_renderer;
 class qw_swapchain;
 class qw_allocator;
-class qw_output;
 QW_END_NAMESPACE
 
 WAYLIB_SERVER_BEGIN_NAMESPACE

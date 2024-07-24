@@ -35,7 +35,7 @@ public:
     QVector<WServerInterface*> interfaceList;
     WServerInterface *pendingInterface = nullptr;
 
-    QScopedPointer<QW_NAMESPACE::qw_display> display;
+    std::unique_ptr<QW_NAMESPACE::qw_display> display;
     wl_event_loop *loop = nullptr;
 
     QList<WSocket*> sockets;
