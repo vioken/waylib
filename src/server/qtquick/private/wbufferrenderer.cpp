@@ -489,6 +489,9 @@ qw_buffer *WBufferRenderer::beginRender(const QSize &pixelSize, qreal devicePixe
     state.renderTarget = rt;
     state.sgRenderTarget = sgRT;
 
+    if (!shouldCacheBuffer())
+        m_textureProvider->setBuffer(buffer);
+
     return buffer;
 }
 
