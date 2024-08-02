@@ -155,7 +155,6 @@ public:
 
         updateFrameDoneConnection();
         updateSurfaceState();
-
         q->rendered = true;
     }
 
@@ -605,7 +604,7 @@ void WSurfaceItem::setRightPadding(qreal newRightPadding)
         return;
     d->paddings.setRight(newRightPadding);
     d->onPaddingsChanged();
-    d->implicitWidthChanged();
+    setImplicitWidth(d->calculateImplicitWidth());
     Q_EMIT rightPaddingChanged();
 }
 
@@ -671,7 +670,7 @@ void WSurfaceItem::setLeftPadding(qreal newLeftPadding)
         return;
     d->paddings.setLeft(newLeftPadding);
     d->onPaddingsChanged();
-    d->implicitWidthChanged();
+    setImplicitWidth(d->calculateImplicitWidth());
     Q_EMIT leftPaddingChanged();
 }
 
@@ -688,7 +687,7 @@ void WSurfaceItem::setBottomPadding(qreal newBottomPadding)
         return;
     d->paddings.setBottom(newBottomPadding);
     d->onPaddingsChanged();
-    d->implicitHeightChanged();
+    setImplicitHeight(d->calculateImplicitHeight());
     Q_EMIT bottomPaddingChanged();
 }
 
@@ -705,7 +704,7 @@ void WSurfaceItem::setTopPadding(qreal newTopPadding)
         return;
     d->paddings.setTop(newTopPadding);
     d->onPaddingsChanged();
-    d->implicitHeightChanged();
+    setImplicitHeight(d->calculateImplicitHeight());
     Q_EMIT topPaddingChanged();
 }
 
@@ -775,9 +774,9 @@ void WSurfaceItem::focusInEvent(QFocusEvent *event)
 {
     QQuickItem::focusInEvent(event);
 
-    Q_D(WSurfaceItem);
-    if (d->eventItem)
-        d->eventItem->forceActiveFocus(event->reason());
+    // Q_D(WSurfaceItem);
+    // if (d->eventItem)
+    //     d->eventItem->forceActiveFocus(event->reason());
 }
 
 void WSurfaceItem::releaseResources()
@@ -927,14 +926,11 @@ void WSurfaceItem::updateSurfaceState()
         d->surfaceState->bufferScale = d->surface->bufferScale();
     }
 
-    auto oldSize = d->surfaceState->contentGeometry.size();
     d->surfaceState->contentGeometry = getContentGeometry();
     d->surfaceState->contentSize = getContentSize();
 
-    if (!qFuzzyCompare(oldSize.width(), d->surfaceState->contentGeometry.width()))
-        implicitWidthChanged();
-    if (!qFuzzyCompare(oldSize.height(), d->surfaceState->contentGeometry.height()))
-        implicitHeightChanged();
+    setImplicitSize(d->calculateImplicitWidth(),
+                    d->calculateImplicitHeight());
 
     if (bufferScaleChanged)
         Q_EMIT this->bufferScaleChanged();
@@ -1177,6 +1173,7 @@ void WSurfaceItemPrivate::updateEventItem(bool forceDestroy)
     } else {
         eventItem = new EventItem(q_func());
         eventItem->setZ(qreal(WSurfaceItem::ZOrder::EventItem));
+        eventItem->setFocus(true);
         updateEventItemGeometry();
     }
 
@@ -1212,24 +1209,23 @@ void WSurfaceItemPrivate::doResize(WSurfaceItem::ResizeMode mode)
     }
 }
 
-qreal WSurfaceItemPrivate::getImplicitWidth() const
+qreal WSurfaceItemPrivate::calculateImplicitWidth() const
 {
     const auto ps = paddingsSize();
     if (!surfaceState)
         return ps.width();
 
-    return surfaceState->contentGeometry.width() + ps.width();
+    return surfaceState->contentSize.width() + ps.width();
 }
 
-qreal WSurfaceItemPrivate::getImplicitHeight() const
+qreal WSurfaceItemPrivate::calculateImplicitHeight() const
 {
     const auto ps = paddingsSize();
     if (!surfaceState)
         return ps.height();
 
-    return surfaceState->contentGeometry.height() + ps.height();
+    return surfaceState->contentSize.height() + ps.height();
 }
-
 
 WToplevelSurface *WSurfaceItem::shellSurface() const
 {
