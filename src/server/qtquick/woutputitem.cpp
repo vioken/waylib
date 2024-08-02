@@ -397,6 +397,12 @@ void WOutputItem::itemChange(ItemChange change, const ItemChangeData &data)
     QQuickItem::itemChange(change, data);
 }
 
+void WOutputItem::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
+{
+    Q_EMIT geometryChanged();
+    QQuickItem::geometryChange(newGeometry, oldGeometry);
+}
+
 qreal WOutputItem::getImplicitWidth() const
 {
     W_DC(WOutputItem);

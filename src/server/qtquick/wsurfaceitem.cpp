@@ -10,6 +10,7 @@
 #include "woutput.h"
 #include "woutputviewport.h"
 #include "wbuffertextureprovider.h"
+#include "woutputrenderwindow.h"
 
 #include <qwcompositor.h>
 #include <qwsubcompositor.h>
@@ -40,10 +41,10 @@ public:
     qw_buffer *qwBuffer() const override;
     void updateTexture(); // in render thread
     void tryUpdateTexture();
-    void maybeUpdateTextureOnSurfacePrrimaryOutputChanged();
     void reset();
 
     qw_texture *ensureTexture();
+    WOutputRenderWindow *renderWindow() const;
 
 private:
     void doUpdateTexture();
@@ -182,10 +183,6 @@ public:
         surface->safeConnect(&qw_surface::notify_commit, q, [this] {
             updateSurfaceState();
         });
-        surface->safeConnect(&WSurface::primaryOutputChanged, q, [this] {
-            if (textureProvider)
-                textureProvider->maybeUpdateTextureOnSurfacePrrimaryOutputChanged();
-        });
 
         if (textureProvider) {
             Q_ASSERT(!updateTextureConnection);
@@ -198,8 +195,9 @@ public:
         updateSurfaceState();
         // window maybe never set before WSurfaceItemContentPrivate::init
         // also need try updateTexture when `ItemSceneChange`
-        if (window)
+        if (window) {
             tp()->updateTexture();
+        }
         q->rendered = true;
     }
 
@@ -540,19 +538,6 @@ void WSGTextureProvider::tryUpdateTexture()
     }
 }
 
-void WSGTextureProvider::maybeUpdateTextureOnSurfacePrrimaryOutputChanged()
-{
-    // Maybe the last failure of WSGTextureProvider::ensureTexture() cause is
-    // because the surface's primary output is nullptr.
-    if (!dwtexture->handle()) {
-        dwtexture->setHandle(ensureTexture());
-        if (!dwtexture->handle()) {
-            Q_EMIT textureChanged();
-            item->update();
-        }
-    }
-}
-
 void WSGTextureProvider::reset()
 {
     if (qwtexture)
@@ -577,16 +562,24 @@ qw_texture *WSGTextureProvider::ensureTexture()
     if (!buffer)
         return nullptr;
 
-    auto output = item->d_func()->surface->primaryOutput();
-    if (!output)
+    auto rw = renderWindow();
+    if (!rw)
         return nullptr;
-
-    auto renderer = output->renderer();
-    if (!renderer)
-        return nullptr;
-
+    auto renderer = rw->renderer();
+    Q_ASSERT_X(renderer, Q_FUNC_INFO, "Please init the WOutputRenderWindow before using WSurfaceItemContent.");
     qwtexture.reset(qw_texture::from_buffer(*renderer, *buffer));
     return qwtexture.get();
+}
+
+WOutputRenderWindow *WSGTextureProvider::renderWindow() const
+{
+    auto window = item->window();
+    if (!window)
+        return nullptr;
+    auto rw = qobject_cast<WOutputRenderWindow*>(window);
+    // Must use in the WOutputRenderWindow
+    Q_ASSERT(rw);
+    return rw;
 }
 
 WSurfaceItem::WSurfaceItem(QQuickItem *parent)
@@ -739,7 +732,7 @@ void WSurfaceItem::setRightPadding(qreal newRightPadding)
         return;
     d->paddings.setRight(newRightPadding);
     d->onPaddingsChanged();
-    d->implicitWidthChanged();
+    setImplicitWidth(d->calculateImplicitWidth());
     Q_EMIT rightPaddingChanged();
 }
 
@@ -805,7 +798,7 @@ void WSurfaceItem::setLeftPadding(qreal newLeftPadding)
         return;
     d->paddings.setLeft(newLeftPadding);
     d->onPaddingsChanged();
-    d->implicitWidthChanged();
+    setImplicitWidth(d->calculateImplicitWidth());
     Q_EMIT leftPaddingChanged();
 }
 
@@ -822,7 +815,7 @@ void WSurfaceItem::setBottomPadding(qreal newBottomPadding)
         return;
     d->paddings.setBottom(newBottomPadding);
     d->onPaddingsChanged();
-    d->implicitHeightChanged();
+    setImplicitHeight(d->calculateImplicitHeight());
     Q_EMIT bottomPaddingChanged();
 }
 
@@ -839,7 +832,7 @@ void WSurfaceItem::setTopPadding(qreal newTopPadding)
         return;
     d->paddings.setTop(newTopPadding);
     d->onPaddingsChanged();
-    d->implicitHeightChanged();
+    setImplicitHeight(d->calculateImplicitHeight());
     Q_EMIT topPaddingChanged();
 }
 
@@ -909,9 +902,9 @@ void WSurfaceItem::focusInEvent(QFocusEvent *event)
 {
     QQuickItem::focusInEvent(event);
 
-    Q_D(WSurfaceItem);
-    if (d->eventItem)
-        d->eventItem->forceActiveFocus(event->reason());
+    // Q_D(WSurfaceItem);
+    // if (d->eventItem)
+    //     d->eventItem->forceActiveFocus(event->reason());
 }
 
 void WSurfaceItem::releaseResources()
@@ -1061,14 +1054,11 @@ void WSurfaceItem::updateSurfaceState()
         d->surfaceState->bufferScale = d->surface->bufferScale();
     }
 
-    auto oldSize = d->surfaceState->contentGeometry.size();
     d->surfaceState->contentGeometry = getContentGeometry();
     d->surfaceState->contentSize = getContentSize();
 
-    if (!qFuzzyCompare(oldSize.width(), d->surfaceState->contentGeometry.width()))
-        implicitWidthChanged();
-    if (!qFuzzyCompare(oldSize.height(), d->surfaceState->contentGeometry.height()))
-        implicitHeightChanged();
+    setImplicitSize(d->calculateImplicitWidth(),
+                    d->calculateImplicitHeight());
 
     if (bufferScaleChanged)
         Q_EMIT this->bufferScaleChanged();
@@ -1311,6 +1301,7 @@ void WSurfaceItemPrivate::updateEventItem(bool forceDestroy)
     } else {
         eventItem = new EventItem(q_func());
         eventItem->setZ(qreal(WSurfaceItem::ZOrder::EventItem));
+        eventItem->setFocus(true);
         updateEventItemGeometry();
     }
 
@@ -1346,24 +1337,23 @@ void WSurfaceItemPrivate::doResize(WSurfaceItem::ResizeMode mode)
     }
 }
 
-qreal WSurfaceItemPrivate::getImplicitWidth() const
+qreal WSurfaceItemPrivate::calculateImplicitWidth() const
 {
     const auto ps = paddingsSize();
     if (!surfaceState)
         return ps.width();
 
-    return surfaceState->contentGeometry.width() + ps.width();
+    return surfaceState->contentSize.width() + ps.width();
 }
 
-qreal WSurfaceItemPrivate::getImplicitHeight() const
+qreal WSurfaceItemPrivate::calculateImplicitHeight() const
 {
     const auto ps = paddingsSize();
     if (!surfaceState)
         return ps.height();
 
-    return surfaceState->contentGeometry.height() + ps.height();
+    return surfaceState->contentSize.height() + ps.height();
 }
-
 
 WToplevelSurface *WSurfaceItem::shellSurface() const
 {
