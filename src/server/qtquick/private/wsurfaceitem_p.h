@@ -48,8 +48,8 @@ public:
                       paddings.top() + paddings.bottom());
     }
 
-    qreal getImplicitWidth() const override;
-    qreal getImplicitHeight() const override;
+    qreal calculateImplicitWidth() const;
+    qreal calculateImplicitHeight() const;
 
     inline WSurfaceItemContent *getItemContent() const {
         if (delegate || !contentContainer)

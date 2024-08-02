@@ -12,6 +12,7 @@
 #include "woutputlayer.h"
 #include "wbufferrenderer_p.h"
 #include "wquicktextureproxy.h"
+#include "weventjunkman.h"
 
 #include "platformplugin/qwlrootsintegration.h"
 #include "platformplugin/qwlrootscreen.h"
@@ -65,6 +66,7 @@ extern "C" {
 }
 
 #include <drm_fourcc.h>
+#include <limits>
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
@@ -1244,6 +1246,11 @@ void WOutputRenderWindowPrivate::init()
             return;
         q->update();
     });
+
+    // for WSeat::filterUnacceptedEvent
+    auto eventJunkman = new WEventJunkman(contentItem);
+    QQuickItemPrivate::get(eventJunkman)->anchors()->setFill(contentItem);
+    eventJunkman->setZ(std::numeric_limits<qreal>::lowest());
 
     Q_EMIT q->initialized();
 }
