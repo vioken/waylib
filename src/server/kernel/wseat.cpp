@@ -393,6 +393,7 @@ public:
     QPointer<WSurface> cursorSurface;
     QPoint cursorSurfaceHotspot;
     WGlobal::CursorShape cursorShape;
+    bool clientCursorUseSurface = false;
 
     QPointer<WSurface> dragSurface;
 };
@@ -415,8 +416,10 @@ void WSeatPrivate::on_request_set_cursor(wlr_seat_pointer_request_set_cursor_eve
         auto *surface = event->surface ? qw_surface::from(event->surface) : nullptr;
         cursorClient = event->seat_client;
 
-        if (cursorSurface)
+        if (cursorSurface) {
             cursorSurface->safeDeleteLater();
+            cursorSurface = nullptr;
+        }
 
         W_Q(WSeat);
         if (surface) {
@@ -427,8 +430,8 @@ void WSeatPrivate::on_request_set_cursor(wlr_seat_pointer_request_set_cursor_eve
         cursorSurfaceHotspot.rx() = event->hotspot_x;
         cursorSurfaceHotspot.ry() = event->hotspot_y;
 
-        if (cursorSurface)
-            Q_EMIT q->requestCursorSurface(cursorSurface, cursorSurfaceHotspot);
+        clientCursorUseSurface = true;
+        Q_EMIT q->requestCursorSurface(cursorSurface, cursorSurfaceHotspot);
     }
 }
 
@@ -701,6 +704,12 @@ bool WSeat::setCursorPositionWithChecker(const QPointF &pos)
     bool ok = cursor()->setPositionWithChecker(pos);
     d->doMouseMove(cursor(), QPointingDevice::primaryPointingDevice(), QDateTime::currentMSecsSinceEpoch());
     return ok;
+}
+
+bool WSeat::clientCursorUseSurface() const
+{
+    W_DC(WSeat);
+    return d->clientCursorUseSurface;
 }
 
 WGlobal::CursorShape WSeat::requestedCursorShape() const
@@ -1330,6 +1339,7 @@ void WSeat::setCursorShape(wlr_seat_client *client, WGlobal::CursorShape shape)
         return;
     d->cursorShape = shape;
     d->cursorClient = client;
+    d->clientCursorUseSurface = false;
     Q_EMIT requestCursorShape(shape);
 }
 

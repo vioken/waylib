@@ -64,8 +64,8 @@ public:
     void setCursor(const QCursor &cursor);
 
     // from client
-    CursorShape requestedCursorShape() const;
-    std::pair<WSurface*, QPoint> requestedCursorSurface() const;
+    std::optional<CursorShape> requestedCursorShape() const;
+    std::optional<std::pair<WSurface*, QPoint>> requestedCursorSurface() const;
     WSurface* requestedDragSurface() const;
 
     void setLayout(WOutputLayout *layout);

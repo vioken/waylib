@@ -75,6 +75,7 @@ public:
     WSurface *requestedCursorSurface() const;
     QPoint requestedCursorSurfaceHotspot() const;
     WSurface *requestedDragSurface() const;
+    bool clientCursorUseSurface() const;
 
     void attachInputDevice(WInputDevice *device);
     void detachInputDevice(WInputDevice *device);

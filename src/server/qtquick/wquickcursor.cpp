@@ -3,7 +3,6 @@
 
 #include "wquickcursor.h"
 #include "woutputrenderwindow.h"
-#include "woutputitem.h"
 #include "wcursorimage.h"
 #include "wbuffertextureprovider.h"
 #include "wimagebuffer.h"
@@ -19,6 +18,8 @@
 #include <QSGImageNode>
 #include <private/qquickitem_p.h>
 #include <private/qsgplaintexture_p.h>
+
+Q_LOGGING_CATEGORY(qLcCursor, "waylib.server.cursor", QtWarningMsg)
 
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -230,10 +231,14 @@ void WQuickCursorPrivate::cleanTextureProvider()
 void WQuickCursorPrivate::setSurface(WSurface *surface)
 {
     if (surface) {
+
+        qDebug() << "WQuickCursorPrivate::setSurface " << surface;
+        W_Q(WQuickCursor);
+
         if (!cursorSurfaceItem) {
-            W_Q(WQuickCursor);
-            cursorSurfaceItem = new WSurfaceItemContent(q);
-            QQuickItemPrivate::get(cursorSurfaceItem)->anchors()->setFill(q);
+            cursorSurfaceItem = new WSurfaceItemContent(q->parentItem());
+            QQuickItemPrivate::get(cursorSurfaceItem)->anchors()->setCenterIn(q);
+
             bool ok = QObject::connect(cursorSurfaceItem, SIGNAL(implicitWidthChanged()),
                                        q, SLOT(updateImplicitSize()));
             Q_ASSERT(ok);
@@ -243,9 +248,13 @@ void WQuickCursorPrivate::setSurface(WSurface *surface)
         }
 
         cursorSurfaceItem->setSurface(surface);
+        //QQuickItemPrivate::get(cursorSurfaceItem)->anchors()->setCenterIn(q);
+        cursorSurfaceItem->setSize(q->sourceSize());
+
         if (textureProvider)
             textureProvider->setProxy(cursorSurfaceItem->wTextureProvider());
     } else if (cursorSurfaceItem) {
+        qDebug() << "WQuickCursorPrivate::setSurface nullptr clear";
         cursorSurfaceItem->deleteLater();
         cursorSurfaceItem = nullptr;
     }
@@ -267,26 +276,45 @@ void WQuickCursorPrivate::updateTexture()
     if (!cursorSurfaceItem) {
         setHotSpot(cursorImage->hotSpot());
         q_func()->update();
+    } else {
+        cursorSurfaceItem->update();
+        q_func()->update();
     }
 }
 
 void WQuickCursorPrivate::updateCursor()
 {
+    W_Q(WQuickCursor);
+
     auto cursor = this->cursor->cursor();
     if (WGlobal::isClientResourceCursor(cursor)) {
         // First try use cursor shape
         auto shape = this->cursor->requestedCursorShape();
-        if (shape != WGlobal::CursorShape::Invalid) {
-            cursorImage->setCursor(WCursor::toQCursor(shape));
-            setHotSpot(cursorImage->hotSpot());
-        } else if (auto rs = this->cursor->requestedCursorSurface(); rs.first) { // Second use cursor surface
-            setSurface(rs.first);
-            setHotSpot(rs.second);
-        } else {
+        if (shape.has_value()) {
+            q->setFlag(QQuickItem::ItemHasContents, true);
+
             setSurface(nullptr);
-            cursorImage->setCursor(QCursor());
+            qDebug() << "@@@@CursorShape" << shape.value();
+            if (shape.value() != WGlobal::CursorShape::Invalid) {
+                cursorImage->setCursor(WCursor::toQCursor(shape.value()));
+
+            } else {
+                qCWarning(qLcCursor) << "Set Invalid CursorShape!";
+                cursorImage->setCursor(WCursor::toQCursor(WGlobal::CursorShape::Invalid));
+            }
+            setHotSpot(cursorImage->hotSpot());
+        } else if (auto rs = this->cursor->requestedCursorSurface(); rs.has_value()) { // Second use cursor surface
+            qDebug() << "@@@@setSurface" << rs.value().first;
+            cursorImage->setCursor(QCursor(Qt::CursorShape::BlankCursor));
+            q->setFlag(QQuickItem::ItemHasContents, false);
+            setSurface(rs.value().first);
+            setHotSpot(rs.value().second);
+            q->update();
+        } else {
+            Q_UNREACHABLE();
         }
     } else {
+        q->setFlag(QQuickItem::ItemHasContents, true);
         setSurface(nullptr);
         cursorImage->setCursor(cursor);
     }
@@ -353,6 +381,8 @@ bool WQuickCursor::valid() const
     W_DC(WQuickCursor);
     if (!d->cursor || !d->cursorImage)
         return false;
+
+    qDebug() << "!!!valid: "<< (d->cursorSurfaceItem ||  !WGlobal::isInvalidCursor(d->cursorImage->cursor()));
 
     return d->cursorSurfaceItem
            ||  !WGlobal::isInvalidCursor(d->cursorImage->cursor());
@@ -449,6 +479,24 @@ QPointF WQuickCursor::hotSpot() const
     return {};
 }
 
+qreal WQuickCursor::dx()
+{
+    W_DC(WQuickCursor);
+
+    if (d->cursorSurfaceItem)
+        return d->cursorSurfaceItem->x();
+    return x();
+}
+
+void WQuickCursor::setDx(qreal x)
+{
+    W_D(WQuickCursor);
+
+    if (d->cursorSurfaceItem)
+        d->cursorSurfaceItem->setX(x);
+    setX(x);
+}
+
 void WQuickCursor::invalidateSceneGraph()
 {
     W_D(WQuickCursor);
@@ -474,6 +522,7 @@ void WQuickCursor::componentComplete()
 void WQuickCursor::itemChange(ItemChange change, const ItemChangeData &data)
 {
     W_D(WQuickCursor);
+    qDebug() << Q_FUNC_INFO << change;
     if (change == ItemSceneChange) {
         if (d->cursor)
             d->cursor->setEventWindow(data.window);

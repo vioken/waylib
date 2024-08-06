@@ -574,17 +574,19 @@ void WCursor::setCursor(const QCursor &cursor)
     Q_EMIT cursorChanged();
 }
 
-WGlobal::CursorShape WCursor::requestedCursorShape() const
+std::optional<WGlobal::CursorShape> WCursor::requestedCursorShape() const
 {
     W_DC(WCursor);
-    return d->seat ? d->seat->requestedCursorShape() : WGlobal::CursorShape::Invalid;
+    if (!d->seat || d->seat->clientCursorUseSurface())
+        return std::nullopt;
+    return d->seat->requestedCursorShape();
 }
 
-std::pair<WSurface *, QPoint> WCursor::requestedCursorSurface() const
+std::optional<std::pair<WSurface *, QPoint>> WCursor::requestedCursorSurface() const
 {
     W_DC(WCursor);
-    if (!d->seat)
-        return {};
+    if (!d->seat || !d->seat->clientCursorUseSurface())
+        return std::nullopt;
 
     return std::make_pair(d->seat->requestedCursorSurface(),
                           d->seat->requestedCursorSurfaceHotspot());

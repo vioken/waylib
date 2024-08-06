@@ -43,6 +43,8 @@ class WAYLIB_SERVER_EXPORT WQuickCursor : public QQuickItem
     Q_PROPERTY(QString themeName READ themeName WRITE setThemeName NOTIFY themeNameChanged)
     Q_PROPERTY(QSize sourceSize READ sourceSize WRITE setSourceSize NOTIFY sourceSizeChanged)
     Q_PROPERTY(QPointF hotSpot READ hotSpot NOTIFY hotSpotChanged FINAL)
+    Q_PROPERTY(qreal dx READ dx WRITE setDx FINAL)
+
     QML_NAMED_ELEMENT(Cursor)
     QML_ATTACHED(WQuickCursorAttached)
 
@@ -67,6 +69,9 @@ public:
     void setSourceSize(const QSize &size);
 
     QPointF hotSpot() const;
+
+    qreal dx();
+    void setDx(qreal x);
 
 Q_SIGNALS:
     void validChanged();
