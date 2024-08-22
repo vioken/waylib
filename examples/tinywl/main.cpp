@@ -264,8 +264,6 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
 
             if (onlyTest)
                 ok &= output->test();
-            else
-                ok &= output->commit();
         }
         m_wOutputManager->sendResult(config, ok);
     });
