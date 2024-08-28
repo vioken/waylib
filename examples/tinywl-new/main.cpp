@@ -7,6 +7,8 @@
 #include <qwbuffer.h>
 #include <qwlogging.h>
 
+#include <QGuiApplication>
+
 WAYLIB_SERVER_USE_NAMESPACE
 
 int main(int argc, char *argv[]) {
