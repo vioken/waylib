@@ -86,7 +86,9 @@ Helper::Helper(QObject *parent)
     m_cursor->setLayout(m_outputLayout);
     m_cursor->setEventWindow(m_renderWindow);
     m_surfaceContainer->setFlag(QQuickItem::ItemIsFocusScope, true);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     m_surfaceContainer->setFocusPolicy(Qt::StrongFocus);
+#endif
     m_backgroundContainer->setZ(ContainerZOrder::BackgroundZOrder);
     m_bottomContainer->setZ(ContainerZOrder::BottomZOrder);
     m_workspace->setZ(ContainerZOrder::NormalZOrder);
