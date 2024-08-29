@@ -1220,7 +1220,7 @@ qreal WSurfaceItemPrivate::calculateImplicitWidth() const
     if (!surfaceState)
         return ps.width();
 
-    return surfaceState->contentSize.width() + ps.width();
+    return surfaceState->contentGeometry.width() + ps.width();
 }
 
 qreal WSurfaceItemPrivate::calculateImplicitHeight() const
@@ -1229,7 +1229,7 @@ qreal WSurfaceItemPrivate::calculateImplicitHeight() const
     if (!surfaceState)
         return ps.height();
 
-    return surfaceState->contentSize.height() + ps.height();
+    return surfaceState->contentGeometry.height() + ps.height();
 }
 
 WToplevelSurface *WSurfaceItem::shellSurface() const
