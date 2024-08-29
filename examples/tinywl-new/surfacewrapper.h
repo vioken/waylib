@@ -117,6 +117,9 @@ public:
     void addSubSurface(SurfaceWrapper *surface);
     void removeSubSurface(SurfaceWrapper *surface);
     const QList<SurfaceWrapper*> &subSurfaces() const;
+    SurfaceWrapper *stackFirstSurface() const;
+    SurfaceWrapper *stackLastSurface() const;
+    bool hasChild(SurfaceWrapper *child) const;
 
     QQuickItem *titleBar() const;
     QQuickItem *decoration() const;
@@ -126,6 +129,10 @@ public Q_SLOTS:
     void requestMinimize();
     void requestToggleMaximize();
     void requestClose();
+
+    bool stackBefore(QQuickItem *item);
+    bool stackAfter(QQuickItem *item);
+    void stackToLast();
 
 signals:
     void boundedRectChanged();
@@ -144,8 +151,10 @@ signals:
     void containerChanged();
 
 private:
-    void setParent(QQuickItem *item);
     using QQuickItem::setParentItem;
+    using QQuickItem::stackBefore;
+    using QQuickItem::stackAfter;
+    void setParent(QQuickItem *item);
     void setNormalGeometry(const QRectF &newNormalGeometry);
     void setNoDecoration(bool newNoDecoration);
     void setBoundedRect(const QRectF &newBoundedRect);
@@ -153,11 +162,13 @@ private:
     void updateBoundedRect();
     void updateVisible();
     void updateImplicitHeight();
+    void updateSubSurfaceStacking();
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
     QmlEngine *m_engine;
     SurfaceContainer *m_container = nullptr;
     QList<SurfaceWrapper*> m_subSurfaces;
+    SurfaceWrapper *m_parentSurface = nullptr;
 
     WToplevelSurface *m_shellSurface = nullptr;
     WSurfaceItem *m_surfaceItem = nullptr;
