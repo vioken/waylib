@@ -853,6 +853,11 @@ void Helper::addSurface(SurfaceWrapper *surface)
         Q_ASSERT(surface);
         startMove(surface, m_seat, 0);
     });
+    connect(surface, &SurfaceWrapper::requestResize, this, [this] (Qt::Edges edges) {
+        auto surface = qobject_cast<SurfaceWrapper*>(sender());
+        Q_ASSERT(surface);
+        startResize(surface, m_seat, edges, 0);
+    });
     connect(surface, &SurfaceWrapper::surfaceStateChanged, this, [surface, this] {
         if (surface->surfaceState() == SurfaceWrapper::State::Minimized
             || surface->surfaceState() == SurfaceWrapper::State::Tiling)

@@ -139,6 +139,7 @@ signals:
     void noDecorationChanged();
     void radiusChanged();
     void requestMove(); // for titlebar
+    void requestResize(Qt::Edges edges);
     void geometryChanged();
     void containerChanged();
 
