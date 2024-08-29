@@ -739,7 +739,7 @@ void Helper::ensureSurfaceNormalPositionValid(SurfaceWrapper *surface)
     normalGeo = adjustRectToMakePointVisible(normalGeo, mustVisiblePosOfSurface, outputRects);
 
     // Ensure titlebar is not outside the screen
-    const auto titlebarGeometry = surface->titlebarGeometry().translated(surface->position());
+    const auto titlebarGeometry = surface->titlebarGeometry().translated(normalGeo.topLeft());
     if (titlebarGeometry.isValid()) {
         bool titlebarGeometryAdjusted = false;
         for (auto r : std::as_const(outputRects)) {
