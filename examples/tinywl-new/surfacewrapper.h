@@ -161,8 +161,8 @@ private:
 
     WToplevelSurface *m_shellSurface = nullptr;
     WSurfaceItem *m_surfaceItem = nullptr;
-    QQuickItem *m_titleBar = nullptr;
-    QQuickItem *m_decoration = nullptr;
+    QPointer<QQuickItem> m_titleBar;
+    QPointer<QQuickItem> m_decoration;
     QRectF m_boundedRect;
     QRectF m_normalGeometry;
     QRectF m_maximizedGeometry;
