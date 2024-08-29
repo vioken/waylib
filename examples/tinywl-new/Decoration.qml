@@ -93,7 +93,7 @@ Item {
     }
 
     Loader {
-        active: surface.radius > 0 && root.visible
+        active: surface.radius > 0 && root.visible && surface.titleBar
         parent: surface.titleBar.parent
         x: surface.titleBar.x
         y: surface.titleBar.y
@@ -125,7 +125,8 @@ Item {
                 surface.titleBar.opacity = 0;
             }
             Component.onDestruction: {
-                surface.titleBar.opacity = 1;
+                if (surface.titleBar)
+                    surface.titleBar.opacity = 1;
             }
         }
     }
@@ -135,20 +136,20 @@ Item {
 
         Item {
             required property SurfaceItem surface
-            readonly property SurfaceWrapper wrapper: surface.parent
-            readonly property real cornerRadius: wrapper.radius
+            readonly property SurfaceWrapper wrapper: surface?.parent ?? null
+            readonly property real cornerRadius: wrapper?.radius ?? cornerRadius
 
             anchors.fill: parent
             SurfaceItemContent {
                 id: content
-                surface: parent.surface.surface
+                surface: wrapper?.surface ?? null
                 anchors.fill: parent
                 opacity: effectLoader.active ? 0 : 1
             }
 
             Loader {
                 id: effectLoader
-                active: cornerRadius > 0 && (wrapper.decoration?.visible ?? false)
+                active: cornerRadius > 0 && (wrapper?.decoration?.visible ?? false)
                 anchors.fill: parent
                 sourceComponent: MultiEffect {
                     anchors.fill: parent
