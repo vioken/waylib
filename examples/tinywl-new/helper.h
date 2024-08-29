@@ -36,6 +36,7 @@ class WSocket;
 class WSurface;
 class WToplevelSurface;
 class WSurfaceItem;
+class WForeignToplevel;
 WAYLIB_SERVER_END_NAMESPACE
 
 QW_BEGIN_NAMESPACE
@@ -139,6 +140,7 @@ private:
     WXWayland *m_xwayland = nullptr;
     WInputMethodHelper *m_inputMethodHelper = nullptr;
     WXdgDecorationManager *m_xdgDecorationManager = nullptr;
+    WForeignToplevel *m_foreignToplevel = nullptr;
 
     // privaet data
     QList<Output*> m_outputList;

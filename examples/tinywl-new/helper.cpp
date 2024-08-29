@@ -217,16 +217,16 @@ void Helper::init()
     });
 
     auto *xdgShell = m_server->attach<WXdgShell>();
-    auto *foreignToplevel = m_server->attach<WForeignToplevel>(xdgShell);
+    m_foreignToplevel = m_server->attach<WForeignToplevel>(xdgShell);
     auto *layerShell = m_server->attach<WLayerShell>();
     auto *xdgOutputManager = m_server->attach<WXdgOutputManager>(m_outputLayout);
 
-    connect(xdgShell, &WXdgShell::surfaceAdded, this, [this, foreignToplevel] (WXdgSurface *surface) {
+    connect(xdgShell, &WXdgShell::surfaceAdded, this, [this] (WXdgSurface *surface) {
         SurfaceWrapper *wrapper = nullptr;
 
         if (surface->isToplevel()) {
             wrapper = new SurfaceWrapper(qmlEngine(), surface, SurfaceWrapper::Type::XdgToplevel);
-            foreignToplevel->addSurface(surface);
+            m_foreignToplevel->addSurface(surface);
         } else {
             wrapper = new SurfaceWrapper(qmlEngine(), surface, SurfaceWrapper::Type::XdgPopup);
         }
@@ -246,9 +246,9 @@ void Helper::init()
 
         Q_ASSERT(wrapper->parentItem());
     });
-    connect(xdgShell, &WXdgShell::surfaceRemoved, this, [this, foreignToplevel] (WXdgSurface *surface) {
+    connect(xdgShell, &WXdgShell::surfaceRemoved, this, [this] (WXdgSurface *surface) {
         if (surface->isToplevel()) {
-            foreignToplevel->removeSurface(surface);
+            m_foreignToplevel->removeSurface(surface);
         }
 
         destroySurface(surface->surface());
@@ -305,11 +305,13 @@ void Helper::init()
         surface->safeConnect(&qw_xwayland_surface::notify_associate, this, [this, surface] {
             auto wrapper = new SurfaceWrapper(qmlEngine(), surface, SurfaceWrapper::Type::XWayland);
             wrapper->setNoDecoration(false);
+            m_foreignToplevel->addSurface(surface);
             addSurface(wrapper);
             m_workspace->addSurface(wrapper);
             Q_ASSERT(wrapper->parentItem());
         });
         surface->safeConnect(&qw_xwayland_surface::notify_dissociate, this, [this, surface] {
+            m_foreignToplevel->removeSurface(surface);
             destroySurface(surface->surface());
         });
     });
