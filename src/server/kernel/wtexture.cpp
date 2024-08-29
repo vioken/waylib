@@ -128,6 +128,7 @@ void WTexturePrivate::init(qw_texture *new_handle)
 {
     auto gpuTexture = new QSGPlainTexture();
     gpuTexture->setOwnsTexture(ownsTexture);
+    Q_ASSERT(texture.isNull());
     texture.reset(gpuTexture);
     updateTexture = getUpdateTextFunction(new_handle, type);
 }
@@ -162,6 +163,7 @@ void WTexture::setHandle(qw_texture *handle)
 
     if (Q_UNLIKELY(!new_handle)) {
         d->handle = nullptr;
+        d->texture.reset();
         return;
     }
 
