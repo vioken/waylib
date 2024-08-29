@@ -56,6 +56,13 @@ SurfaceWrapper::~SurfaceWrapper()
 
     if (m_ownsOutput)
         m_ownsOutput->removeSurface(this);
+
+    for (auto subS : std::as_const(m_subSurfaces)) {
+        subS->m_parentSurface = nullptr;
+    }
+
+    if (m_parentSurface)
+        m_parentSurface->removeSubSurface(this);
 }
 
 void SurfaceWrapper::setParent(QQuickItem *item)
@@ -394,6 +401,15 @@ void SurfaceWrapper::updateImplicitHeight()
     }
 }
 
+void SurfaceWrapper::updateSubSurfaceStacking()
+{
+    SurfaceWrapper *lastSurface = this;
+    for (auto surface : std::as_const(m_subSurfaces)) {
+        surface->stackAfter(lastSurface);
+        lastSurface = surface->stackLastSurface();
+    }
+}
+
 void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
     if (isNormal()) {
@@ -446,13 +462,119 @@ void SurfaceWrapper::requestClose()
     updateVisible();
 }
 
+SurfaceWrapper *SurfaceWrapper::stackFirstSurface() const
+{
+    return m_subSurfaces.isEmpty() ? const_cast<SurfaceWrapper*>(this) : m_subSurfaces.first()->stackFirstSurface();
+}
+
+SurfaceWrapper *SurfaceWrapper::stackLastSurface() const
+{
+    return m_subSurfaces.isEmpty() ? const_cast<SurfaceWrapper*>(this) : m_subSurfaces.last()->stackLastSurface();
+}
+
+bool SurfaceWrapper::hasChild(SurfaceWrapper *child) const
+{
+    for (auto s : std::as_const(m_subSurfaces)) {
+        if (s == child || s->hasChild(child))
+            return true;
+    }
+
+    return false;
+}
+
+bool SurfaceWrapper::stackBefore(QQuickItem *item)
+{
+    if (!parentItem() || item->parentItem() != parentItem())
+        return false;
+    if (this == item)
+        return false;
+
+    do {
+        auto s = qobject_cast<SurfaceWrapper*>(item);
+        if (s) {
+            if (hasChild(s) || s->hasChild(this))
+                return false;
+            item = s->stackFirstSurface();
+
+            if (m_parentSurface && m_parentSurface == s->m_parentSurface) {
+                QQuickItem::stackBefore(item);
+                m_parentSurface->m_subSurfaces.removeOne(this);
+                m_parentSurface->m_subSurfaces.prepend(this);
+                break;
+            }
+        }
+
+        if (m_parentSurface) {
+            if (!m_parentSurface->stackBefore(item))
+                return false;
+        } else {
+            QQuickItem::stackBefore(item);
+        }
+    } while (false);
+
+    updateSubSurfaceStacking();
+    return true;
+}
+
+bool SurfaceWrapper::stackAfter(QQuickItem *item)
+{
+    if (!parentItem() || item->parentItem() != parentItem())
+        return false;
+    if (this == item)
+        return false;
+
+    do {
+        auto s = qobject_cast<SurfaceWrapper*>(item);
+        if (s) {
+            if (hasChild(s) || s->hasChild(this))
+                return false;
+            item = s->stackLastSurface();
+
+            if (m_parentSurface && m_parentSurface == s->m_parentSurface) {
+                QQuickItem::stackAfter(item);
+                m_parentSurface->m_subSurfaces.removeOne(this);
+                m_parentSurface->m_subSurfaces.append(this);
+                break;
+            }
+        }
+
+        if (m_parentSurface) {
+            if (!m_parentSurface->stackAfter(item))
+                return false;
+        } else {
+            QQuickItem::stackAfter(item);
+        }
+    } while (false);
+
+    updateSubSurfaceStacking();
+    return true;
+}
+
+void SurfaceWrapper::stackToLast()
+{
+    if (!parentItem())
+        return;
+
+    if (m_parentSurface) {
+        m_parentSurface->stackToLast();
+        stackAfter(m_parentSurface->stackLastSurface());
+    } else {
+        auto last = parentItem()->childItems().last();
+        stackAfter(last);
+    }
+}
+
 void SurfaceWrapper::addSubSurface(SurfaceWrapper *surface)
 {
+    Q_ASSERT(!surface->m_parentSurface);
+    surface->m_parentSurface = this;
     m_subSurfaces.append(surface);
 }
 
 void SurfaceWrapper::removeSubSurface(SurfaceWrapper *surface)
 {
+    Q_ASSERT(surface->m_parentSurface == this);
+    surface->m_parentSurface = nullptr;
     m_subSurfaces.removeOne(surface);
 }
 

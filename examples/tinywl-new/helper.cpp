@@ -641,13 +641,7 @@ void Helper::setActivatedSurface(SurfaceWrapper *newActivateSurface)
         return;
 
     if (newActivateSurface) {
-        auto container = newActivateSurface->parentItem();
-        if (container) {
-            auto topItem = container->childItems().last();
-            Q_ASSERT(topItem);
-            if (topItem != newActivateSurface)
-                newActivateSurface->stackAfter(topItem);
-        }
+        newActivateSurface->stackToLast();
     }
 
     if (m_activatedSurface)
