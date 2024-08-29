@@ -53,6 +53,9 @@ SurfaceWrapper::~SurfaceWrapper()
         delete m_titleBar;
     if (m_decoration)
         delete m_decoration;
+
+    if (m_ownsOutput)
+        m_ownsOutput->removeSurface(this);
 }
 
 void SurfaceWrapper::setParent(QQuickItem *item)
