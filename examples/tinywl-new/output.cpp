@@ -296,16 +296,18 @@ void Output::layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDi
 {
     Q_ASSERT(surface->type() != SurfaceWrapper::Type::Layer);
     surface->setFullscreenGeometry(geometry());
-    surface->setMaximizedGeometry(validGeometry());
+    const auto validGeo = this->validGeometry();
+    surface->setMaximizedGeometry(validGeo);
 
     QRectF normalGeo = surface->normalGeometry();
-    const auto validGeo = this->validGeometry();
     do {
         if (surface->positionAutomatic()) {
             if (normalGeo.size().isEmpty())
                 return;
 
             normalGeo.moveCenter(validGeo.center());
+            normalGeo.moveTop(qMax(normalGeo.top(), validGeo.top()));
+            normalGeo.moveLeft(qMax(normalGeo.left(), validGeo.left()));
             surface->moveNormalGeometryInOutput(normalGeo.topLeft());
         } else if (!sizeDiff.isNull()) {
             const QSizeF outputSize = m_item->size();
