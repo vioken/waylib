@@ -439,12 +439,7 @@ void SurfaceWrapper::requestToggleMaximize()
 
 void SurfaceWrapper::requestClose()
 {
-    if (m_type == Type::XWayland) {
-        qobject_cast<WXWaylandSurface*>(m_shellSurface)->close();
-    } else {
-        surface()->unmap();
-    }
-
+    m_shellSurface->close();
     updateVisible();
 }
 
