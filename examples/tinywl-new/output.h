@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 #pragma once
 
+#include "surfacecontainer.h"
+
 #include <wglobal.h>
 #include <QMargins>
 #include <QObject>
@@ -16,7 +18,7 @@ WAYLIB_SERVER_END_NAMESPACE
 WAYLIB_SERVER_USE_NAMESPACE
 
 class SurfaceWrapper;
-class Output : public QObject
+class Output : public SurfaceListModel
 {
     Q_OBJECT
     Q_PROPERTY(QMargins exclusiveZone READ exclusiveZone NOTIFY exclusiveZoneChanged FINAL)
@@ -36,9 +38,8 @@ public:
 
     bool isPrimary() const;
 
-    void addSurface(SurfaceWrapper *surface);
-    void removeSurface(SurfaceWrapper *surface);
-    const QList<SurfaceWrapper *> &surfaceList() const;
+    void addSurface(SurfaceWrapper *surface) override;
+    void removeSurface(SurfaceWrapper *surface) override;
 
     void beginMoveResize(SurfaceWrapper *surface, Qt::Edges edges);
     void doMoveResize(const QPointF &incrementPos);
@@ -73,8 +74,6 @@ private:
     Type m_type;
     WOutputItem *m_item;
     Output *m_proxy = nullptr;
-
-    QList<SurfaceWrapper*> m_surfaces;
 
     QMargins m_exclusiveZone;
     QList<std::pair<QObject*, int>> m_topExclusiveZones;
