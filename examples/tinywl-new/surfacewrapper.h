@@ -70,6 +70,7 @@ public:
     WSurface *surface() const;
     WToplevelSurface *shellSurface() const;
     WSurfaceItem *surfaceItem() const;
+    bool resize(const QSizeF &size);
 
     QRectF titlebarGeometry() const;
     QRectF boundedRect() const;
