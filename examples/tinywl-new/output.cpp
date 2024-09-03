@@ -128,9 +128,7 @@ void Output::resizeSurface(SurfaceWrapper *surface, const QRectF &startGeo, Qt::
     if (edges & Qt::BottomEdge)
         geo.setBottom(geo.bottom() + incrementPos.y());
 
-    if (surface->resize(geo.size())) {
-        surface->setPosition(geo.topLeft());
-    }
+    surface->resize(geo.size());
 }
 
 WOutput *Output::output() const
@@ -309,7 +307,7 @@ void Output::layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDi
             normalGeo.moveTop(qMax(normalGeo.top(), validGeo.top()));
             normalGeo.moveLeft(qMax(normalGeo.left(), validGeo.left()));
             surface->moveNormalGeometryInOutput(normalGeo.topLeft());
-        } else if (!sizeDiff.isNull()) {
+        } else if (!sizeDiff.isNull() && sizeDiff.isValid()) {
             const QSizeF outputSize = m_item->size();
             const auto xScale = outputSize.width() / (outputSize.width() - sizeDiff.width());
             const auto yScale = outputSize.height() / (outputSize.height() - sizeDiff.height());
