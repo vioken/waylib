@@ -45,7 +45,7 @@ Output *Output::createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, Q
 }
 
 Output::Output(WOutputItem *output, QObject *parent)
-    : QObject(parent)
+    : SurfaceListModel(parent)
     , m_item(output)
 {
     connect(output, &WOutputItem::geometryChanged, this, &Output::layoutAllSurfaces);
@@ -64,8 +64,8 @@ bool Output::isPrimary() const
 
 void Output::addSurface(SurfaceWrapper *surface)
 {
-    Q_ASSERT(!m_surfaces.contains(surface));
-    m_surfaces.append(surface);
+    Q_ASSERT(!hasSurface(surface));
+    SurfaceListModel::addSurface(surface);
 
     if (surface->type() == SurfaceWrapper::Type::Layer) {
         auto layer = qobject_cast<WLayerSurface*>(surface->shellSurface());
@@ -92,8 +92,8 @@ void Output::addSurface(SurfaceWrapper *surface)
 
 void Output::removeSurface(SurfaceWrapper *surface)
 {
-    Q_ASSERT(m_surfaces.contains(surface));
-    m_surfaces.removeOne(surface);
+    Q_ASSERT(hasSurface(surface));
+    SurfaceListModel::removeSurface(surface);
     surface->disconnect(this);
 
     if (moveResizeState.surface == surface)
@@ -105,11 +105,6 @@ void Output::removeSurface(SurfaceWrapper *surface)
 
         layoutLayerSurfaces();
     }
-}
-
-const QList<SurfaceWrapper*> &Output::surfaceList() const
-{
-    return m_surfaces;
 }
 
 void Output::beginMoveResize(SurfaceWrapper *surface, Qt::Edges edges)
@@ -304,7 +299,7 @@ void Output::layoutLayerSurfaces()
     m_leftExclusiveZones.clear();
     m_rightExclusiveZones.clear();
 
-    for (auto *s : std::as_const(m_surfaces)) {
+    for (auto *s : surfaces()) {
         if (s->type() != SurfaceWrapper::Type::Layer)
             continue;
         layoutLayerSurface(s);
@@ -354,7 +349,7 @@ void Output::layoutNonLayerSurfaces()
                               : QSizeF(0, 0);
     m_lastSizeOnLayoutNonLayerSurfaces = currentSize;
 
-    for (SurfaceWrapper *surface : std::as_const(m_surfaces)) {
+    for (SurfaceWrapper *surface : surfaces()) {
         if (surface->type() == SurfaceWrapper::Type::Layer)
             continue;
         layoutNonLayerSurface(surface, sizeDiff);
