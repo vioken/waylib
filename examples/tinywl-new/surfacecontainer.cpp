@@ -4,8 +4,72 @@
 #include "surfacecontainer.h"
 #include "surfacewrapper.h"
 
+SurfaceListModel::SurfaceListModel(QObject *parent)
+    : QAbstractListModel(parent)
+{
+
+}
+
+int SurfaceListModel::rowCount(const QModelIndex &parent) const
+{
+    if (parent.isValid())
+        return 0;
+
+    return m_surfaces.count();
+}
+
+QVariant SurfaceListModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() >= m_surfaces.count())
+        return {};
+
+    if (role == Qt::DisplayRole)
+        return QVariant::fromValue(m_surfaces.at(index.row()));
+
+    return {};
+}
+
+QMap<int, QVariant> SurfaceListModel::itemData(const QModelIndex &index) const
+{
+    if (!index.isValid() || index.row() >= m_surfaces.count())
+        return {};
+
+    QMap<int, QVariant> data;
+    data.insert(Qt::DisplayRole, QVariant::fromValue(m_surfaces.at(index.row())));
+    return data;
+}
+
+Qt::ItemFlags SurfaceListModel::flags(const QModelIndex &index) const
+{
+    Q_UNUSED(index);
+    return Qt::ItemIsSelectable|Qt::ItemIsEnabled;
+}
+
+void SurfaceListModel::addSurface(SurfaceWrapper *surface)
+{
+    beginInsertRows(QModelIndex(), m_surfaces.count(), m_surfaces.count());
+    m_surfaces.append(surface);
+    endInsertRows();
+}
+
+void SurfaceListModel::removeSurface(SurfaceWrapper *surface)
+{
+    int index = m_surfaces.indexOf(surface);
+    if (index <= 0)
+        return;
+    beginRemoveRows({}, index, index);
+    m_surfaces.removeAt(index);
+    endRemoveRows();
+}
+
+bool SurfaceListModel::hasSurface(SurfaceWrapper *surface) const
+{
+    return m_surfaces.contains(surface);
+}
+
 SurfaceContainer::SurfaceContainer(QQuickItem *parent)
     : QQuickItem(parent)
+    , m_model(new SurfaceListModel(this))
 {
 
 }
@@ -18,8 +82,8 @@ SurfaceContainer::SurfaceContainer(SurfaceContainer *parent)
 
 SurfaceContainer::~SurfaceContainer()
 {
-    if (!m_surfaces.isEmpty()) {
-        qWarning() << "SurfaceContainer destroyed with surfaces still attached:" << m_surfaces;
+    if (!m_model->surfaces().isEmpty()) {
+        qWarning() << "SurfaceContainer destroyed with surfaces still attached:" << m_model->surfaces();
     }
 }
 
@@ -45,7 +109,7 @@ void SurfaceContainer::removeSurface(SurfaceWrapper *surface)
 
 bool SurfaceContainer::doAddSurface(SurfaceWrapper *surface, bool setContainer)
 {
-    if (m_surfaces.contains(surface))
+    if (m_model->hasSurface(surface))
         return false;
 
     if (setContainer) {
@@ -54,7 +118,7 @@ bool SurfaceContainer::doAddSurface(SurfaceWrapper *surface, bool setContainer)
         surface->setParent(this);
     }
 
-    m_surfaces << surface;
+    m_model->addSurface(surface);
     emit surfaceAdded(surface);
 
     if (auto p = parentContainer())
@@ -65,7 +129,7 @@ bool SurfaceContainer::doAddSurface(SurfaceWrapper *surface, bool setContainer)
 
 bool SurfaceContainer::doRemoveSurface(SurfaceWrapper *surface, bool setContainer)
 {
-    if (!m_surfaces.contains(surface))
+    if (!m_model->hasSurface(surface))
         return false;
 
     if (setContainer) {
@@ -73,7 +137,7 @@ bool SurfaceContainer::doRemoveSurface(SurfaceWrapper *surface, bool setContaine
         surface->setContainer(nullptr);
     }
 
-    m_surfaces.removeOne(surface);
+    m_model->removeSurface(surface);
     emit surfaceRemoved(surface);
 
     if (auto p = parentContainer())
