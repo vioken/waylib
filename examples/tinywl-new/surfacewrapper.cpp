@@ -418,23 +418,8 @@ void SurfaceWrapper::updateSubSurfaceStacking()
 
 void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    if (m_anchorEdges != 0 && !m_setPositionForAnchorEdgets) {
-        QRectF geometry = newGeometry;
-        if (m_anchorEdges & Qt::LeftEdge)
-            geometry.moveLeft(oldGeometry.left());
-        if (m_anchorEdges & Qt::TopEdge)
-            geometry.moveTop(oldGeometry.top());
-        if (m_anchorEdges & Qt::RightEdge)
-            geometry.moveRight(oldGeometry.right());
-        if (m_anchorEdges & Qt::BottomEdge)
-            geometry.moveBottom(oldGeometry.bottom());
-        if (geometry.topLeft() != newGeometry.topLeft()) {
-            m_setPositionForAnchorEdgets = true;
-            setPosition(geometry.topLeft());
-            m_setPositionForAnchorEdgets = false;
-            return;
-        }
-    }
+    if (m_ownsOutput && m_ownsOutput->filterSurfaceGeometryChanged(this, newGeometry, oldGeometry))
+        return;
 
     if (isNormal()) {
         setNormalGeometry(newGeometry);
@@ -628,17 +613,4 @@ QQuickItem *SurfaceWrapper::titleBar() const
 QQuickItem *SurfaceWrapper::decoration() const
 {
     return m_decoration;
-}
-
-Qt::Edges SurfaceWrapper::anchorEdges() const
-{
-    return m_anchorEdges;
-}
-
-void SurfaceWrapper::setAnchorEdges(const Qt::Edges &newAnchorEdges)
-{
-    if (m_anchorEdges == newAnchorEdges)
-        return;
-    m_anchorEdges = newAnchorEdges;
-    emit anchorEdgesChanged();
 }
