@@ -166,11 +166,5 @@ private:
     SurfaceContainer *m_overlayContainer = nullptr;
 
     // for move resize
-    struct {
-        SurfaceWrapper *surface = nullptr;
-        WSeat *seat = nullptr;
-        QPointF surfacePosOfStartMoveResize;
-        QSizeF surfaceSizeOfStartMoveResize;
-        Qt::Edges resizeEdgets;
-    } moveReiszeState;
+    SurfaceWrapper *m_moveResizeSurface = nullptr;
 };

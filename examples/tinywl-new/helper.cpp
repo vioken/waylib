@@ -208,7 +208,7 @@ void Helper::init()
             }
         }
 
-        if (moveReiszeState.surface && moveReiszeState.surface->ownsOutput() == o) {
+        if (m_moveResizeSurface && m_moveResizeSurface->ownsOutput() == o) {
             stopMoveResize();
         }
 
@@ -436,72 +436,67 @@ void Helper::activeSurface(SurfaceWrapper *wrapper)
 
 void Helper::stopMoveResize()
 {
-    if (auto s = moveReiszeState.surface) {
-        s->setAnchorEdges({});
-        s->shellSurface()->setResizeing(false);
+    if (!m_moveResizeSurface)
+        return;
+    auto o = m_moveResizeSurface->ownsOutput();
+    if (o && o->moveResizeSurface()) {
+        Q_ASSERT(o->moveResizeSurface() == m_moveResizeSurface);
+        o->endMoveResize();
+        Q_ASSERT(!m_moveResizeSurface);
+        return;
+    }
+    m_moveResizeSurface->shellSurface()->setResizeing(false);
 
-        auto o = moveReiszeState.surface->ownsOutput();
-        if (!o || !moveReiszeState.surface->surface()->outputs().contains(o->output())) {
-            o = outputAt(m_cursor);
-            Q_ASSERT(o);
-            moveReiszeState.surface->setOwnsOutput(o);
-        }
-
-        ensureSurfaceNormalPositionValid(moveReiszeState.surface);
+    if (!o || !m_moveResizeSurface->surface()->outputs().contains(o->output())) {
+        o = outputAt(m_cursor);
+        Q_ASSERT(o);
+        m_moveResizeSurface->setOwnsOutput(o);
     }
 
-    moveReiszeState.surface = nullptr;
-    moveReiszeState.seat = nullptr;
-    moveReiszeState.resizeEdgets = {0};
+    ensureSurfaceNormalPositionValid(m_moveResizeSurface);
+    m_moveResizeSurface = nullptr;
 }
 
 void Helper::startMove(SurfaceWrapper *surface, WSeat *seat, int serial)
 {
+    Q_ASSERT(seat == m_seat);
+    auto o = surface->ownsOutput();
+    if (!o)
+        return;
+
     stopMoveResize();
 
     Q_UNUSED(serial)
 
-    moveReiszeState.surface = surface;
-    moveReiszeState.seat = seat;
-    moveReiszeState.resizeEdgets = {0};
-    moveReiszeState.surfacePosOfStartMoveResize = surface->position();
+    m_moveResizeSurface = surface;
+    connect(o, &Output::moveResizeFinised, this, &Helper::stopMoveResize, Qt::SingleShotConnection);
+    o->beginMoveResize(surface, Qt::Edges{0});
 
-    surface->setPositionAutomatic(false);
     activeSurface(surface);
 }
 
 void Helper::startResize(SurfaceWrapper *surface, WSeat *seat, Qt::Edges edge, int serial)
 {
+    Q_ASSERT(seat == m_seat);
+    auto o = surface->ownsOutput();
+    if (!o)
+        return;
+
     stopMoveResize();
 
     Q_UNUSED(serial)
     Q_ASSERT(edge != 0);
 
-    moveReiszeState.surface = surface;
-    moveReiszeState.seat = seat;
-    moveReiszeState.surfacePosOfStartMoveResize = surface->position();
-    moveReiszeState.surfaceSizeOfStartMoveResize = surface->size();
-    moveReiszeState.resizeEdgets = edge;
-
-    Qt::Edges anchorEdgets;
-    if (edge & Qt::LeftEdge)
-        anchorEdgets |= Qt::RightEdge;
-    if (edge & Qt::RightEdge)
-        anchorEdgets |= Qt::LeftEdge;
-    if (edge & Qt::TopEdge)
-        anchorEdgets |= Qt::BottomEdge;
-    if (edge & Qt::BottomEdge)
-        anchorEdgets |= Qt::TopEdge;
-
-    surface->setAnchorEdges(anchorEdgets);
-    surface->setPositionAutomatic(false);
+    m_moveResizeSurface = surface;
+    connect(o, &Output::moveResizeFinised, this, &Helper::stopMoveResize, Qt::SingleShotConnection);
+    o->beginMoveResize(surface, edge);
     surface->shellSurface()->setResizeing(true);
     activeSurface(surface);
 }
 
 void Helper::cancelMoveResize(SurfaceWrapper *surface)
 {
-    if (moveReiszeState.surface != surface)
+    if (m_moveResizeSurface != surface)
         return;
     stopMoveResize();
 }
@@ -539,27 +534,21 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *, QInputEvent *event)
         seat->cursor()->setVisible(false);
     }
 
-    if (moveReiszeState.surface && (seat == moveReiszeState.seat || moveReiszeState.seat == nullptr)) {
+    if (m_moveResizeSurface) {
         // for move resize
         if (Q_LIKELY(event->type() == QEvent::MouseMove || event->type() == QEvent::TouchUpdate)) {
             auto cursor = seat->cursor();
             Q_ASSERT(cursor);
             QMouseEvent *ev = static_cast<QMouseEvent*>(event);
 
-            auto ownsOutput = moveReiszeState.surface->ownsOutput();
+            auto ownsOutput = m_moveResizeSurface->ownsOutput();
             if (!ownsOutput) {
                 stopMoveResize();
                 return false;
             }
 
-            if (moveReiszeState.resizeEdgets == 0) {
-                auto increment_pos = ev->globalPosition() - cursor->lastPressedOrTouchDownPosition();
-                ownsOutput->moveSurface(moveReiszeState.surface, moveReiszeState.surfacePosOfStartMoveResize, increment_pos);
-            } else {
-                auto increment_pos = ev->globalPosition() - cursor->lastPressedOrTouchDownPosition();
-                QRectF geo(moveReiszeState.surfacePosOfStartMoveResize, moveReiszeState.surfaceSizeOfStartMoveResize);
-                ownsOutput->resizeSurface(moveReiszeState.surface, geo, moveReiszeState.resizeEdgets, increment_pos);
-            }
+            auto increment_pos = ev->globalPosition() - cursor->lastPressedOrTouchDownPosition();
+            ownsOutput->doMoveResize(increment_pos);
 
             return true;
         } else if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
@@ -922,7 +911,7 @@ void Helper::destroySurface(WSurface *surface)
     auto index = indexOfSurface(surface);
     Q_ASSERT(index >= 0);
     auto wrapper = m_surfaceList.takeAt(index);
-    if (wrapper == moveReiszeState.surface)
+    if (wrapper == m_moveResizeSurface)
         stopMoveResize();
 
     if (wrapper->type() != SurfaceWrapper::Type::Layer)
