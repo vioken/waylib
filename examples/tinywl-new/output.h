@@ -40,8 +40,10 @@ public:
     void removeSurface(SurfaceWrapper *surface);
     const QList<SurfaceWrapper *> &surfaceList() const;
 
-    void moveSurface(SurfaceWrapper *surface, const QPointF &startPos, const QPointF &incrementPos);
-    void resizeSurface(SurfaceWrapper *surface, const QRectF &startGeo, Qt::Edges edges, const QPointF &incrementPos);
+    void beginMoveResize(SurfaceWrapper *surface, Qt::Edges edges);
+    void doMoveResize(const QPointF &incrementPos);
+    void endMoveResize();
+    SurfaceWrapper *moveResizeSurface() const;
 
     WOutput *output() const;
     WOutputItem *outputItem() const;
@@ -54,8 +56,12 @@ public:
 
 signals:
     void exclusiveZoneChanged();
+    void moveResizeFinised();
 
 private:
+    friend class SurfaceWrapper;
+    bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry);
+
     void addExclusiveZone(Qt::Edge edge, QObject *object, int value);
     bool removeExclusiveZone(QObject *object);
     void layoutLayerSurface(SurfaceWrapper *surface);
@@ -77,4 +83,12 @@ private:
     QList<std::pair<QObject*, int>> m_rightExclusiveZones;
 
     QSizeF m_lastSizeOnLayoutNonLayerSurfaces;
+
+    // for move resize
+    struct {
+        SurfaceWrapper *surface = nullptr;
+        QRectF startGeometry;
+        Qt::Edges resizeEdges;
+        bool setSurfacePositionForAnchorEdgets = false;
+    } moveResizeState;
 };
