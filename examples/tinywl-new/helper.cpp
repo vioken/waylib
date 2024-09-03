@@ -437,6 +437,7 @@ void Helper::activeSurface(SurfaceWrapper *wrapper)
 void Helper::stopMoveResize()
 {
     if (auto s = moveReiszeState.surface) {
+        s->setAnchorEdges({});
         s->shellSurface()->setResizeing(false);
 
         auto o = moveReiszeState.surface->ownsOutput();
@@ -482,6 +483,17 @@ void Helper::startResize(SurfaceWrapper *surface, WSeat *seat, Qt::Edges edge, i
     moveReiszeState.surfaceSizeOfStartMoveResize = surface->size();
     moveReiszeState.resizeEdgets = edge;
 
+    Qt::Edges anchorEdgets;
+    if (edge & Qt::LeftEdge)
+        anchorEdgets |= Qt::RightEdge;
+    if (edge & Qt::RightEdge)
+        anchorEdgets |= Qt::LeftEdge;
+    if (edge & Qt::TopEdge)
+        anchorEdgets |= Qt::BottomEdge;
+    if (edge & Qt::BottomEdge)
+        anchorEdgets |= Qt::TopEdge;
+
+    surface->setAnchorEdges(anchorEdgets);
     surface->setPositionAutomatic(false);
     surface->shellSurface()->setResizeing(true);
     activeSurface(surface);

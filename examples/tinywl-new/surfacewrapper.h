@@ -41,6 +41,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(SurfaceContainer* container READ container NOTIFY containerChanged FINAL)
     Q_PROPERTY(QQuickItem* titleBar READ titleBar NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(QQuickItem* decoration READ decoration NOTIFY noDecorationChanged FINAL)
+    Q_PROPERTY(Qt::Edges anchorEdges READ anchorEdges WRITE setAnchorEdges NOTIFY anchorEdgesChanged FINAL)
 
 public:
     enum class Type {
@@ -125,6 +126,9 @@ public:
     QQuickItem *titleBar() const;
     QQuickItem *decoration() const;
 
+    Qt::Edges anchorEdges() const;
+    void setAnchorEdges(const Qt::Edges &newAnchorEdges);
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
@@ -150,6 +154,7 @@ signals:
     void requestResize(Qt::Edges edges);
     void geometryChanged();
     void containerChanged();
+    void anchorEdgesChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -188,4 +193,6 @@ private:
     State m_surfaceState = State::Normal;
     bool m_noDecoration = true;
     qreal m_radius = 18.0;
+    Qt::Edges m_anchorEdges;
+    bool m_setPositionForAnchorEdgets = false;
 };
