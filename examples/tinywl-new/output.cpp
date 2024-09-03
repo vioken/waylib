@@ -128,7 +128,7 @@ void Output::resizeSurface(SurfaceWrapper *surface, const QRectF &startGeo, Qt::
     if (edges & Qt::BottomEdge)
         geo.setBottom(geo.bottom() + incrementPos.y());
 
-    if (surface->surfaceItem()->resizeSurface(geo.size().toSize())) {
+    if (surface->resize(geo.size())) {
         surface->setPosition(geo.topLeft());
     }
 }
