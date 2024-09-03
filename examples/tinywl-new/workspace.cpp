@@ -23,7 +23,7 @@ void Workspace::addSurface(SurfaceWrapper *surface, int workspaceIndex)
                          ? m_containers.at(workspaceIndex)
                          : m_containers.at(m_currentIndex);
 
-    if (container->m_surfaces.contains(surface))
+    if (container->m_model->hasSurface(surface))
         return;
 
     for (auto c : std::as_const(m_containers)) {
@@ -54,7 +54,7 @@ void Workspace::removeSurface(SurfaceWrapper *surface)
 int Workspace::containerIndexOfSurface(SurfaceWrapper *surface) const
 {
     for (int i = 0; i < m_containers.size(); ++i) {
-        if (m_containers.at(i)->m_surfaces.contains(surface))
+        if (m_containers.at(i)->m_model->hasSurface(surface))
             return i;
     }
 

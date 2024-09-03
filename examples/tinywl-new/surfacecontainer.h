@@ -3,8 +3,30 @@
 #pragma once
 
 #include <QQuickItem>
+#include <QAbstractListModel>
 
 class SurfaceWrapper;
+class SurfaceListModel : public QAbstractListModel
+{
+public:
+    explicit SurfaceListModel(QObject *parent = nullptr);
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    QMap<int, QVariant> itemData(const QModelIndex &index) const override;
+    Qt::ItemFlags flags(const QModelIndex &index) const override;
+
+    virtual void addSurface(SurfaceWrapper *surface);
+    virtual void removeSurface(SurfaceWrapper *surface);
+    bool hasSurface(SurfaceWrapper *surface) const;
+    const QList<SurfaceWrapper*> &surfaces() const {
+        return m_surfaces;
+    }
+
+private:
+    QList<SurfaceWrapper*> m_surfaces;
+};
+
 class SurfaceContainer : public QQuickItem
 {
     Q_OBJECT
@@ -22,7 +44,7 @@ public:
     virtual void removeSurface(SurfaceWrapper *surface);
 
     const QList<SurfaceWrapper*> &surfaces() const {
-        return m_surfaces;
+        return m_model->surfaces();
     }
 
 signals:
@@ -36,5 +58,5 @@ protected:
     virtual void addBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
     virtual void removeBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
 
-    QList<SurfaceWrapper*> m_surfaces;
+    SurfaceListModel *m_model = nullptr;
 };
