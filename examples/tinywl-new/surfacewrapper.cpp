@@ -94,6 +94,12 @@ WSurfaceItem *SurfaceWrapper::surfaceItem() const
     return m_surfaceItem;
 }
 
+bool SurfaceWrapper::resize(const QSizeF &size)
+{
+    QSize surfaceSize = m_titleBar ? QSizeF(size.width(), size.height() - m_titleBar->height()).toSize() : size.toSize();
+    return m_surfaceItem->resizeSurface(surfaceSize);
+}
+
 QRectF SurfaceWrapper::titlebarGeometry() const
 {
     return m_titleBar ? QRectF({0, 0}, m_titleBar->size()) : QRectF();
