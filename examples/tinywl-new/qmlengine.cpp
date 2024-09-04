@@ -1,9 +1,10 @@
 // Copyright (C) 2024 UnionTech Software Technology Co., Ltd.
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
+#include "output.h"
 #include "qmlengine.h"
 #include "surfacewrapper.h"
-#include "output.h"
+#include "wallpaperprovider.h"
 
 #include <QQuickItem>
 
@@ -15,7 +16,6 @@ QmlEngine::QmlEngine(QObject *parent)
     , surfaceContent(this, "Tinywl", "SurfaceContent")
     , shadowComponent(this, "Tinywl", "Shadow")
 {
-
 }
 
 QQuickItem *QmlEngine::createTitleBar(SurfaceWrapper *surface, QQuickItem *parent)
@@ -94,4 +94,15 @@ QQuickItem *QmlEngine::createShadow(QQuickItem *parent)
     shadowComponent.completeCreate();
 
     return item;
+}
+
+WallpaperImageProvider *QmlEngine::wallpaperImageProvider()
+{
+    Q_ASSERT(!this->imageProvider("wallpaper"));
+    if (!wallpaperProvider) {
+        wallpaperProvider = new WallpaperImageProvider;
+        addImageProvider("wallpaper", wallpaperProvider);
+    }
+
+    return wallpaperProvider;
 }

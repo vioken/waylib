@@ -10,6 +10,7 @@ QT_BEGIN_NAMESPACE
 class QQuickItem;
 QT_END_NAMESPACE
 
+class WallpaperImageProvider;
 class SurfaceWrapper;
 class Output;
 class QmlEngine : public QQmlApplicationEngine
@@ -24,6 +25,7 @@ public:
     QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
     QQuickItem *createShadow(QQuickItem *parent);
     QQmlComponent *surfaceContentComponent() { return &surfaceContent; }
+    WallpaperImageProvider *wallpaperImageProvider();
 
 private:
     QQmlComponent titleBarComponent;
@@ -32,4 +34,5 @@ private:
     QQmlComponent taskBarComponent;
     QQmlComponent surfaceContent;
     QQmlComponent shadowComponent;
+    WallpaperImageProvider *wallpaperProvider = nullptr;
 };
