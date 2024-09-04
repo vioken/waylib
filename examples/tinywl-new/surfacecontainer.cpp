@@ -45,11 +45,21 @@ Qt::ItemFlags SurfaceListModel::flags(const QModelIndex &index) const
     return Qt::ItemIsSelectable|Qt::ItemIsEnabled;
 }
 
+QHash<int, QByteArray> SurfaceListModel::roleNames() const
+{
+    return {{Qt::DisplayRole, "surface"}};
+}
+
 void SurfaceListModel::addSurface(SurfaceWrapper *surface)
 {
+    if (m_surfaces.contains(surface))
+        return;
+
     beginInsertRows(QModelIndex(), m_surfaces.count(), m_surfaces.count());
     m_surfaces.append(surface);
     endInsertRows();
+
+    emit surfaceAdded(surface);
 }
 
 void SurfaceListModel::removeSurface(SurfaceWrapper *surface)
@@ -60,11 +70,80 @@ void SurfaceListModel::removeSurface(SurfaceWrapper *surface)
     beginRemoveRows({}, index, index);
     m_surfaces.removeAt(index);
     endRemoveRows();
+
+    emit surfaceRemoved(surface);
 }
 
 bool SurfaceListModel::hasSurface(SurfaceWrapper *surface) const
 {
     return m_surfaces.contains(surface);
+}
+
+SurfaceFilterModel::SurfaceFilterModel(SurfaceListModel *parent)
+    : SurfaceListModel(parent)
+{
+    connect(parent, &SurfaceListModel::surfaceAdded,
+            this, &SurfaceFilterModel::initForSourceSurface);
+    connect(parent, &SurfaceListModel::surfaceRemoved,
+            this, [this] (SurfaceWrapper *surface) {
+        removeSurface(surface);
+        m_properties.erase(surface);
+    });
+}
+
+void SurfaceFilterModel::setFilter(std::function<bool(SurfaceWrapper*)> filter)
+{
+    m_filter = filter;
+    m_properties.clear();
+
+    for (auto surface : parent()->surfaces()) {
+        initForSourceSurface(surface);
+    }
+}
+
+void SurfaceFilterModel::initForSourceSurface(SurfaceWrapper *surface)
+{
+    if (m_filter(surface)) {
+        makeBindingForSourceSurface(surface);
+    } else {
+        updateSurfaceVisibility(surface);
+    }
+}
+
+void SurfaceFilterModel::makeBindingForSourceSurface(SurfaceWrapper *surface)
+{
+    Property &p = m_properties[surface];
+
+    if (!p.init) {
+        p.init = true;
+        p.notifier = p.prop.addNotifier([this, surface] {
+            updateSurfaceVisibility(surface);
+        });
+    }
+
+    p.setBinding([this, surface] {
+        return m_filter(surface);
+    });
+}
+
+void SurfaceFilterModel::updateSurfaceVisibility(SurfaceWrapper *surface)
+{
+    if (!m_filter) {
+        if (hasSurface(surface))
+            return;
+        addSurface(surface);
+        return;
+    }
+
+    Q_ASSERT(m_properties.contains(surface));
+    Q_ASSERT(parent()->hasSurface(surface));
+    const Property &p = m_properties.at(surface);
+    Q_ASSERT(p.init);
+    if (p.prop.value()) {
+        addSurface(surface);
+    } else {
+        removeSurface(surface);
+    }
 }
 
 SurfaceContainer::SurfaceContainer(QQuickItem *parent)
