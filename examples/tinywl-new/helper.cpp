@@ -125,6 +125,11 @@ WOutputRenderWindow *Helper::window() const
     return m_renderWindow;
 }
 
+Workspace* Helper::workspace() const
+{
+    return m_workspace;
+}
+
 void Helper::init()
 {
     auto engine = qmlEngine();

@@ -36,6 +36,8 @@ qt_add_qml_module(${TARGET}
     SOURCES layersurfacecontainer.h layersurfacecontainer.cpp
     SOURCES rootsurfacecontainer.h rootsurfacecontainer.cpp
     SOURCES surfaceproxy.h surfaceproxy.cpp
+    SOURCES wallpaperprovider.h wallpaperprovider.cpp
+    SOURCES wallpaperimage.h wallpaperimage.cpp
 
     QML_FILES PrimaryOutput.qml
     QML_FILES CopyOutput.qml
@@ -46,6 +48,9 @@ qt_add_qml_module(${TARGET}
     QML_FILES SurfaceContent.qml
     QML_FILES Shadow.qml
     QML_FILES Border.qml
+
+    RESOURCES
+    "res/gezi.png"
 )
 
 target_compile_definitions(${TARGET}
@@ -59,6 +64,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
+    Qt6::QuickPrivate
     Waylib::WaylibServer
     PkgConfig::PIXMAN
     PkgConfig::WAYLAND
