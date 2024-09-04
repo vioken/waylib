@@ -4,6 +4,7 @@
 #pragma once
 
 #include "qmlengine.h"
+#include "workspace.h"
 
 #include <wglobal.h>
 #include <wqmlcreator.h>
@@ -60,6 +61,7 @@ class Helper : public WSeatEventFilter
     Q_PROPERTY(bool socketEnabled READ socketEnabled WRITE setSocketEnabled NOTIFY socketEnabledChanged FINAL)
     Q_PROPERTY(SurfaceWrapper* activatedSurface READ activatedSurface NOTIFY activatedSurfaceChanged FINAL)
     Q_PROPERTY(RootSurfaceContainer* rootContainer READ rootContainer CONSTANT FINAL)
+    Q_PROPERTY(Workspace* workspace READ workspace CONSTANT FINAL)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -71,6 +73,8 @@ public:
 
     QmlEngine *qmlEngine() const;
     WOutputRenderWindow *window() const;
+    Workspace* workspace() const;
+    Output* output() const;
     void init();
 
     bool socketEnabled() const;
