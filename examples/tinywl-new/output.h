@@ -21,8 +21,10 @@ class SurfaceWrapper;
 class Output : public SurfaceListModel
 {
     Q_OBJECT
+    QML_ANONYMOUS
     Q_PROPERTY(QMargins exclusiveZone READ exclusiveZone NOTIFY exclusiveZoneChanged FINAL)
     Q_PROPERTY(QRectF validRect READ validRect NOTIFY exclusiveZoneChanged FINAL)
+    Q_PROPERTY(SurfaceListModel* minimizedSurfaces MEMBER minimizedSurfaces CONSTANT)
 
 public:
     enum class Type {
@@ -74,6 +76,7 @@ private:
     Type m_type;
     WOutputItem *m_item;
     Output *m_proxy = nullptr;
+    SurfaceFilterModel *minimizedSurfaces;
 
     QMargins m_exclusiveZone;
     QList<std::pair<QObject*, int>> m_topExclusiveZones;

@@ -278,9 +278,9 @@ void SurfaceWrapper::setSurfaceState(State newSurfaceState)
         || m_pendingSurfaceState == newSurfaceState) {
         return;
     }
-    m_pendingSurfaceState = newSurfaceState;
+    m_pendingSurfaceState.setValueBypassingBindings(newSurfaceState);
     updateVisible();
-    m_decoration->setVisible(isNormal());
+    m_decoration->setVisible(decorationCanVisible());
 
     if (newSurfaceState == State::Maximized) {
         setPosition(m_maximizedGeometry.topLeft());
@@ -296,10 +296,14 @@ void SurfaceWrapper::setSurfaceState(State newSurfaceState)
         setSize(m_tilingGeometry.size());
     }
 
-    m_surfaceState = newSurfaceState;
-    m_decoration->setVisible(isNormal());
+    m_surfaceState.setValueBypassingBindings(newSurfaceState);
+    m_decoration->setVisible(decorationCanVisible());
+    m_surfaceState.notify();
+}
 
-    emit surfaceStateChanged();
+QBindable<SurfaceWrapper::State> SurfaceWrapper::bindableSurfaceState()
+{
+    return &m_surfaceState;
 }
 
 bool SurfaceWrapper::isNormal() const
@@ -437,6 +441,11 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &old
     Q_EMIT geometryChanged();
     QQuickItem::geometryChange(newGeometry, oldGeometry);
     updateBoundedRect();
+}
+
+bool SurfaceWrapper::decorationCanVisible() const
+{
+    return isNormal();
 }
 
 qreal SurfaceWrapper::radius() const
