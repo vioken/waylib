@@ -47,7 +47,12 @@ Output *Output::createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, Q
 Output::Output(WOutputItem *output, QObject *parent)
     : SurfaceListModel(parent)
     , m_item(output)
+    , minimizedSurfaces(new SurfaceFilterModel(this))
 {
+    minimizedSurfaces->setFilter([] (SurfaceWrapper *s) {
+        return s->isMinimized();
+    });
+
     connect(output, &WOutputItem::geometryChanged, this, &Output::layoutAllSurfaces);
 }
 

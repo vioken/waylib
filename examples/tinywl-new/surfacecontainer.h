@@ -4,10 +4,17 @@
 
 #include <QQuickItem>
 #include <QAbstractListModel>
+#include <QProperty>
+#include <QPropertyNotifier>
+
+#include <functional>
 
 class SurfaceWrapper;
 class SurfaceListModel : public QAbstractListModel
 {
+    Q_OBJECT
+    QML_ANONYMOUS
+
 public:
     explicit SurfaceListModel(QObject *parent = nullptr);
 
@@ -15,6 +22,7 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
     QMap<int, QVariant> itemData(const QModelIndex &index) const override;
     Qt::ItemFlags flags(const QModelIndex &index) const override;
+    QHash<int, QByteArray> roleNames() const override;
 
     virtual void addSurface(SurfaceWrapper *surface);
     virtual void removeSurface(SurfaceWrapper *surface);
@@ -23,8 +31,55 @@ public:
         return m_surfaces;
     }
 
+signals:
+    void surfaceAdded(SurfaceWrapper *surface);
+    void surfaceRemoved(SurfaceWrapper *surface);
+
 private:
     QList<SurfaceWrapper*> m_surfaces;
+};
+
+class SurfaceFilterModel : public SurfaceListModel
+{
+    Q_OBJECT
+    QML_ELEMENT
+
+public:
+    explicit SurfaceFilterModel(SurfaceListModel *parent);
+
+    inline SurfaceFilterModel *parent() const {
+        return qobject_cast<SurfaceFilterModel*>(QObject::parent());
+    }
+    void setFilter(std::function<bool(SurfaceWrapper*)> filter);
+
+private:
+    using SurfaceListModel::addSurface;
+    using SurfaceListModel::removeSurface;
+
+    void initForSourceSurface(SurfaceWrapper *surface);
+    void makeBindingForSourceSurface(SurfaceWrapper *surface);
+    void updateSurfaceVisibility(SurfaceWrapper *surface);
+
+    std::function<bool(SurfaceWrapper*)> m_filter;
+
+    struct Property {
+        Property()
+            : prop(false)
+        {
+
+        }
+
+        template <typename F>
+        inline void setBinding(F f) {
+            prop.setBinding(f);
+        }
+
+        bool init = false;
+        QProperty<bool> prop;
+        QPropertyNotifier notifier;
+    };
+
+    std::map<SurfaceWrapper*, Property> m_properties;
 };
 
 class SurfaceContainer : public QQuickItem
