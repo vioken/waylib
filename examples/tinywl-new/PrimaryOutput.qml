@@ -77,11 +77,16 @@ OutputItem {
         }
     }
 
-    Image {
+    Wallpaper {
         id: background
-        source: "file:///usr/share/wallpapers/deepin/desktop.jpg"
-        fillMode: Image.PreserveAspectCrop
+        userId: 1000
+        output: rootOutputItem.output
+        workspace: Helper.workspace.currentIndex
+
+        fillMode: Image.Tile
+        cache: false
         asynchronous: true
+        sourceSize: Qt.size(1920, 1080)
         anchors.fill: parent
     }
 
