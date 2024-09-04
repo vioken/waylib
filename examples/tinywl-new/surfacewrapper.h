@@ -35,7 +35,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(QRectF tilingGeometry READ tilingGeometry NOTIFY tilingGeometryChanged FINAL)
     Q_PROPERTY(Output* ownsOutput READ ownsOutput NOTIFY ownsOutputChanged FINAL)
     Q_PROPERTY(bool positionAutomatic READ positionAutomatic WRITE setPositionAutomatic NOTIFY positionAutomaticChanged FINAL)
-    Q_PROPERTY(State surfaceState READ surfaceState NOTIFY surfaceStateChanged FINAL)
+    Q_PROPERTY(State surfaceState READ surfaceState NOTIFY surfaceStateChanged BINDABLE bindableSurfaceState FINAL)
     Q_PROPERTY(bool noDecoration READ noDecoration NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(qreal radius READ radius WRITE setRadius NOTIFY radiusChanged FINAL)
     Q_PROPERTY(SurfaceContainer* container READ container NOTIFY containerChanged FINAL)
@@ -103,6 +103,7 @@ public:
 
     State surfaceState() const;
     void setSurfaceState(State newSurfaceState);
+    QBindable<State> bindableSurfaceState();
     bool isNormal() const;
     bool isMaximized() const;
     bool isMinimized() const;
@@ -166,6 +167,8 @@ private:
     void updateSubSurfaceStacking();
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
+    bool decorationCanVisible() const;
+
     QmlEngine *m_engine;
     SurfaceContainer *m_container = nullptr;
     QList<SurfaceWrapper*> m_subSurfaces;
@@ -184,8 +187,8 @@ private:
     QPointer<Output> m_ownsOutput;
     QPointF m_positionInOwnsOutput;
     bool m_positionAutomatic = true;
-    State m_pendingSurfaceState = State::Normal;
-    State m_surfaceState = State::Normal;
+    Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_pendingSurfaceState, State::Normal)
+    Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_surfaceState, State::Normal, &SurfaceWrapper::surfaceStateChanged)
     bool m_noDecoration = true;
     qreal m_radius = 18.0;
 };
