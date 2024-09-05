@@ -4,6 +4,7 @@
 #include "output.h"
 #include "surfacewrapper.h"
 #include "helper.h"
+#include "rootsurfacecontainer.h"
 
 #include <woutputitem.h>
 #include <wlayersurface.h>
@@ -59,7 +60,7 @@ Output::Output(WOutputItem *output, QObject *parent)
 
     auto contentItem = Helper::instance()->window()->contentItem();
     m_taskBar = Helper::instance()->qmlEngine()->createTaskBar(this, contentItem);
-    m_taskBar->setZ(static_cast<int>(Helper::ContainerZOrder::TaskBarZOrder));
+    m_taskBar->setZ(RootSurfaceContainer::TaskBarZOrder);
 }
 
 Output::~Output()
@@ -249,7 +250,7 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
     WLayerSurface* layer = qobject_cast<WLayerSurface*>(surface->shellSurface());
     Q_ASSERT(layer);
 
-    auto validGeo = layer->exclusiveZone() == -1 ? this->geometry() : validGeometry();
+    auto validGeo = layer->exclusiveZone() == -1 ? this->rect() : validRect();
     validGeo = validGeo.marginsRemoved(QMargins(layer->leftMargin(),
                                                 layer->topMargin(),
                                                 layer->rightMargin(),

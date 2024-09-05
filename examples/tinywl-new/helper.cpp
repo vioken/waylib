@@ -7,6 +7,8 @@
 #include "workspace.h"
 #include "qmlengine.h"
 #include "surfacecontainer.h"
+#include "rootsurfacecontainer.h"
+#include "layersurfacecontainer.h"
 
 #include <WServer>
 #include <WOutput>
@@ -77,12 +79,12 @@ Helper::Helper(QObject *parent)
     , m_outputLayout(new WOutputLayout(this))
     , m_server(new WServer(this))
     , m_cursor(new WCursor(this))
-    , m_surfaceContainer(new SurfaceContainer(m_renderWindow->contentItem()))
-    , m_backgroundContainer(new SurfaceContainer(m_surfaceContainer))
-    , m_bottomContainer(new SurfaceContainer(m_surfaceContainer))
+    , m_surfaceContainer(new RootSurfaceContainer(m_renderWindow->contentItem()))
+    , m_backgroundContainer(new LayerSurfaceContainer(m_surfaceContainer))
+    , m_bottomContainer(new LayerSurfaceContainer(m_surfaceContainer))
     , m_workspace(new Workspace(m_surfaceContainer))
-    , m_topContainer(new SurfaceContainer(m_surfaceContainer))
-    , m_overlayContainer(new SurfaceContainer(m_surfaceContainer))
+    , m_topContainer(new LayerSurfaceContainer(m_surfaceContainer))
+    , m_overlayContainer(new LayerSurfaceContainer(m_surfaceContainer))
 {
     Q_ASSERT(!m_instance);
     m_instance = this;
@@ -93,11 +95,11 @@ Helper::Helper(QObject *parent)
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     m_surfaceContainer->setFocusPolicy(Qt::StrongFocus);
 #endif
-    m_backgroundContainer->setZ(ContainerZOrder::BackgroundZOrder);
-    m_bottomContainer->setZ(ContainerZOrder::BottomZOrder);
-    m_workspace->setZ(ContainerZOrder::NormalZOrder);
-    m_topContainer->setZ(ContainerZOrder::TopZOrder);
-    m_overlayContainer->setZ(ContainerZOrder::OverlayZOrder);
+    m_backgroundContainer->setZ(RootSurfaceContainer::BackgroundZOrder);
+    m_bottomContainer->setZ(RootSurfaceContainer::BottomZOrder);
+    m_workspace->setZ(RootSurfaceContainer::NormalZOrder);
+    m_topContainer->setZ(RootSurfaceContainer::TopZOrder);
+    m_overlayContainer->setZ(RootSurfaceContainer::OverlayZOrder);
 
     connect(m_outputLayout, &WOutputLayout::implicitWidthChanged, this, [this] {
         const auto width = m_outputLayout->implicitWidth();
@@ -124,7 +126,7 @@ Helper::Helper(QObject *parent)
     connect(m_outputLayout, &WOutputLayout::notify_change, this, [this] {
         ensureCursorPositionValid();
 
-        for (auto s : std::as_const(m_surfaceList)) {
+        for (auto s : m_surfaceContainer->surfaces()) {
             ensureSurfaceNormalPositionValid(s);
             updateSurfaceOutputs(s);
         }
@@ -133,6 +135,11 @@ Helper::Helper(QObject *parent)
 
 Helper::~Helper()
 {
+    for (auto s : m_surfaceContainer->surfaces()) {
+        if (auto c = s->container())
+            c->removeSurface(s);
+    }
+
     Q_ASSERT(m_instance == this);
     m_instance = nullptr;
 }
@@ -179,11 +186,13 @@ void Helper::init()
         o->outputItem()->stackBefore(m_surfaceContainer);
         m_outputList.append(o);
         m_outputLayout->autoAdd(output);
+        m_surfaceContainer->addOutput(o);
 
         if (!m_primaryOutput) {
             setPrimaryOutput(o);
 
-            for (auto s : std::as_const(m_surfaceList)) {
+            const auto surfaces = m_surfaceContainer->surfaces();
+            for (auto s : surfaces) {
                 updateSurfaceOwnsOutput(s);
                 ensureSurfaceNormalPositionValid(s);
             }
@@ -196,6 +205,7 @@ void Helper::init()
         auto index = indexOfOutput(output);
         Q_ASSERT(index >= 0);
         const auto o = m_outputList.takeAt(index);
+        m_surfaceContainer->removeOutput(o);
         auto primaryOutput = m_primaryOutput;
 
         if (primaryOutput == o) {
@@ -215,7 +225,8 @@ void Helper::init()
                 setCursorPosition(primaryOutput->outputItem()->position() + posInOutput);
             }
 
-            for (auto s : std::as_const(m_surfaceList)) {
+            const auto surfaces = m_surfaceContainer->surfaces();
+            for (auto s : surfaces) {
                 if (s->type() == SurfaceWrapper::Type::Layer)
                     continue;
 
@@ -252,10 +263,9 @@ void Helper::init()
 
         wrapper->setNoDecoration(m_xdgDecorationManager->modeBySurface(surface->surface())
                                  != WXdgDecorationManager::Server);
-        addSurface(wrapper);
 
         if (auto parent = surface->parentSurface()) {
-            auto parentWrapper = getSurface(parent);
+            auto parentWrapper = m_surfaceContainer->getSurface(parent);
             auto container = parentWrapper->container();
             Q_ASSERT(container);
             container->addSurface(wrapper);
@@ -276,8 +286,6 @@ void Helper::init()
     connect(layerShell, &WLayerShell::surfaceAdded, this, [this] (WLayerSurface *surface) {
         auto wrapper = new SurfaceWrapper(qmlEngine(), surface, SurfaceWrapper::Type::Layer);
         wrapper->setNoDecoration(true);
-        addSurface(wrapper);
-
         updateLayerSurfaceContainer(wrapper);
 
         connect(surface, &WLayerSurface::layerChanged, this, [this, wrapper] {
@@ -325,7 +333,6 @@ void Helper::init()
             auto wrapper = new SurfaceWrapper(qmlEngine(), surface, SurfaceWrapper::Type::XWayland);
             wrapper->setNoDecoration(false);
             m_foreignToplevel->addSurface(surface);
-            addSurface(wrapper);
             m_workspace->addSurface(wrapper);
             Q_ASSERT(wrapper->parentItem());
         });
@@ -348,7 +355,7 @@ void Helper::init()
     m_xdgDecorationManager = m_server->attach<WXdgDecorationManager>();
     connect(m_xdgDecorationManager, &WXdgDecorationManager::surfaceModeChanged,
             this, [this] (WSurface *surface, WXdgDecorationManager::DecorationMode mode) {
-        auto s = getSurface(surface);
+        auto s = m_surfaceContainer->getSurface(surface);
         if (!s)
             return;
         s->setNoDecoration(mode != WXdgDecorationManager::Server);
@@ -476,9 +483,8 @@ void Helper::stopMoveResize()
     m_moveResizeSurface = nullptr;
 }
 
-void Helper::startMove(SurfaceWrapper *surface, WSeat *seat, int serial)
+void Helper::startMove(SurfaceWrapper *surface, int serial)
 {
-    Q_ASSERT(seat == m_seat);
     auto o = surface->ownsOutput();
     if (!o)
         return;
@@ -494,9 +500,8 @@ void Helper::startMove(SurfaceWrapper *surface, WSeat *seat, int serial)
     activeSurface(surface);
 }
 
-void Helper::startResize(SurfaceWrapper *surface, WSeat *seat, Qt::Edges edge, int serial)
+void Helper::startResize(SurfaceWrapper *surface, Qt::Edges edge, int serial)
 {
-    Q_ASSERT(seat == m_seat);
     auto o = surface->ownsOutput();
     if (!o)
         return;
@@ -595,7 +600,7 @@ bool Helper::afterHandleEvent(WSeat *seat, WSurface *watched, QObject *surfaceIt
             }
         }
 
-        auto surface = getSurface(watched);
+        auto surface = m_surfaceContainer->getSurface(watched);
         activeSurface(surface, Qt::MouseFocusReason);
     }
 
@@ -860,81 +865,11 @@ void Helper::setOutputProxy(Output *output)
 
 }
 
-void Helper::addSurface(SurfaceWrapper *surface)
-{
-    m_surfaceList << surface;
-
-    connect(surface, &SurfaceWrapper::requestMove, this, [this] {
-        auto surface = qobject_cast<SurfaceWrapper*>(sender());
-        Q_ASSERT(surface);
-        startMove(surface, m_seat, 0);
-    });
-    connect(surface, &SurfaceWrapper::requestResize, this, [this] (Qt::Edges edges) {
-        auto surface = qobject_cast<SurfaceWrapper*>(sender());
-        Q_ASSERT(surface);
-        startResize(surface, m_seat, edges, 0);
-    });
-    connect(surface, &SurfaceWrapper::surfaceStateChanged, this, [surface, this] {
-        if (surface->surfaceState() == SurfaceWrapper::State::Minimized
-            || surface->surfaceState() == SurfaceWrapper::State::Tiling)
-            return;
-        activeSurface(surface);
-    });
-    connect(surface, &SurfaceWrapper::geometryChanged, this, [this, surface] {
-        updateSurfaceOutputs(surface);
-    });
-
-    updateSurfaceOwnsOutput(surface);
-    updateSurfaceOutputs(surface);
-    activeSurface(surface, Qt::OtherFocusReason);
-}
-
-int Helper::indexOfSurface(WSurface *surface) const
-{
-    for (int i = 0; i < m_surfaceList.size(); i++) {
-        if (m_surfaceList.at(i)->surface() == surface)
-            return i;
-    }
-    return -1;
-}
-
-SurfaceWrapper *Helper::getSurface(WSurface *surface) const
-{
-    for (const auto &wrapper: std::as_const(m_surfaceList)) {
-        if (wrapper->surface() == surface)
-            return wrapper;
-    }
-    return nullptr;
-}
-
-int Helper::indexOfSurface(WToplevelSurface *surface) const
-{
-    for (int i = 0; i < m_surfaceList.size(); i++) {
-        if (m_surfaceList.at(i)->shellSurface() == surface)
-            return i;
-    }
-    return -1;
-}
-
-SurfaceWrapper *Helper::getSurface(WToplevelSurface *surface) const
-{
-    for (const auto &wrapper: m_surfaceList) {
-        if (wrapper->shellSurface() == surface)
-            return wrapper;
-    }
-    return nullptr;
-}
-
 void Helper::destroySurface(WSurface *surface)
 {
-    auto index = indexOfSurface(surface);
-    Q_ASSERT(index >= 0);
-    auto wrapper = m_surfaceList.takeAt(index);
+    auto wrapper = m_surfaceContainer->getSurface(surface);
     if (wrapper == m_moveResizeSurface)
         stopMoveResize();
-
-    if (wrapper->type() != SurfaceWrapper::Type::Layer)
-        m_workspace->removeSurface(wrapper);
 
     delete wrapper;
 }
@@ -997,7 +932,7 @@ void Helper::updateSurfaceOwnsOutput(SurfaceWrapper *surface)
 
 void Helper::updateSurfacesOwnsOutput()
 {
-    for (auto surface : std::as_const(m_surfaceList)) {
+    for (auto surface : m_surfaceContainer->surfaces()) {
         updateSurfaceOwnsOutput(surface);
     }
 }

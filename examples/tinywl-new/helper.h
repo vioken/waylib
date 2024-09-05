@@ -51,9 +51,11 @@ QW_USE_NAMESPACE
 class Output;
 class SurfaceWrapper;
 class Workspace;
-class SurfaceContainer;
+class RootSurfaceContainer;
+class LayerSurfaceContainer;
 class Helper : public WSeatEventFilter
 {
+    friend class RootSurfaceContainer;
     Q_OBJECT
     Q_PROPERTY(bool socketEnabled READ socketEnabled WRITE setSocketEnabled NOTIFY socketEnabledChanged FINAL)
     Q_PROPERTY(SurfaceWrapper* activatedSurface READ activatedSurface NOTIFY activatedSurfaceChanged FINAL)
@@ -63,15 +65,6 @@ class Helper : public WSeatEventFilter
 public:
     explicit Helper(QObject *parent = nullptr);
     ~Helper();
-
-    enum ContainerZOrder {
-        BackgroundZOrder = -2,
-        BottomZOrder = -1,
-        NormalZOrder = 0,
-        TopZOrder = 1,
-        OverlayZOrder = 2,
-        TaskBarZOrder = 3,
-    };
 
     static Helper *instance();
 
@@ -103,11 +96,6 @@ private:
 
     void setOutputProxy(Output *output);
 
-    void addSurface(SurfaceWrapper *surface);
-    int indexOfSurface(WSurface *surface) const;
-    SurfaceWrapper *getSurface(WSurface *surface) const;
-    int indexOfSurface(WToplevelSurface *surface) const;
-    SurfaceWrapper *getSurface(WToplevelSurface *surface) const;
     void destroySurface(WSurface *surface);
     void updateLayerSurfaceContainer(SurfaceWrapper *surface);
     void updateSurfaceOwnsOutput(SurfaceWrapper *surface);
@@ -124,8 +112,8 @@ private:
     void ensureSurfaceNormalPositionValid(SurfaceWrapper *surface);
 
     void stopMoveResize();
-    void startMove(SurfaceWrapper *surface, WSeat *seat, int serial);
-    void startResize(SurfaceWrapper *surface, WSeat *seat, Qt::Edges edges, int serial);
+    void startMove(SurfaceWrapper *surface, int serial);
+    void startResize(SurfaceWrapper *surface, Qt::Edges edges, int serial);
     void cancelMoveResize(SurfaceWrapper *surface);
 
     bool startDemoClient();
@@ -160,16 +148,15 @@ private:
     QList<Output*> m_outputList;
     QPointer<Output> m_primaryOutput;
 
-    QList<SurfaceWrapper*> m_surfaceList;
     QPointer<SurfaceWrapper> m_keyboardFocusSurface;
     QPointer<SurfaceWrapper> m_activatedSurface;
 
-    SurfaceContainer *m_surfaceContainer = nullptr;
-    SurfaceContainer *m_backgroundContainer = nullptr;
-    SurfaceContainer *m_bottomContainer = nullptr;
+    RootSurfaceContainer *m_surfaceContainer = nullptr;
+    LayerSurfaceContainer *m_backgroundContainer = nullptr;
+    LayerSurfaceContainer *m_bottomContainer = nullptr;
     Workspace *m_workspace = nullptr;
-    SurfaceContainer *m_topContainer = nullptr;
-    SurfaceContainer *m_overlayContainer = nullptr;
+    LayerSurfaceContainer *m_topContainer = nullptr;
+    LayerSurfaceContainer *m_overlayContainer = nullptr;
 
     // for move resize
     SurfaceWrapper *m_moveResizeSurface = nullptr;
