@@ -70,6 +70,7 @@
 
 #define WLR_FRACTIONAL_SCALE_V1_VERSION 1
 
+Helper *Helper::m_instance = nullptr;
 Helper::Helper(QObject *parent)
     : WSeatEventFilter(parent)
     , m_renderWindow(new WOutputRenderWindow(this))
@@ -83,6 +84,9 @@ Helper::Helper(QObject *parent)
     , m_topContainer(new SurfaceContainer(m_surfaceContainer))
     , m_overlayContainer(new SurfaceContainer(m_surfaceContainer))
 {
+    Q_ASSERT(!m_instance);
+    m_instance = this;
+
     m_cursor->setLayout(m_outputLayout);
     m_cursor->setEventWindow(m_renderWindow);
     m_surfaceContainer->setFlag(QQuickItem::ItemIsFocusScope, true);
@@ -129,7 +133,13 @@ Helper::Helper(QObject *parent)
 
 Helper::~Helper()
 {
+    Q_ASSERT(m_instance == this);
+    m_instance = nullptr;
+}
 
+Helper *Helper::instance()
+{
+    return m_instance;
 }
 
 QmlEngine *Helper::qmlEngine() const
@@ -137,8 +147,17 @@ QmlEngine *Helper::qmlEngine() const
     return qobject_cast<QmlEngine*>(::qmlEngine(this));
 }
 
+WOutputRenderWindow *Helper::window() const
+{
+    return m_renderWindow;
+}
+
 void Helper::init()
 {
+    auto engine = qmlEngine();
+    engine->setContextForObject(m_renderWindow, engine->rootContext());
+    engine->setContextForObject(m_renderWindow->contentItem(), engine->rootContext());
+
     m_seat = m_server->attach<WSeat>();
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_cursor);

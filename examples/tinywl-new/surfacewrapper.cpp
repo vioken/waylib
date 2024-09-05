@@ -267,6 +267,11 @@ QRectF SurfaceWrapper::geometry() const
     return QRectF(position(), size());
 }
 
+SurfaceWrapper::State SurfaceWrapper::previousSurfaceState() const
+{
+    return m_previousSurfaceState;
+}
+
 SurfaceWrapper::State SurfaceWrapper::surfaceState() const
 {
     return m_surfaceState;
@@ -280,7 +285,8 @@ void SurfaceWrapper::setSurfaceState(State newSurfaceState)
     }
     m_pendingSurfaceState.setValueBypassingBindings(newSurfaceState);
     updateVisible();
-    m_decoration->setVisible(decorationCanVisible());
+    setVisibleDecoration(newSurfaceState == State::Minimized
+                         || newSurfaceState == State::Normal);
 
     if (newSurfaceState == State::Maximized) {
         setPosition(m_maximizedGeometry.topLeft());
@@ -296,9 +302,15 @@ void SurfaceWrapper::setSurfaceState(State newSurfaceState)
         setSize(m_tilingGeometry.size());
     }
 
+    if (m_previousSurfaceState != newSurfaceState) {
+        m_previousSurfaceState.setValueBypassingBindings(m_surfaceState);
+    }
+
     m_surfaceState.setValueBypassingBindings(newSurfaceState);
-    m_decoration->setVisible(decorationCanVisible());
+    m_previousSurfaceState.notify();
     m_surfaceState.notify();
+
+    updateVisible();
 }
 
 QBindable<SurfaceWrapper::State> SurfaceWrapper::bindableSurfaceState()
@@ -443,11 +455,6 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &old
     updateBoundedRect();
 }
 
-bool SurfaceWrapper::decorationCanVisible() const
-{
-    return isNormal();
-}
-
 qreal SurfaceWrapper::radius() const
 {
     return m_radius;
@@ -464,6 +471,12 @@ void SurfaceWrapper::setRadius(qreal newRadius)
 void SurfaceWrapper::requestMinimize()
 {
     setSurfaceState(State::Minimized);
+}
+
+void SurfaceWrapper::requestUnminimize()
+{
+    if (m_surfaceState == State::Minimized)
+        setSurfaceState(m_previousSurfaceState);
 }
 
 void SurfaceWrapper::requestToggleMaximize()
@@ -622,4 +635,17 @@ QQuickItem *SurfaceWrapper::titleBar() const
 QQuickItem *SurfaceWrapper::decoration() const
 {
     return m_decoration;
+}
+
+bool SurfaceWrapper::visibleDecoration() const
+{
+    return m_visibleDecoration;
+}
+
+void SurfaceWrapper::setVisibleDecoration(bool newVisibleDecoration)
+{
+    if (m_visibleDecoration == newVisibleDecoration)
+        return;
+    m_visibleDecoration = newVisibleDecoration;
+    emit visibleDecorationChanged();
 }

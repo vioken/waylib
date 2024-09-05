@@ -12,6 +12,7 @@ Item {
     required property SurfaceWrapper surface
     readonly property SurfaceItem surfaceItem: surface.surfaceItem
 
+    visible: surface && surface.visibleDecoration
     x: -shadow.blurMax
     y: -shadow.blurMax
     width: surface.implicitWidth + 2 * shadow.blurMax
@@ -80,7 +81,7 @@ Item {
         y: blurMax
         width: shadowSource.width
         height: shadowSource.height
-        shadowEnabled: root.visible
+        shadowEnabled: surface.visibleDecoration
         shadowColor: "black"
         shadowBlur: 1.0
         blurMax: 64
@@ -93,7 +94,7 @@ Item {
     }
 
     Loader {
-        active: surface.radius > 0 && root.visible && surface.titleBar
+        active: surface.radius > 0 && surface.visibleDecoration && surface.titleBar
         parent: surface.titleBar.parent
         x: surface.titleBar.x
         y: surface.titleBar.y
@@ -149,7 +150,7 @@ Item {
 
             Loader {
                 id: effectLoader
-                active: cornerRadius > 0 && (wrapper?.decoration?.visible ?? false)
+                active: cornerRadius > 0 && (wrapper?.visibleDecoration ?? false)
                 anchors.fill: parent
                 sourceComponent: MultiEffect {
                     anchors.fill: parent
@@ -184,7 +185,7 @@ Item {
 
     Rectangle {
         id: outsideBorder
-        visible: root.visible
+        visible: surface.visibleDecoration
         parent: surfaceItem
         x: -border.width
         y: -border.width + surface.titleBar.y
@@ -201,7 +202,7 @@ Item {
 
     Rectangle {
         id: insideBorder
-        visible: root.visible
+        visible: surface.visibleDecoration
         parent: surfaceItem
         y: surface.titleBar.y
         width: surface.implicitWidth
