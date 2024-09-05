@@ -10,6 +10,7 @@
 #include <wcursor.h>
 #include <woutputitem.h>
 #include <woutput.h>
+#include <wxdgsurface.h>
 
 #include <QQuickWindow>
 
@@ -229,6 +230,22 @@ void RootSurfaceContainer::addBySubContainer(SurfaceContainer *sub, SurfaceWrapp
             return;
         Helper::instance()->activeSurface(surface);
     });
+
+    if (!surface->ownsOutput()) {
+        auto parentSurface = surface->parentSurface();
+        auto output = parentSurface ? parentSurface->ownsOutput() :
+            Helper::instance()->rootContainer()->primaryOutput();
+
+        if (auto xdgSurface = qobject_cast<WXdgSurface*>(surface->shellSurface())) {
+            if (xdgSurface->isPopup() && parentSurface->type() != SurfaceWrapper::Type::Layer) {
+                auto pos = parentSurface->position() + parentSurface->surfaceItem()->position() + xdgSurface->getPopupPosition();
+                if (auto op = m_outputLayout->output_at(pos.x(), pos.y()))
+                    output = Helper::instance()->getOutput(WOutput::fromHandle(qw_output::from(op)));
+            }
+        }
+        surface->setOwnsOutput(output);
+    }
+
     connect(surface, &SurfaceWrapper::geometryChanged, this, [this, surface] {
         updateSurfaceOutputs(surface);
     });
