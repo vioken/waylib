@@ -11,6 +11,7 @@
 #include <wsurfaceitem.h>
 #include <wlayersurface.h>
 #include <woutputrenderwindow.h>
+#include <wxdgsurface.h>
 
 #include <QQmlEngine>
 
@@ -83,14 +84,7 @@ void Output::addSurface(SurfaceWrapper *surface)
 
     if (surface->type() == SurfaceWrapper::Type::Layer) {
         auto layer = qobject_cast<WLayerSurface*>(surface->shellSurface());
-        layer->safeConnect(&WLayerSurface::ancherChanged, this, &Output::layoutLayerSurfaces);
-        layer->safeConnect(&WLayerSurface::leftMarginChanged, this, &Output::layoutLayerSurfaces);
-        layer->safeConnect(&WLayerSurface::rightMarginChanged, this, &Output::layoutLayerSurfaces);
-        layer->safeConnect(&WLayerSurface::topMarginChanged, this, &Output::layoutLayerSurfaces);
-        layer->safeConnect(&WLayerSurface::bottomMarginChanged, this, &Output::layoutLayerSurfaces);
-        layer->safeConnect(&WLayerSurface::exclusiveZoneChanged, this, &Output::layoutLayerSurfaces);
-        connect(surface, &SurfaceWrapper::widthChanged, this, &Output::layoutLayerSurfaces);
-        connect(surface, &SurfaceWrapper::heightChanged, this, &Output::layoutLayerSurfaces);
+        layer->safeConnect(&WLayerSurface::layerPropertiesChanged, this, &Output::layoutLayerSurfaces);
 
         layoutLayerSurfaces();
     } else {
@@ -290,10 +284,46 @@ void Output::layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDi
             if (normalGeo.size().isEmpty())
                 return;
 
-            normalGeo.moveCenter(validGeo.center());
-            normalGeo.moveTop(qMax(normalGeo.top(), validGeo.top()));
-            normalGeo.moveLeft(qMax(normalGeo.left(), validGeo.left()));
-            surface->moveNormalGeometryInOutput(normalGeo.topLeft());
+            SurfaceWrapper* parentSurfaceWrapper = surface->parentSurface();
+            if (parentSurfaceWrapper) {
+                auto xdgSurface = qobject_cast<WXdgSurface*>(surface->shellSurface());
+                if (xdgSurface && xdgSurface->isPopup()) {
+                    if (!surface->positionAutomatic())
+                        return;
+                    QPointF dPos = xdgSurface->getPopupPosition();
+                    QPointF topLeft;
+                    // TODO: remove parentSurfaceWrapper->surfaceItem()->x()
+                    topLeft.setX(parentSurfaceWrapper->x() + parentSurfaceWrapper->surfaceItem()->x() + dPos.x());
+                    topLeft.setY(parentSurfaceWrapper->y() + parentSurfaceWrapper->surfaceItem()->y() + dPos.y());
+                    auto output = surface->ownsOutput()->outputItem();
+
+                    normalGeo.setWidth(std::min(output->width(), surface->implicitWidth()));
+                    normalGeo.setHeight(std::min(output->height(), surface->implicitHeight()));
+                    surface->resizeNormalGeometryInOutput(normalGeo.size());
+
+                    if (topLeft.x() + normalGeo.width() > output->x() + output->width())
+                        topLeft.setX(output->x() + output->width() - normalGeo.width());
+                    if (topLeft.y() + normalGeo.height() > output->y() + output->height())
+                        topLeft.setY(output->y() + output->height() - normalGeo.height());
+                    normalGeo.moveTopLeft(topLeft);
+                    surface->moveNormalGeometryInOutput(normalGeo.topLeft());
+                } else {
+                    QPointF dPos {
+                        (parentSurfaceWrapper->implicitWidth() - surface->implicitWidth()) / 2,
+                        (parentSurfaceWrapper->implicitHeight() - surface->implicitHeight()) / 2
+                    };
+                    QPointF topLeft;
+                    topLeft.setX(parentSurfaceWrapper->x() + dPos.x());
+                    topLeft.setY(parentSurfaceWrapper->y() + dPos.y());
+                    normalGeo.moveTopLeft(topLeft);
+                    surface->moveNormalGeometryInOutput(normalGeo.topLeft());
+                }
+            } else {
+                normalGeo.moveCenter(validGeo.center());
+                normalGeo.moveTop(qMax(normalGeo.top(), validGeo.top()));
+                normalGeo.moveLeft(qMax(normalGeo.left(), validGeo.left()));
+                surface->moveNormalGeometryInOutput(normalGeo.topLeft());
+            }
         } else if (!sizeDiff.isNull() && sizeDiff.isValid()) {
             const QSizeF outputSize = m_item->size();
             const auto xScale = outputSize.width() / (outputSize.width() - sizeDiff.width());
