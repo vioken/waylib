@@ -38,6 +38,7 @@ qt_add_qml_module(${TARGET}
     QML_FILES CopyOutput.qml
     QML_FILES TitleBar.qml
     QML_FILES Decoration.qml
+    QML_FILES TaskBar.qml
 )
 
 target_compile_definitions(${TARGET}

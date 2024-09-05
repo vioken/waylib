@@ -35,12 +35,14 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(QRectF tilingGeometry READ tilingGeometry NOTIFY tilingGeometryChanged FINAL)
     Q_PROPERTY(Output* ownsOutput READ ownsOutput NOTIFY ownsOutputChanged FINAL)
     Q_PROPERTY(bool positionAutomatic READ positionAutomatic WRITE setPositionAutomatic NOTIFY positionAutomaticChanged FINAL)
+    Q_PROPERTY(State previousSurfaceState READ previousSurfaceState NOTIFY previousSurfaceStateChanged FINAL)
     Q_PROPERTY(State surfaceState READ surfaceState NOTIFY surfaceStateChanged BINDABLE bindableSurfaceState FINAL)
     Q_PROPERTY(bool noDecoration READ noDecoration NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(qreal radius READ radius WRITE setRadius NOTIFY radiusChanged FINAL)
     Q_PROPERTY(SurfaceContainer* container READ container NOTIFY containerChanged FINAL)
     Q_PROPERTY(QQuickItem* titleBar READ titleBar NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(QQuickItem* decoration READ decoration NOTIFY noDecorationChanged FINAL)
+    Q_PROPERTY(bool visibleDecoration READ visibleDecoration NOTIFY visibleDecorationChanged FINAL)
 
 public:
     enum class Type {
@@ -101,6 +103,7 @@ public:
     void resetWidth();
     void resetHeight();
 
+    State previousSurfaceState() const;
     State surfaceState() const;
     void setSurfaceState(State newSurfaceState);
     QBindable<State> bindableSurfaceState();
@@ -126,9 +129,12 @@ public:
     QQuickItem *titleBar() const;
     QQuickItem *decoration() const;
 
+    bool visibleDecoration() const;
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
+    void requestUnminimize();
     void requestToggleMaximize();
     void requestClose();
 
@@ -144,6 +150,7 @@ signals:
     void fullscreenGeometryChanged();
     void tilingGeometryChanged();
     void positionAutomaticChanged();
+    void previousSurfaceStateChanged();
     void surfaceStateChanged();
     void noDecorationChanged();
     void radiusChanged();
@@ -151,6 +158,7 @@ signals:
     void requestResize(Qt::Edges edges);
     void geometryChanged();
     void containerChanged();
+    void visibleDecorationChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -161,13 +169,12 @@ private:
     void setNoDecoration(bool newNoDecoration);
     void setBoundedRect(const QRectF &newBoundedRect);
     void setContainer(SurfaceContainer *newContainer);
+    void setVisibleDecoration(bool newVisibleDecoration);
     void updateBoundedRect();
     void updateVisible();
     void updateImplicitHeight();
     void updateSubSurfaceStacking();
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
-
-    bool decorationCanVisible() const;
 
     QmlEngine *m_engine;
     SurfaceContainer *m_container = nullptr;
@@ -188,7 +195,9 @@ private:
     QPointF m_positionInOwnsOutput;
     bool m_positionAutomatic = true;
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_pendingSurfaceState, State::Normal)
+    Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_previousSurfaceState, State::Normal, &SurfaceWrapper::previousSurfaceStateChanged)
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_surfaceState, State::Normal, &SurfaceWrapper::surfaceStateChanged)
     bool m_noDecoration = true;
     qreal m_radius = 18.0;
+    bool m_visibleDecoration = true;
 };
