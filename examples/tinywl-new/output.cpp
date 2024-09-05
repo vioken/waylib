@@ -3,11 +3,13 @@
 
 #include "output.h"
 #include "surfacewrapper.h"
+#include "helper.h"
 
 #include <woutputitem.h>
 #include <wlayersurface.h>
 #include <wsurfaceitem.h>
 #include <wlayersurface.h>
+#include <woutputrenderwindow.h>
 
 #include <QQmlEngine>
 
@@ -54,12 +56,21 @@ Output::Output(WOutputItem *output, QObject *parent)
     });
 
     connect(output, &WOutputItem::geometryChanged, this, &Output::layoutAllSurfaces);
+
+    auto contentItem = Helper::instance()->window()->contentItem();
+    m_taskBar = Helper::instance()->qmlEngine()->createTaskBar(this, contentItem);
+    m_taskBar->setZ(static_cast<int>(Helper::ContainerZOrder::TaskBarZOrder));
 }
 
 Output::~Output()
 {
     if (moveResizeState.surface)
         endMoveResize();
+
+    if (m_taskBar) {
+        delete m_taskBar;
+        m_taskBar = nullptr;
+    }
 }
 
 bool Output::isPrimary() const

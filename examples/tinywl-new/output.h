@@ -24,6 +24,7 @@ class Output : public SurfaceListModel
     QML_ANONYMOUS
     Q_PROPERTY(QMargins exclusiveZone READ exclusiveZone NOTIFY exclusiveZoneChanged FINAL)
     Q_PROPERTY(QRectF validRect READ validRect NOTIFY exclusiveZoneChanged FINAL)
+    Q_PROPERTY(WOutputItem* outputItem MEMBER m_item CONSTANT)
     Q_PROPERTY(SurfaceListModel* minimizedSurfaces MEMBER minimizedSurfaces CONSTANT)
 
 public:
@@ -77,6 +78,7 @@ private:
     WOutputItem *m_item;
     Output *m_proxy = nullptr;
     SurfaceFilterModel *minimizedSurfaces;
+    QPointer<QQuickItem> m_taskBar;
 
     QMargins m_exclusiveZone;
     QList<std::pair<QObject*, int>> m_topExclusiveZones;
@@ -94,3 +96,5 @@ private:
         bool setSurfacePositionForAnchorEdgets = false;
     } moveResizeState;
 };
+
+Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WOutputItem*)

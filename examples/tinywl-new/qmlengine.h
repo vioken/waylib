@@ -11,6 +11,7 @@ class QQuickItem;
 QT_END_NAMESPACE
 
 class SurfaceWrapper;
+class Output;
 class QmlEngine : public QQmlApplicationEngine
 {
     Q_OBJECT
@@ -19,8 +20,10 @@ public:
 
     QQuickItem *createTitleBar(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createDecoration(SurfaceWrapper *surface, QQuickItem *parent);
+    QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
 
 private:
     QQmlComponent titleBarComponent;
     QQmlComponent decorationComponent;
+    QQmlComponent taskBarComponent;
 };
