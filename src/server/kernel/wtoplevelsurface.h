@@ -112,7 +112,7 @@ Q_SIGNALS:
     void requestMaximize();
     void requestCancelMaximize();
     void requestMinimize();
-    void requestCancelMinimize();
+    void requestCancelMinimize(); // Only for XWaylandSurface
     void requestFullscreen();
     void requestCancelFullscreen();
     void requestShowWindowMenu(WSeat *seat, QPoint pos, quint32 serial);
