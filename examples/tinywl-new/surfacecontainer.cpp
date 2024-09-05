@@ -65,7 +65,7 @@ void SurfaceListModel::addSurface(SurfaceWrapper *surface)
 void SurfaceListModel::removeSurface(SurfaceWrapper *surface)
 {
     int index = m_surfaces.indexOf(surface);
-    if (index <= 0)
+    if (index < 0)
         return;
     beginRemoveRows({}, index, index);
     m_surfaces.removeAt(index);
@@ -103,11 +103,10 @@ void SurfaceFilterModel::setFilter(std::function<bool(SurfaceWrapper*)> filter)
 
 void SurfaceFilterModel::initForSourceSurface(SurfaceWrapper *surface)
 {
-    if (m_filter(surface)) {
+    if (m_filter) {
         makeBindingForSourceSurface(surface);
-    } else {
-        updateSurfaceVisibility(surface);
     }
+    updateSurfaceVisibility(surface);
 }
 
 void SurfaceFilterModel::makeBindingForSourceSurface(SurfaceWrapper *surface)
