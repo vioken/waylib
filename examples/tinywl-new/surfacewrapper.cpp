@@ -33,6 +33,19 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     m_surfaceItem->setResizeMode(WSurfaceItem::ManualResize);
     m_surfaceItem->setShellSurface(shellSurface);
 
+    shellSurface->safeConnect(&WToplevelSurface::requestMinimize, this, &SurfaceWrapper::requestMinimize);
+    shellSurface->safeConnect(&WToplevelSurface::requestCancelMinimize, this, &SurfaceWrapper::requestCancelMinimize);
+    shellSurface->safeConnect(&WToplevelSurface::requestMaximize, this, &SurfaceWrapper::requestMaximize);
+    shellSurface->safeConnect(&WToplevelSurface::requestCancelMaximize, this, &SurfaceWrapper::requestCancelMaximize);
+    shellSurface->safeConnect(&WToplevelSurface::requestMove, this, [this](WSeat *, quint32) {
+        Q_EMIT requestMove();
+    });
+    shellSurface->safeConnect(&WToplevelSurface::requestResize, this, [this](WSeat *, Qt::Edges edge, quint32) {
+        requestResize(edge);
+    });
+    shellSurface->safeConnect(&WToplevelSurface::requestFullscreen, this, &SurfaceWrapper::requestFullscreen);
+    shellSurface->safeConnect(&WToplevelSurface::requestCancelFullscreen, this, &SurfaceWrapper::requestCancelFullscreen);
+
     connect(m_surfaceItem, &WSurfaceItem::implicitWidthChanged, this, [this] {
         setImplicitWidth(m_surfaceItem->implicitWidth());
         if (m_titleBar)
@@ -128,7 +141,7 @@ void SurfaceWrapper::moveNormalGeometryInOutput(const QPointF &position)
 
 void SurfaceWrapper::resizeNormalGeometryInOutput(const QSizeF &size)
 {
-    Q_ASSERT(m_type == Type::Layer);
+    Q_ASSERT(m_type == Type::Layer || m_type == Type::XdgPopup);
     if (size.isValid()) {
         setSize(size);
     }
@@ -228,6 +241,11 @@ SurfaceWrapper::Type SurfaceWrapper::type() const
     return m_type;
 }
 
+SurfaceWrapper *SurfaceWrapper::parentSurface() const
+{
+    return m_parentSurface;
+}
+
 Output *SurfaceWrapper::ownsOutput() const
 {
     return m_ownsOutput;
@@ -308,12 +326,41 @@ void SurfaceWrapper::setSurfaceState(State newSurfaceState)
         setSize(m_tilingGeometry.size());
     }
 
-    if (m_previousSurfaceState != newSurfaceState) {
-        m_previousSurfaceState.setValueBypassingBindings(m_surfaceState);
-    }
-
+    m_previousSurfaceState.setValueBypassingBindings(m_surfaceState);
     m_surfaceState.setValueBypassingBindings(newSurfaceState);
+
+    switch (m_previousSurfaceState.value()) {
+    case State::Maximized:
+        m_shellSurface->setMaximize(false);
+        break;
+    case State::Minimized:
+        m_shellSurface->setMinimize(false);
+        break;
+    case State::Fullscreen:
+        m_shellSurface->setFullScreen(false);
+        break;
+    case State::Normal: [[fallthrough]];
+    case State::Tiling: [[fallthrough]];
+    default:
+        break;
+    }
     m_previousSurfaceState.notify();
+
+    switch (m_surfaceState.value()) {
+    case State::Maximized:
+        m_shellSurface->setMaximize(true);
+        break;
+    case State::Minimized:
+        m_shellSurface->setMinimize(true);
+        break;
+    case State::Fullscreen:
+        m_shellSurface->setFullScreen(true);
+        break;
+    case State::Normal: [[fallthrough]];
+    case State::Tiling: [[fallthrough]];
+    default:
+        break;
+    }
     m_surfaceState.notify();
 
     updateVisible();
@@ -489,18 +536,52 @@ void SurfaceWrapper::requestMinimize()
     setSurfaceState(State::Minimized);
 }
 
-void SurfaceWrapper::requestUnminimize()
+void SurfaceWrapper::requestCancelMinimize()
 {
-    if (m_surfaceState == State::Minimized)
-        setSurfaceState(m_previousSurfaceState);
+    if (m_surfaceState != State::Minimized)
+        return;
+
+    setSurfaceState(m_previousSurfaceState);
+}
+
+void SurfaceWrapper::requestMaximize()
+{
+    if (m_surfaceState == State::Minimized || m_surfaceState == State::Fullscreen)
+        return;
+
+    setSurfaceState(State::Maximized);
+}
+
+void SurfaceWrapper::requestCancelMaximize()
+{
+    if (m_surfaceState != State::Maximized)
+        return;
+
+    setSurfaceState(State::Normal);
 }
 
 void SurfaceWrapper::requestToggleMaximize()
 {
     if (m_surfaceState == State::Maximized)
-        setSurfaceState(State::Normal);
+        requestCancelMaximize();
     else
-        setSurfaceState(State::Maximized);
+        requestMaximize();
+}
+
+void SurfaceWrapper::requestFullscreen()
+{
+    if (m_surfaceState == State::Minimized)
+        return;
+
+    setSurfaceState(State::Fullscreen);
+}
+
+void SurfaceWrapper::requestCancelFullscreen()
+{
+    if (m_surfaceState != State::Fullscreen)
+        return;
+
+    setSurfaceState(m_previousSurfaceState);
 }
 
 void SurfaceWrapper::requestClose()

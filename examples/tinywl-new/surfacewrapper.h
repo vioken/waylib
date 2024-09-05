@@ -79,6 +79,7 @@ public:
     QRectF boundedRect() const;
 
     Type type() const;
+    SurfaceWrapper *parentSurface() const;
 
     Output *ownsOutput() const;
     void setOwnsOutput(Output *newOwnsOutput);
@@ -139,8 +140,12 @@ public:
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
-    void requestUnminimize();
+    void requestCancelMinimize();
+    void requestMaximize();
+    void requestCancelMaximize();
     void requestToggleMaximize();
+    void requestFullscreen();
+    void requestCancelFullscreen();
     void requestClose();
 
     bool stackBefore(QQuickItem *item);

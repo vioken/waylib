@@ -25,7 +25,7 @@ ListView {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: surface.requestUnminimize()
+            onClicked: surface.requestCancelMinimize()
         }
     }
 
