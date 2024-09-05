@@ -186,6 +186,7 @@ void Helper::init()
             auto parentWrapper = m_surfaceContainer->getSurface(parent);
             auto container = parentWrapper->container();
             Q_ASSERT(container);
+            parentWrapper->addSubSurface(wrapper);
             container->addSurface(wrapper);
         } else {
             m_workspace->addSurface(wrapper);

@@ -164,10 +164,9 @@ void WXdgSurfacePrivate::connect()
             }
         });
         QObject::connect(toplevel, &qw_xdg_toplevel::notify_request_minimize, q, [q, toplevel] () {
+            // Wayland clients can't request unset minimization on this surface
             if ((*toplevel)->requested.minimized) {
                 Q_EMIT q->requestMinimize();
-            } else {
-                Q_EMIT q->requestCancelMinimize();
             }
         });
         QObject::connect(toplevel, &qw_xdg_toplevel::notify_request_fullscreen, q, [q, toplevel] () {
