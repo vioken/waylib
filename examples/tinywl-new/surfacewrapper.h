@@ -177,7 +177,7 @@ private:
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
     QmlEngine *m_engine;
-    SurfaceContainer *m_container = nullptr;
+    QPointer<SurfaceContainer> m_container;
     QList<SurfaceWrapper*> m_subSurfaces;
     SurfaceWrapper *m_parentSurface = nullptr;
 

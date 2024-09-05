@@ -57,6 +57,9 @@ SurfaceWrapper::~SurfaceWrapper()
     if (m_ownsOutput)
         m_ownsOutput->removeSurface(this);
 
+    if (m_container)
+        m_container->removeSurface(this);
+
     for (auto subS : std::as_const(m_subSurfaces)) {
         subS->m_parentSurface = nullptr;
     }
