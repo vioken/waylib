@@ -3,6 +3,7 @@
 
 #include "qmlengine.h"
 #include "surfacewrapper.h"
+#include "output.h"
 
 #include <QQuickItem>
 
@@ -10,6 +11,7 @@ QmlEngine::QmlEngine(QObject *parent)
     : QQmlApplicationEngine(parent)
     , titleBarComponent(this, "Tinywl", "TitleBar")
     , decorationComponent(this, "Tinywl", "Decoration")
+    , taskBarComponent(this, "Tinywl", "TaskBar")
 {
 
 }
@@ -42,6 +44,22 @@ QQuickItem *QmlEngine::createDecoration(SurfaceWrapper *surface, QQuickItem *par
     item->setParent(parent);
     item->setParentItem(parent);
     decorationComponent.completeCreate();
+
+    return item;
+}
+
+QQuickItem *QmlEngine::createTaskBar(Output *output, QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = taskBarComponent.beginCreate(context);
+    taskBarComponent.setInitialProperties(obj, {
+        {"output", QVariant::fromValue(output)}
+    });
+    auto item = qobject_cast<QQuickItem*>(obj);
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    taskBarComponent.completeCreate();
 
     return item;
 }
