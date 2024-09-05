@@ -33,6 +33,8 @@ qt_add_qml_module(${TARGET}
     SOURCES output.h output.cpp
     SOURCES qmlengine.h qmlengine.cpp
     SOURCES surfacecontainer.h surfacecontainer.cpp
+    SOURCES layersurfacecontainer.h layersurfacecontainer.cpp
+    SOURCES rootsurfacecontainer.h rootsurfacecontainer.cpp
 
     QML_FILES PrimaryOutput.qml
     QML_FILES CopyOutput.qml

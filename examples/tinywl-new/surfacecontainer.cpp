@@ -165,6 +165,15 @@ SurfaceContainer::~SurfaceContainer()
     }
 }
 
+SurfaceContainer *SurfaceContainer::rootContainer() const
+{
+    SurfaceContainer *root = const_cast<SurfaceContainer*>(this);
+    while (auto p = root->parentContainer()) {
+        root = p;
+    }
+    return root;
+}
+
 SurfaceContainer *SurfaceContainer::parentContainer() const
 {
     return qobject_cast<SurfaceContainer*>(parent());
@@ -183,6 +192,22 @@ void SurfaceContainer::addSurface(SurfaceWrapper *surface)
 void SurfaceContainer::removeSurface(SurfaceWrapper *surface)
 {
     doRemoveSurface(surface, true);
+}
+
+void SurfaceContainer::addOutput(Output *output)
+{
+    const auto subContainers = this->subContainers();
+    for (auto sub : subContainers) {
+        sub->addOutput(output);
+    }
+}
+
+void SurfaceContainer::removeOutput(Output *output)
+{
+    const auto subContainers = this->subContainers();
+    for (auto sub : subContainers) {
+        sub->removeOutput(output);
+    }
 }
 
 bool SurfaceContainer::doAddSurface(SurfaceWrapper *surface, bool setContainer)

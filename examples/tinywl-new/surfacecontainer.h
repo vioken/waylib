@@ -85,6 +85,7 @@ private:
     std::map<SurfaceWrapper*, Property> m_properties;
 };
 
+class Output;
 class SurfaceContainer : public QQuickItem
 {
     Q_OBJECT
@@ -95,11 +96,15 @@ public:
     explicit SurfaceContainer(SurfaceContainer *parent);
     ~SurfaceContainer() override;
 
+    SurfaceContainer *rootContainer() const;
     SurfaceContainer *parentContainer() const;
     QList<SurfaceContainer*> subContainers() const;
 
     virtual void addSurface(SurfaceWrapper *surface);
     virtual void removeSurface(SurfaceWrapper *surface);
+
+    virtual void addOutput(Output *output);
+    virtual void removeOutput(Output *output);
 
     const QList<SurfaceWrapper*> &surfaces() const {
         return m_model->surfaces();
