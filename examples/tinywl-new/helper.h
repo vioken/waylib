@@ -64,7 +64,19 @@ public:
     explicit Helper(QObject *parent = nullptr);
     ~Helper();
 
+    enum ContainerZOrder {
+        BackgroundZOrder = -2,
+        BottomZOrder = -1,
+        NormalZOrder = 0,
+        TopZOrder = 1,
+        OverlayZOrder = 2,
+        TaskBarZOrder = 3,
+    };
+
+    static Helper *instance();
+
     QmlEngine *qmlEngine() const;
+    WOutputRenderWindow *window() const;
     void init();
 
     bool socketEnabled() const;
@@ -122,6 +134,8 @@ private:
     bool afterHandleEvent(WSeat *seat, WSurface *watched, QObject *surfaceItem, QObject *, QInputEvent *event) override;
     bool unacceptedEvent(WSeat *, QWindow *, QInputEvent *event) override;
 
+    static Helper *m_instance;
+
     // qtquick helper
     WOutputRenderWindow *m_renderWindow = nullptr;
     WOutputLayout *m_outputLayout = nullptr;
@@ -145,14 +159,6 @@ private:
     // privaet data
     QList<Output*> m_outputList;
     QPointer<Output> m_primaryOutput;
-
-    enum ContainerZOrder {
-        BackgroundZOrder = -2,
-        BottomZOrder = -1,
-        NormalZOrder = 0,
-        TopZOrder = 1,
-        OverlayZOrder = 2,
-    };
 
     QList<SurfaceWrapper*> m_surfaceList;
     QPointer<SurfaceWrapper> m_keyboardFocusSurface;

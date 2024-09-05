@@ -47,8 +47,11 @@ class SurfaceFilterModel : public SurfaceListModel
 public:
     explicit SurfaceFilterModel(SurfaceListModel *parent);
 
-    inline SurfaceFilterModel *parent() const {
-        return qobject_cast<SurfaceFilterModel*>(QObject::parent());
+    inline SurfaceListModel *parent() const {
+        auto op = QObject::parent();
+        auto p = qobject_cast<SurfaceListModel*>(op);
+        Q_ASSERT(p);
+        return p;
     }
     void setFilter(std::function<bool(SurfaceWrapper*)> filter);
 
