@@ -3,6 +3,9 @@
 
 #include "workspace.h"
 #include "surfacewrapper.h"
+#include "output.h"
+#include "helper.h"
+#include "rootsurfacecontainer.h"
 
 WorkspaceContainer::WorkspaceContainer(Workspace *parent)
     : SurfaceContainer(parent)
@@ -36,6 +39,8 @@ void Workspace::addSurface(SurfaceWrapper *surface, int workspaceIndex)
     }
 
     container->addSurface(surface);
+    if (!surface->ownsOutput())
+        surface->setOwnsOutput(Helper::instance()->rootContainer()->primaryOutput());
 }
 
 void Workspace::removeSurface(SurfaceWrapper *surface)
@@ -118,16 +123,31 @@ void Workspace::setCurrentIndex(int newCurrentIndex)
     emit currentChanged();
 }
 
-void Workspace::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
-{
-    for (auto container : std::as_const(m_containers)) {
-        container->setSize(newGeometry.size());
-    }
-
-    QQuickItem::geometryChange(newGeometry, oldGeometry);
-}
-
 WorkspaceContainer *Workspace::currentworkspace() const
 {
     return m_containers.at(m_currentIndex);
+}
+
+void Workspace::updateSurfaceOwnsOutput(SurfaceWrapper *surface)
+{
+    auto outputs = surface->surface()->outputs();
+    if (surface->ownsOutput() && outputs.contains(surface->ownsOutput()->output()))
+        return;
+
+    Output *output = nullptr;
+    if (!outputs.isEmpty())
+        output = Helper::instance()->getOutput(outputs.first());
+    if (!output)
+        output = Helper::instance()->rootContainer()->cursorOutput();
+    if (!output)
+        output = Helper::instance()->rootContainer()->primaryOutput();
+    if (output)
+        surface->setOwnsOutput(output);
+}
+
+void Workspace::updateSurfacesOwnsOutput()
+{
+    for (auto surface : this->surfaces()) {
+        updateSurfaceOwnsOutput(surface);
+    }
 }
