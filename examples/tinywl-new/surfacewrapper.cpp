@@ -437,7 +437,7 @@ void SurfaceWrapper::updateSubSurfaceStacking()
 
 void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    if (m_ownsOutput && m_ownsOutput->filterSurfaceGeometryChanged(this, newGeometry, oldGeometry))
+    if (m_container && m_container->filterSurfaceGeometryChanged(this, newGeometry, oldGeometry))
         return;
 
     if (isNormal()) {

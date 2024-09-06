@@ -4,6 +4,8 @@
 #include "layersurfacecontainer.h"
 #include "surfacewrapper.h"
 #include "output.h"
+#include "helper.h"
+#include "rootsurfacecontainer.h"
 
 #include <wlayersurface.h>
 #include <woutputitem.h>
@@ -14,7 +16,8 @@ OutputLayerSurfaceContainer::OutputLayerSurfaceContainer(Output *output, LayerSu
     : SurfaceContainer(parent)
     , m_output(output)
 {
-    connect(output->outputItem(), &WOutputItem::geometryChanged, this, &OutputLayerSurfaceContainer::onOutputGeometryChanged);
+    connect(output->outputItem(), &WOutputItem::geometryChanged,
+            this, &OutputLayerSurfaceContainer::onOutputGeometryChanged);
     setClip(true);
 }
 
@@ -26,11 +29,14 @@ Output *OutputLayerSurfaceContainer::output() const
 void OutputLayerSurfaceContainer::addSurface(SurfaceWrapper *surface)
 {
     SurfaceContainer::addSurface(surface);
+    surface->setOwnsOutput(m_output);
 }
 
 void OutputLayerSurfaceContainer::removeSurface(SurfaceWrapper *surface)
 {
     SurfaceContainer::removeSurface(surface);
+    if (surface->ownsOutput() == m_output)
+        surface->setOwnsOutput(nullptr);
 }
 
 void OutputLayerSurfaceContainer::onOutputGeometryChanged()
@@ -50,6 +56,7 @@ void LayerSurfaceContainer::addOutput(Output *output)
     Q_ASSERT(!getSurfaceContainer(output));
     auto container = new OutputLayerSurfaceContainer(output, this);
     m_surfaceContainers.append(container);
+    updateSurfacesContainer();
 }
 
 void LayerSurfaceContainer::removeOutput(Output *output)
@@ -57,6 +64,16 @@ void LayerSurfaceContainer::removeOutput(Output *output)
     OutputLayerSurfaceContainer *container = getSurfaceContainer(output);
     Q_ASSERT(container);
     m_surfaceContainers.removeOne(container);
+
+    for (SurfaceWrapper *surface : container->surfaces()) {
+        container->removeSurface(surface);
+        auto layerSurface = qobject_cast<WLayerSurface*>(surface->shellSurface());
+        Q_ASSERT(layerSurface);
+        // Needs to be moved to the new primary output
+        if (!layerSurface->output())
+            addSurfaceToContainer(surface);
+    }
+
     container->deleteLater();
 }
 
@@ -83,12 +100,7 @@ void LayerSurfaceContainer::addSurface(SurfaceWrapper *surface)
     Q_ASSERT(surface->type() == SurfaceWrapper::Type::Layer);
     if (!SurfaceContainer::doAddSurface(surface, false))
         return;
-    auto shell = qobject_cast<WLayerSurface*>(surface->shellSurface());
-    auto output = shell->output();
-    auto container = getSurfaceContainer(output);
-    Q_ASSERT(container);
-    Q_ASSERT(!container->surfaces().contains(surface));
-    container->addSurface(surface);
+    addSurfaceToContainer(surface);
 }
 
 void LayerSurfaceContainer::removeSurface(SurfaceWrapper *surface)
@@ -101,4 +113,25 @@ void LayerSurfaceContainer::removeSurface(SurfaceWrapper *surface)
     Q_ASSERT(container);
     Q_ASSERT(container->surfaces().contains(surface));
     container->removeSurface(surface);
+}
+
+void LayerSurfaceContainer::addSurfaceToContainer(SurfaceWrapper *surface)
+{
+    Q_ASSERT(!surface->container());
+    auto shell = qobject_cast<WLayerSurface*>(surface->shellSurface());
+    auto output = shell->output() ? shell->output() : Helper::instance()->rootContainer()->primaryOutput()->output();
+    if (!output)
+        return;
+    auto container = getSurfaceContainer(output);
+    Q_ASSERT(container);
+    Q_ASSERT(!container->surfaces().contains(surface));
+    container->addSurface(surface);
+}
+
+void LayerSurfaceContainer::updateSurfacesContainer()
+{
+    for (SurfaceWrapper *surface : surfaces()) {
+        if (!surface->container())
+            addSurfaceToContainer(surface);
+    }
 }

@@ -3,6 +3,7 @@
 
 #include "surfacecontainer.h"
 #include "surfacewrapper.h"
+#include "output.h"
 
 SurfaceListModel::SurfaceListModel(QObject *parent)
     : QAbstractListModel(parent)
@@ -196,6 +197,7 @@ void SurfaceContainer::removeSurface(SurfaceWrapper *surface)
 
 void SurfaceContainer::addOutput(Output *output)
 {
+    Q_ASSERT(output->isPrimary());
     const auto subContainers = this->subContainers();
     for (auto sub : subContainers) {
         sub->addOutput(output);
@@ -208,6 +210,17 @@ void SurfaceContainer::removeOutput(Output *output)
     for (auto sub : subContainers) {
         sub->removeOutput(output);
     }
+}
+
+void SurfaceContainer::geometryChange(const QRectF &newGeo, const QRectF &oldGeo)
+{
+    const auto subContainers = this->subContainers();
+    for (SurfaceContainer *c : subContainers) {
+        c->setPosition(newGeo.topLeft());
+        c->setSize(newGeo.size());
+    }
+
+    QQuickItem::geometryChange(newGeo, oldGeo);
 }
 
 bool SurfaceContainer::doAddSurface(SurfaceWrapper *surface, bool setContainer)
@@ -259,4 +272,11 @@ void SurfaceContainer::removeBySubContainer(SurfaceContainer *sub, SurfaceWrappe
 {
     Q_UNUSED(sub);
     doRemoveSurface(surface, false);
+}
+
+bool SurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry)
+{
+    if (auto p = parentContainer())
+        return p->filterSurfaceGeometryChanged(surface, newGeometry, oldGeometry);
+    return false;
 }

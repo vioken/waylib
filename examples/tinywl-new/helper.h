@@ -59,6 +59,7 @@ class Helper : public WSeatEventFilter
     Q_OBJECT
     Q_PROPERTY(bool socketEnabled READ socketEnabled WRITE setSocketEnabled NOTIFY socketEnabledChanged FINAL)
     Q_PROPERTY(SurfaceWrapper* activatedSurface READ activatedSurface NOTIFY activatedSurfaceChanged FINAL)
+    Q_PROPERTY(RootSurfaceContainer* rootContainer READ rootContainer CONSTANT FINAL)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -77,6 +78,9 @@ public:
 
     void activeSurface(SurfaceWrapper *wrapper, Qt::FocusReason reason);
 
+    RootSurfaceContainer *rootContainer() const;
+    Output *getOutput(WOutput *output) const;
+
 public Q_SLOTS:
     void activeSurface(SurfaceWrapper *wrapper);
 
@@ -84,23 +88,17 @@ signals:
     void socketEnabledChanged();
     void keyboardFocusSurfaceChanged();
     void activatedSurfaceChanged();
+    void primaryOutputChanged();
 
 private:
     void allowNonDrmOutputAutoChangeMode(WOutput *output);
     void enableOutput(WOutput *output);
 
     int indexOfOutput(WOutput *output) const;
-    Output *getOutput(WOutput *output) const;
-    Output *outputAt(WCursor *cursor) const;
-    void setPrimaryOutput(Output *output);
 
     void setOutputProxy(Output *output);
 
-    void destroySurface(WSurface *surface);
     void updateLayerSurfaceContainer(SurfaceWrapper *surface);
-    void updateSurfaceOwnsOutput(SurfaceWrapper *surface);
-    void updateSurfacesOwnsOutput();
-    void updateSurfaceOutputs(SurfaceWrapper *surface);
 
     SurfaceWrapper *keyboardFocusSurface() const;
     void setKeyboardFocusSurface(SurfaceWrapper *newActivateSurface, Qt::FocusReason reason);
@@ -108,13 +106,6 @@ private:
     void setActivatedSurface(SurfaceWrapper *newActivateSurface);
 
     void setCursorPosition(const QPointF &position);
-    void ensureCursorPositionValid();
-    void ensureSurfaceNormalPositionValid(SurfaceWrapper *surface);
-
-    void stopMoveResize();
-    void startMove(SurfaceWrapper *surface, int serial);
-    void startResize(SurfaceWrapper *surface, Qt::Edges edges, int serial);
-    void cancelMoveResize(SurfaceWrapper *surface);
 
     bool startDemoClient();
 
@@ -126,12 +117,10 @@ private:
 
     // qtquick helper
     WOutputRenderWindow *m_renderWindow = nullptr;
-    WOutputLayout *m_outputLayout = nullptr;
 
     // wayland helper
     WServer *m_server = nullptr;
     WSocket *m_socket = nullptr;
-    WCursor *m_cursor = nullptr;
     WSeat *m_seat = nullptr;
     WBackend *m_backend = nullptr;
     qw_renderer *m_renderer = nullptr;
@@ -146,7 +135,6 @@ private:
 
     // privaet data
     QList<Output*> m_outputList;
-    QPointer<Output> m_primaryOutput;
 
     QPointer<SurfaceWrapper> m_keyboardFocusSurface;
     QPointer<SurfaceWrapper> m_activatedSurface;
@@ -157,7 +145,6 @@ private:
     Workspace *m_workspace = nullptr;
     LayerSurfaceContainer *m_topContainer = nullptr;
     LayerSurfaceContainer *m_overlayContainer = nullptr;
-
-    // for move resize
-    SurfaceWrapper *m_moveResizeSurface = nullptr;
 };
+
+Q_DECLARE_OPAQUE_POINTER(RootSurfaceContainer*)
