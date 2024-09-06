@@ -44,5 +44,8 @@ public:
     void removeSurface(SurfaceWrapper *surface) override;
 
 private:
+    void addSurfaceToContainer(SurfaceWrapper *surface);
+    void updateSurfacesContainer();
+
     QList<OutputLayerSurfaceContainer*> m_surfaceContainers;
 };

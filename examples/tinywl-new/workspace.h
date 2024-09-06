@@ -41,7 +41,8 @@ signals:
     void currentChanged();
 
 private:
-    void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
+    void updateSurfaceOwnsOutput(SurfaceWrapper *surface);
+    void updateSurfacesOwnsOutput();
 
     int m_currentIndex = 0;
     QList<WorkspaceContainer*> m_containers;
