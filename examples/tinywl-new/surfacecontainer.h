@@ -115,11 +115,17 @@ signals:
     void surfaceRemoved(SurfaceWrapper *surface);
 
 protected:
+    friend class SurfaceWrapper;
+
+    void geometryChange(const QRectF &newGeo, const QRectF &oldGeo) override;
+
     bool doAddSurface(SurfaceWrapper *surface, bool setContainer);
     bool doRemoveSurface(SurfaceWrapper *surface, bool setContainer);
 
     virtual void addBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
     virtual void removeBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
+
+    virtual bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry);
 
     SurfaceListModel *m_model = nullptr;
 };
