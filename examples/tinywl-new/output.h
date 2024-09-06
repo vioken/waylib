@@ -44,11 +44,6 @@ public:
     void addSurface(SurfaceWrapper *surface) override;
     void removeSurface(SurfaceWrapper *surface) override;
 
-    void beginMoveResize(SurfaceWrapper *surface, Qt::Edges edges);
-    void doMoveResize(const QPointF &incrementPos);
-    void endMoveResize();
-    SurfaceWrapper *moveResizeSurface() const;
-
     WOutput *output() const;
     WOutputItem *outputItem() const;
 
@@ -64,7 +59,6 @@ signals:
 
 private:
     friend class SurfaceWrapper;
-    bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry);
 
     void addExclusiveZone(Qt::Edge edge, QObject *object, int value);
     bool removeExclusiveZone(QObject *object);
@@ -87,14 +81,6 @@ private:
     QList<std::pair<QObject*, int>> m_rightExclusiveZones;
 
     QSizeF m_lastSizeOnLayoutNonLayerSurfaces;
-
-    // for move resize
-    struct {
-        SurfaceWrapper *surface = nullptr;
-        QRectF startGeometry;
-        Qt::Edges resizeEdges;
-        bool setSurfacePositionForAnchorEdgets = false;
-    } moveResizeState;
 };
 
 Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WOutputItem*)
