@@ -65,9 +65,6 @@ Output::Output(WOutputItem *output, QObject *parent)
 
 Output::~Output()
 {
-    if (moveResizeState.surface)
-        endMoveResize();
-
     if (m_taskBar) {
         delete m_taskBar;
         m_taskBar = nullptr;
@@ -113,60 +110,12 @@ void Output::removeSurface(SurfaceWrapper *surface)
     SurfaceListModel::removeSurface(surface);
     surface->disconnect(this);
 
-    if (moveResizeState.surface == surface)
-        endMoveResize();
-
     if (surface->type() == SurfaceWrapper::Type::Layer) {
         if (auto ss = surface->shellSurface())
             ss->safeDisconnect(this);
 
         layoutLayerSurfaces();
     }
-}
-
-void Output::beginMoveResize(SurfaceWrapper *surface, Qt::Edges edges)
-{
-    Q_ASSERT(!moveResizeState.surface);
-    moveResizeState.surface = surface;
-    moveResizeState.startGeometry = surface->geometry();
-    moveResizeState.resizeEdges = edges;
-    surface->setPositionAutomatic(false);
-}
-
-void Output::doMoveResize(const QPointF &incrementPos)
-{
-    Q_ASSERT(moveResizeState.surface);
-
-    if (moveResizeState.resizeEdges) {
-        QRectF geo = moveResizeState.startGeometry;
-
-        if (moveResizeState.resizeEdges & Qt::LeftEdge)
-            geo.setLeft(geo.left() + incrementPos.x());
-        if (moveResizeState.resizeEdges & Qt::TopEdge)
-            geo.setTop(geo.top() + incrementPos.y());
-
-        if (moveResizeState.resizeEdges & Qt::RightEdge)
-            geo.setRight(geo.right() + incrementPos.x());
-        if (moveResizeState.resizeEdges & Qt::BottomEdge)
-            geo.setBottom(geo.bottom() + incrementPos.y());
-
-        moveResizeState.surface->resize(geo.size());
-    } else {
-        auto new_pos = moveResizeState.startGeometry.topLeft() + incrementPos;
-        moveResizeState.surface->setPosition(new_pos);
-    }
-}
-
-void Output::endMoveResize()
-{
-    Q_ASSERT(moveResizeState.surface);
-    moveResizeState.surface = nullptr;
-    Q_EMIT moveResizeFinised();
-}
-
-SurfaceWrapper *Output::moveResizeSurface() const
-{
-    return moveResizeState.surface;
 }
 
 WOutput *Output::output() const
@@ -402,36 +351,4 @@ QRectF Output::validRect() const
 QRectF Output::validGeometry() const
 {
     return geometry().marginsRemoved(m_exclusiveZone);
-}
-
-bool Output::filterSurfaceGeometryChanged(SurfaceWrapper *surface,
-                                          const QRectF &newGeometry,
-                                          const QRectF &oldGeometry)
-{
-    Q_ASSERT(surface->ownsOutput() == this);
-
-    if (surface != moveResizeState.surface)
-        return false;
-
-    if (moveResizeState.resizeEdges != 0
-        && !moveResizeState.setSurfacePositionForAnchorEdgets) {
-        QRectF geometry = newGeometry;
-        if (moveResizeState.resizeEdges & Qt::RightEdge)
-            geometry.moveLeft(oldGeometry.left());
-        if (moveResizeState.resizeEdges & Qt::BottomEdge)
-            geometry.moveTop(oldGeometry.top());
-        if (moveResizeState.resizeEdges & Qt::LeftEdge)
-            geometry.moveRight(oldGeometry.right());
-        if (moveResizeState.resizeEdges & Qt::TopEdge)
-            geometry.moveBottom(oldGeometry.bottom());
-
-        if (geometry.topLeft() != newGeometry.topLeft()) {
-            moveResizeState.setSurfacePositionForAnchorEdgets = true;
-            surface->setPosition(geometry.topLeft());
-            moveResizeState.setSurfacePositionForAnchorEdgets = false;
-            return true;
-        }
-    }
-
-    return false;
 }
