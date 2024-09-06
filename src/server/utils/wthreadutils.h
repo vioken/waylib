@@ -142,7 +142,6 @@ private:
         } else {
             using Prototype = ReturnType(*)(Args...);
             QtPrivate::AssertCompatibleFunctions<Prototype, Func>();
-#endif
         }
 
         QPromise<ReturnType> promise;
