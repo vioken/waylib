@@ -35,6 +35,7 @@
 #include <QQuickRenderControl>
 #include <QOpenGLFunctions>
 #include <QLoggingCategory>
+#include <QRunnable>
 #include <memory>
 
 #define protected public
@@ -1865,6 +1866,30 @@ void WOutputRenderWindow::setHeight(qreal arg)
 {
     QQuickWindow::setHeight(arg);
     contentItem()->setHeight(arg);
+}
+
+void WOutputRenderWindow::markItemClipRectDirty(QQuickItem *item)
+{
+    class MarkItemClipRectDirtyJob : public QRunnable
+    {
+    public:
+        MarkItemClipRectDirtyJob(QQuickItem *item)
+            : item(item) { }
+        void run() override {
+            if (!item)
+                return;
+            auto d = QQuickItemPrivate::get(item);
+            if (auto clip = d->clipNode()) {
+                clip->setClipRect(item->clipRect());
+                clip->update();
+            }
+        }
+        QPointer<QQuickItem> item;
+    };
+
+    // Delay clean the qt rhi textures.
+    scheduleRenderJob(new MarkItemClipRectDirtyJob(item),
+                      QQuickWindow::AfterSynchronizingStage);
 }
 
 void WOutputRenderWindow::classBegin()
