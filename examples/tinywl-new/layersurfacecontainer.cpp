@@ -16,9 +16,7 @@ OutputLayerSurfaceContainer::OutputLayerSurfaceContainer(Output *output, LayerSu
     : SurfaceContainer(parent)
     , m_output(output)
 {
-    connect(output->outputItem(), &WOutputItem::geometryChanged,
-            this, &OutputLayerSurfaceContainer::onOutputGeometryChanged);
-    setClip(true);
+
 }
 
 Output *OutputLayerSurfaceContainer::output() const
@@ -37,12 +35,6 @@ void OutputLayerSurfaceContainer::removeSurface(SurfaceWrapper *surface)
     SurfaceContainer::removeSurface(surface);
     if (surface->ownsOutput() == m_output)
         surface->setOwnsOutput(nullptr);
-}
-
-void OutputLayerSurfaceContainer::onOutputGeometryChanged()
-{
-    setPosition(m_output->outputItem()->position());
-    setSize(m_output->outputItem()->size());
 }
 
 LayerSurfaceContainer::LayerSurfaceContainer(SurfaceContainer *parent)
