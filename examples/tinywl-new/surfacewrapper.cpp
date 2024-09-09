@@ -11,6 +11,7 @@
 #include <wxwaylandsurfaceitem.h>
 #include <wxwaylandsurface.h>
 #include <woutputitem.h>
+#include <woutputrenderwindow.h>
 
 SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurface, Type type, QQuickItem *parent)
     : QQuickItem(parent)
@@ -175,6 +176,8 @@ void SurfaceWrapper::setFullscreenGeometry(const QRectF &newFullscreenGeometry)
     }
 
     emit fullscreenGeometryChanged();
+
+    updateClipRect();
 }
 
 QRectF SurfaceWrapper::tilingGeometry() const
@@ -435,6 +438,15 @@ void SurfaceWrapper::updateSubSurfaceStacking()
     }
 }
 
+void SurfaceWrapper::updateClipRect()
+{
+    if (!clip() || !window())
+        return;
+    auto rw = qobject_cast<WOutputRenderWindow*>(window());
+    Q_ASSERT(rw);
+    rw->markItemClipRectDirty(this);
+}
+
 void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
     if (m_container && m_container->filterSurfaceGeometryChanged(this, newGeometry, oldGeometry))
@@ -456,6 +468,7 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &old
     Q_EMIT geometryChanged();
     QQuickItem::geometryChange(newGeometry, oldGeometry);
     updateBoundedRect();
+    updateClipRect();
 }
 
 qreal SurfaceWrapper::radius() const
@@ -651,4 +664,27 @@ void SurfaceWrapper::setVisibleDecoration(bool newVisibleDecoration)
         return;
     m_visibleDecoration = newVisibleDecoration;
     emit visibleDecorationChanged();
+}
+
+bool SurfaceWrapper::clipInOutput() const
+{
+    return m_clipInOutput;
+}
+
+void SurfaceWrapper::setClipInOutput(bool newClipInOutput)
+{
+    if (m_clipInOutput == newClipInOutput)
+        return;
+    m_clipInOutput = newClipInOutput;
+    updateClipRect();
+    emit clipInOutputChanged();
+}
+
+QRectF SurfaceWrapper::clipRect() const
+{
+    if (m_clipInOutput) {
+        return m_fullscreenGeometry & geometry();
+    }
+
+    return QQuickItem::clipRect();
 }
