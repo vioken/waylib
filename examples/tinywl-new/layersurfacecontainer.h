@@ -21,8 +21,6 @@ public:
     void removeSurface(SurfaceWrapper *surface) override;
 
 private:
-    void onOutputGeometryChanged();
-
     Output *m_output;
 };
 
