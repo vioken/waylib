@@ -43,6 +43,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(QQuickItem* titleBar READ titleBar NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(QQuickItem* decoration READ decoration NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(bool visibleDecoration READ visibleDecoration NOTIFY visibleDecorationChanged FINAL)
+    Q_PROPERTY(bool clipInOutput READ clipInOutput WRITE setClipInOutput NOTIFY clipInOutputChanged FINAL)
 
 public:
     enum class Type {
@@ -131,6 +132,10 @@ public:
 
     bool visibleDecoration() const;
 
+    bool clipInOutput() const;
+    void setClipInOutput(bool newClipInOutput);
+    QRectF clipRect() const override;
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
@@ -159,6 +164,7 @@ signals:
     void geometryChanged();
     void containerChanged();
     void visibleDecorationChanged();
+    void clipInOutputChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -174,6 +180,7 @@ private:
     void updateVisible();
     void updateImplicitHeight();
     void updateSubSurfaceStacking();
+    void updateClipRect();
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
     QmlEngine *m_engine;
@@ -200,4 +207,5 @@ private:
     bool m_noDecoration = true;
     qreal m_radius = 18.0;
     bool m_visibleDecoration = true;
+    bool m_clipInOutput = false;
 };
