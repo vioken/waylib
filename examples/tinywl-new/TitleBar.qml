@@ -6,12 +6,14 @@ import QtQuick.Controls
 import Waylib.Server
 import Tinywl
 
-Rectangle {
-    id: titlebar
-    height: 30
-    color: Helper.activatedSurface === surface ? "white" : "gray"
+Item {
+    id: root
 
     required property SurfaceWrapper surface
+    readonly property SurfaceItem surfaceItem: surface.surfaceItem
+
+    height: 30
+    width: surfaceItem.width
 
     MouseArea {
         anchors.fill: parent
@@ -22,27 +24,44 @@ Rectangle {
         }
     }
 
-    Row {
-        anchors {
-            verticalCenter: parent.verticalCenter
-            right: parent.right
-            rightMargin: 8
-        }
+    Rectangle {
+        id: titlebar
+        anchors.fill: parent
+        color: Helper.activatedSurface === surface ? "white" : "gray"
 
-        Button {
-            width: titlebar.height
-            text: "-"
-            onClicked: surface.requestMinimize()
+        Row {
+            anchors {
+                verticalCenter: parent.verticalCenter
+                right: parent.right
+                rightMargin: 8
+            }
+
+            Button {
+                width: titlebar.height
+                text: "-"
+                onClicked: surface.requestMinimize()
+            }
+            Button {
+                width: titlebar.height
+                text: "O"
+                onClicked: surface.requestToggleMaximize()
+            }
+            Button {
+                width: titlebar.height
+                text: "X"
+                onClicked: surface.requestClose()
+            }
         }
-        Button {
-            width: titlebar.height
-            text: "O"
-            onClicked: surface.requestToggleMaximize()
-        }
-        Button {
-            width: titlebar.height
-            text: "X"
-            onClicked: surface.requestClose()
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: surface.radius > 0
+        sourceComponent: RoundedClipEffect {
+            anchors.fill: parent
+            sourceItem: titlebar
+            radius: surface.radius
+            targetRect: Qt.rect(-root.x, -root.y, surfaceItem.width, surfaceItem.height)
         }
     }
 }
