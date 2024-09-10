@@ -117,7 +117,8 @@ public:
 
     enum Flag {
         DontCacheLastBuffer = 0x1,
-        RejectEvent = 0x2
+        RejectEvent = 0x2,
+        NonLive = 0x4,
     };
     Q_ENUM(Flag)
     Q_DECLARE_FLAGS(Flags, Flag)
