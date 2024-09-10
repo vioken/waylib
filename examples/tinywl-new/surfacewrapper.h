@@ -18,6 +18,7 @@ class SurfaceWrapper : public QQuickItem
 {
     friend class Helper;
     friend class SurfaceContainer;
+    friend class SurfaceProxy;
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("SurfaceWrapper objects are created by c++")
@@ -37,13 +38,13 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(bool positionAutomatic READ positionAutomatic WRITE setPositionAutomatic NOTIFY positionAutomaticChanged FINAL)
     Q_PROPERTY(State previousSurfaceState READ previousSurfaceState NOTIFY previousSurfaceStateChanged FINAL)
     Q_PROPERTY(State surfaceState READ surfaceState NOTIFY surfaceStateChanged BINDABLE bindableSurfaceState FINAL)
-    Q_PROPERTY(bool noDecoration READ noDecoration NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(qreal radius READ radius WRITE setRadius NOTIFY radiusChanged FINAL)
     Q_PROPERTY(SurfaceContainer* container READ container NOTIFY containerChanged FINAL)
-    Q_PROPERTY(QQuickItem* titleBar READ titleBar NOTIFY noDecorationChanged FINAL)
+    Q_PROPERTY(QQuickItem* titleBar READ titleBar NOTIFY noTitleBarChanged FINAL)
     Q_PROPERTY(QQuickItem* decoration READ decoration NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(bool visibleDecoration READ visibleDecoration NOTIFY visibleDecorationChanged FINAL)
     Q_PROPERTY(bool clipInOutput READ clipInOutput WRITE setClipInOutput NOTIFY clipInOutputChanged FINAL)
+    Q_PROPERTY(bool noTitleBar READ noTitleBar WRITE setNoTitleBar RESET resetNoTitleBar NOTIFY noTitleBarChanged FINAL)
 
 public:
     enum class Type {
@@ -114,8 +115,6 @@ public:
     bool isMinimized() const;
     bool isTiling() const;
 
-    bool noDecoration() const;
-
     qreal radius() const;
     void setRadius(qreal newRadius);
 
@@ -131,11 +130,16 @@ public:
     QQuickItem *titleBar() const;
     QQuickItem *decoration() const;
 
+    bool noDecoration() const;
     bool visibleDecoration() const;
 
     bool clipInOutput() const;
     void setClipInOutput(bool newClipInOutput);
     QRectF clipRect() const override;
+
+    bool noTitleBar() const;
+    void setNoTitleBar(bool newNoTitleBar);
+    void resetNoTitleBar();
 
 public Q_SLOTS:
     // for titlebar
@@ -162,7 +166,6 @@ signals:
     void positionAutomaticChanged();
     void previousSurfaceStateChanged();
     void surfaceStateChanged();
-    void noDecorationChanged();
     void radiusChanged();
     void requestMove(); // for titlebar
     void requestResize(Qt::Edges edges);
@@ -170,6 +173,8 @@ signals:
     void containerChanged();
     void visibleDecorationChanged();
     void clipInOutputChanged();
+    void noDecorationChanged();
+    void noTitleBarChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -178,12 +183,12 @@ private:
     void setParent(QQuickItem *item);
     void setNormalGeometry(const QRectF &newNormalGeometry);
     void setNoDecoration(bool newNoDecoration);
+    void updateTitleBar();
     void setBoundedRect(const QRectF &newBoundedRect);
     void setContainer(SurfaceContainer *newContainer);
     void setVisibleDecoration(bool newVisibleDecoration);
     void updateBoundedRect();
     void updateVisible();
-    void updateImplicitHeight();
     void updateSubSurfaceStacking();
     void updateClipRect();
     void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
@@ -205,12 +210,20 @@ private:
     Type m_type;
     QPointer<Output> m_ownsOutput;
     QPointF m_positionInOwnsOutput;
-    bool m_positionAutomatic = true;
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_pendingSurfaceState, State::Normal)
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_previousSurfaceState, State::Normal, &SurfaceWrapper::previousSurfaceStateChanged)
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_surfaceState, State::Normal, &SurfaceWrapper::surfaceStateChanged)
-    bool m_noDecoration = true;
     qreal m_radius = 18.0;
-    bool m_visibleDecoration = true;
-    bool m_clipInOutput = false;
+
+    struct TitleBarState {
+        constexpr static uint Default = 0;
+        constexpr static uint Visible = 1;
+        constexpr static uint Hidden = 2;
+    };
+
+    uint m_positionAutomatic:1;
+    uint m_visibleDecoration:1;
+    uint m_clipInOutput:1;
+    uint m_noDecoration:1;
+    uint m_titleBarState:2;
 };

@@ -9,28 +9,37 @@ ListView {
     required property QtObject output
     readonly property OutputItem outputItem: output.outputItem
 
-    width: 50
-    height: Math.min(outputItem.height, contentHeight)
+    width: 250 + leftMargin + rightMargin
+    height: Math.min(outputItem.height, contentHeight) + topMargin + bottomMargin
     x: outputItem.x
     y: (outputItem.height - height) / 2
+    spacing: 80
+    leftMargin: 40
+    rightMargin: 40
+    topMargin: 40
+    bottomMargin: 40
     model: output.minimizedSurfaces
-    delegate: ShaderEffectSource {
+    delegate: Item {
         required property SurfaceWrapper surface
-        sourceItem: surface
-        sourceRect: surface?.boundedRect ?? null
-        live: false
-        mipmap: true
-        width: Math.min(sourceRect.width, 150)
-        height: sourceRect.height * (width / sourceRect.width)
+
+        width: proxy.width
+        height: proxy.height
+
+        SurfaceProxy {
+            id: proxy
+            live: true
+            surface: parent.surface
+            maxSize: Qt.size(250, 150)
+        }
 
         MouseArea {
             anchors.fill: parent
-            onClicked: surface.requestCancelMinimize()
+            onClicked: parent.surface.requestCancelMinimize()
         }
     }
 
     transform: Rotation {
-        angle: 45
+        angle: 30
         axis {
             x: 0
             y: 1
@@ -41,5 +50,12 @@ ListView {
             x: width / 2
             y: height / 2
         }
+    }
+
+    layer {
+        enabled: true
+        live: true
+        mipmap: true
+        smooth: true
     }
 }

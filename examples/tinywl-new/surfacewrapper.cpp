@@ -18,6 +18,11 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     , m_engine(qmlEngine)
     , m_shellSurface(shellSurface)
     , m_type(type)
+    , m_positionAutomatic(true)
+    , m_visibleDecoration(true)
+    , m_clipInOutput(false)
+    , m_noDecoration(true)
+    , m_titleBarState(TitleBarState::Default)
 {
     QQmlEngine::setContextForObject(this, qmlEngine->rootContext());
 
@@ -30,6 +35,7 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     }
 
     QQmlEngine::setContextForObject(m_surfaceItem, qmlEngine->rootContext());
+    m_surfaceItem->setDelegate(qmlEngine->surfaceContentComponent());
     m_surfaceItem->setResizeMode(WSurfaceItem::ManualResize);
     m_surfaceItem->setShellSurface(shellSurface);
 
@@ -48,10 +54,10 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
 
     connect(m_surfaceItem, &WSurfaceItem::implicitWidthChanged, this, [this] {
         setImplicitWidth(m_surfaceItem->implicitWidth());
-        if (m_titleBar)
-            m_titleBar->setWidth(m_surfaceItem->width());
     });
-    connect(m_surfaceItem, &WSurfaceItem::heightChanged, this, &SurfaceWrapper::updateImplicitHeight);
+    connect(m_surfaceItem, &WSurfaceItem::heightChanged, this, [this] {
+        setImplicitHeight(m_surfaceItem->implicitHeight());
+    });
     setImplicitSize(m_surfaceItem->implicitWidth(), m_surfaceItem->implicitHeight());
 
     if (shellSurface->doesNotAcceptFocus()) {
@@ -395,39 +401,20 @@ bool SurfaceWrapper::isTiling() const
            && m_pendingSurfaceState == State::Tiling;
 }
 
-bool SurfaceWrapper::noDecoration() const
-{
-    return m_noDecoration;
-}
-
 void SurfaceWrapper::setNoDecoration(bool newNoDecoration)
 {
     if (m_noDecoration == newNoDecoration)
         return;
-    m_noDecoration = newNoDecoration;
 
-    if (newNoDecoration) {
-        Q_ASSERT(m_titleBar);
-        m_titleBar->deleteLater();
-        m_titleBar = nullptr;
+    m_noDecoration = newNoDecoration;
+    if (m_titleBarState == TitleBarState::Default)
+        updateTitleBar();
+
+    if (m_noDecoration) {
         Q_ASSERT(m_decoration);
         m_decoration->deleteLater();
         m_decoration = nullptr;
-        m_surfaceItem->setY(0);
-        Q_EMIT boundedRectChanged();
     } else {
-        Q_ASSERT(!m_titleBar);
-        m_titleBar = m_engine->createTitleBar(this, m_surfaceItem);
-        m_titleBar->setZ(static_cast<int>(WSurfaceItem::ZOrder::ContentItem));
-        m_titleBar->setWidth(m_surfaceItem->width());
-        m_surfaceItem->setY(m_titleBar->height());
-        m_titleBar->setY(-m_titleBar->height());
-        connect(m_titleBar, &QQuickItem::heightChanged, this, [this] {
-            m_surfaceItem->setY(m_titleBar->height());
-            m_titleBar->setY(-m_titleBar->height());
-            updateImplicitHeight();
-        });
-
         Q_ASSERT(!m_decoration);
         m_decoration = m_engine->createDecoration(this, this);
         m_decoration->stackBefore(m_surfaceItem);
@@ -435,11 +422,30 @@ void SurfaceWrapper::setNoDecoration(bool newNoDecoration)
         connect(m_decoration, &QQuickItem::yChanged, this, &SurfaceWrapper::updateBoundedRect);
         connect(m_decoration, &QQuickItem::widthChanged, this, &SurfaceWrapper::updateBoundedRect);
         connect(m_decoration, &QQuickItem::heightChanged, this, &SurfaceWrapper::updateBoundedRect);
-        updateBoundedRect();
     }
 
-    updateImplicitHeight();
+    updateBoundedRect();
     emit noDecorationChanged();
+}
+
+void SurfaceWrapper::updateTitleBar()
+{
+    if (noTitleBar() == !m_titleBar)
+        return;
+
+    if (m_titleBar) {
+        m_titleBar->deleteLater();
+        m_titleBar = nullptr;
+    } else {
+        m_titleBar = m_engine->createTitleBar(this, m_surfaceItem);
+        m_titleBar->setZ(static_cast<int>(WSurfaceItem::ZOrder::ContentItem));
+        m_surfaceItem->setTopPadding(m_titleBar->height());
+        connect(m_titleBar, &QQuickItem::heightChanged, this, [this] {
+            m_surfaceItem->setTopPadding(m_titleBar->height());
+        });
+    }
+
+    emit noTitleBarChanged();
 }
 
 void SurfaceWrapper::setBoundedRect(const QRectF &newBoundedRect)
@@ -465,15 +471,6 @@ void SurfaceWrapper::updateBoundedRect()
 void SurfaceWrapper::updateVisible()
 {
     setVisible(!isMinimized() && surface()->mapped());
-}
-
-void SurfaceWrapper::updateImplicitHeight()
-{
-    if (m_titleBar) {
-        setImplicitHeight(m_surfaceItem->implicitHeight() + m_titleBar->height());
-    } else {
-        setImplicitHeight(m_surfaceItem->implicitHeight());
-    }
 }
 
 void SurfaceWrapper::updateSubSurfaceStacking()
@@ -734,6 +731,11 @@ QQuickItem *SurfaceWrapper::decoration() const
     return m_decoration;
 }
 
+bool SurfaceWrapper::noDecoration() const
+{
+    return m_noDecoration;
+}
+
 bool SurfaceWrapper::visibleDecoration() const
 {
     return m_visibleDecoration;
@@ -768,4 +770,28 @@ QRectF SurfaceWrapper::clipRect() const
     }
 
     return QQuickItem::clipRect();
+}
+
+bool SurfaceWrapper::noTitleBar() const
+{
+    if (m_titleBarState == TitleBarState::Visible)
+        return false;
+
+    return m_titleBarState == TitleBarState::Hidden || m_noDecoration;
+}
+
+void SurfaceWrapper::setNoTitleBar(bool newNoTitleBar)
+{
+    if (newNoTitleBar) {
+        m_titleBarState = TitleBarState::Hidden;
+    } else {
+        m_titleBarState = TitleBarState::Visible;
+    }
+    updateTitleBar();
+}
+
+void SurfaceWrapper::resetNoTitleBar()
+{
+    m_titleBarState = TitleBarState::Default;
+    updateTitleBar();
 }
