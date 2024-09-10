@@ -20,10 +20,16 @@ public:
 
     QQuickItem *createTitleBar(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createDecoration(SurfaceWrapper *surface, QQuickItem *parent);
+    QQuickItem *createBorder(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
+    QQuickItem *createShadow(QQuickItem *parent);
+    QQmlComponent *surfaceContentComponent() { return &surfaceContent; }
 
 private:
     QQmlComponent titleBarComponent;
     QQmlComponent decorationComponent;
+    QQmlComponent borderComponent;
     QQmlComponent taskBarComponent;
+    QQmlComponent surfaceContent;
+    QQmlComponent shadowComponent;
 };

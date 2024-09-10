@@ -35,12 +35,17 @@ qt_add_qml_module(${TARGET}
     SOURCES surfacecontainer.h surfacecontainer.cpp
     SOURCES layersurfacecontainer.h layersurfacecontainer.cpp
     SOURCES rootsurfacecontainer.h rootsurfacecontainer.cpp
+    SOURCES surfaceproxy.h surfaceproxy.cpp
 
     QML_FILES PrimaryOutput.qml
     QML_FILES CopyOutput.qml
     QML_FILES TitleBar.qml
     QML_FILES Decoration.qml
     QML_FILES TaskBar.qml
+    QML_FILES RoundedClipEffect.qml
+    QML_FILES SurfaceContent.qml
+    QML_FILES Shadow.qml
+    QML_FILES Border.qml
 )
 
 target_compile_definitions(${TARGET}

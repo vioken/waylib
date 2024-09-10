@@ -12,6 +12,8 @@ QmlEngine::QmlEngine(QObject *parent)
     , titleBarComponent(this, "Tinywl", "TitleBar")
     , decorationComponent(this, "Tinywl", "Decoration")
     , taskBarComponent(this, "Tinywl", "TaskBar")
+    , surfaceContent(this, "Tinywl", "SurfaceContent")
+    , shadowComponent(this, "Tinywl", "Shadow")
 {
 
 }
@@ -48,6 +50,22 @@ QQuickItem *QmlEngine::createDecoration(SurfaceWrapper *surface, QQuickItem *par
     return item;
 }
 
+QQuickItem *QmlEngine::createBorder(SurfaceWrapper *surface, QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = borderComponent.beginCreate(context);
+    borderComponent.setInitialProperties(obj, {
+        {"surface", QVariant::fromValue(surface)}
+    });
+    auto item = qobject_cast<QQuickItem*>(obj);
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    borderComponent.completeCreate();
+
+    return item;
+}
+
 QQuickItem *QmlEngine::createTaskBar(Output *output, QQuickItem *parent)
 {
     auto context = qmlContext(parent);
@@ -56,10 +74,24 @@ QQuickItem *QmlEngine::createTaskBar(Output *output, QQuickItem *parent)
         {"output", QVariant::fromValue(output)}
     });
     auto item = qobject_cast<QQuickItem*>(obj);
+    qDebug() << taskBarComponent.errorString();
     Q_ASSERT(item);
     item->setParent(parent);
     item->setParentItem(parent);
     taskBarComponent.completeCreate();
+
+    return item;
+}
+
+QQuickItem *QmlEngine::createShadow(QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = shadowComponent.beginCreate(context);
+    auto item = qobject_cast<QQuickItem*>(obj);
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    shadowComponent.completeCreate();
 
     return item;
 }
