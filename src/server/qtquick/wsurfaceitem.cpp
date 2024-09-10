@@ -587,8 +587,10 @@ void WSurfaceItem::setFlags(const Flags &newFlags)
     d->surfaceFlags = newFlags;
     d->updateEventItem(false);
 
-    if (auto content = d->getItemContent())
+    if (auto content = d->getItemContent()) {
         content->setCacheLastBuffer(!newFlags.testFlag(DontCacheLastBuffer));
+        content->setLive(!newFlags.testFlag(NonLive));
+    }
 
     for (auto sub : std::as_const(d->subsurfaces))
         sub->setFlags(newFlags);
@@ -992,6 +994,7 @@ void WSurfaceItemPrivate::initForDelegate()
             contentItem->setSurface(surface);
         contentItem->setCacheLastBuffer(!surfaceFlags.testFlag(WSurfaceItem::DontCacheLastBuffer));
         contentItem->setSmooth(q->smooth());
+        contentItem->setLive(!q->flags().testFlag(WSurfaceItem::NonLive));
         QObject::connect(q, &WSurfaceItem::smoothChanged, contentItem, &WSurfaceItemContent::setSmooth);
         newContentContainer.reset(contentItem);
     } else if (delegateIsDirty) {
