@@ -56,7 +56,7 @@ Item {
 
     Loader {
         anchors.fill: parent
-        active: surface.radius > 0
+        active: surface.radius > 0 && surface.visibleDecoration
         sourceComponent: RoundedClipEffect {
             anchors.fill: parent
             sourceItem: titlebar
