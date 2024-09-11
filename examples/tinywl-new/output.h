@@ -8,6 +8,7 @@
 #include <QMargins>
 #include <QObject>
 #include <QQmlComponent>
+Q_MOC_INCLUDE(<woutputitem_p.h>)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 class WOutput;
