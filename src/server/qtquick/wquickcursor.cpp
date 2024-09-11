@@ -236,9 +236,9 @@ void WQuickCursorPrivate::setSurface(WSurface *surface)
         }
         q->setFlag(QQuickItem::ItemHasContents, true);
     }
-
     updateImplicitSize();
-    q->update();
+    if (q->flags().testFlag(QQuickItem::ItemHasContents))
+        q->update();
 }
 
 void WQuickCursorPrivate::enterOutput(WOutput *output)
