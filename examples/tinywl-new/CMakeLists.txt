@@ -17,7 +17,7 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(PIXMAN REQUIRED IMPORTED_TARGET pixman-1)
 pkg_search_module(WAYLAND REQUIRED IMPORTED_TARGET wayland-server)
 
-set(TARGET tinywl-qtquick)
+set(TARGET tinywl-qtquick-new)
 
 add_executable(${TARGET}
     main.cpp
