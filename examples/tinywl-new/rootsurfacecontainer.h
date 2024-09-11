@@ -8,6 +8,7 @@
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 class WSurface;
+class WSurfaceItem;
 class WToplevelSurface;
 class WOutputLayout;
 class WCursor;
@@ -79,6 +80,7 @@ private:
     QList<Output*> m_outputList;
     QPointer<Output> m_primaryOutput;
     WCursor *m_cursor = nullptr;
+    WSurfaceItem *m_dargSurfaceItem = nullptr;
 
     // for move resize
     struct {
