@@ -44,6 +44,18 @@ RootSurfaceContainer::RootSurfaceContainer(QQuickItem *parent)
         //     updateSurfaceOutputs(s);
         // }
     });
+
+    m_dargSurfaceItem = new WSurfaceItem(window()->contentItem());
+    m_dargSurfaceItem->setZ(static_cast<std::underlying_type_t<WOutputLayout::Layer>>(WOutputLayout::Layer::Cursor) - 1);
+    m_dargSurfaceItem->setFlags(WSurfaceItem::DontCacheLastBuffer);
+
+    m_cursor->safeConnect(&WCursor::positionChanged, this, [this] {
+        m_dargSurfaceItem->setPosition(m_cursor->position());
+    });
+
+    m_cursor->safeConnect(&WCursor::requestedDragSurfaceChanged, this, [this] {
+        m_dargSurfaceItem->setSurface(m_cursor->requestedDragSurface());
+    });
 }
 
 SurfaceWrapper *RootSurfaceContainer::getSurface(WSurface *surface) const
