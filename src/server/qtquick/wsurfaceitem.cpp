@@ -737,8 +737,9 @@ void WSurfaceItem::geometryChange(const QRectF &newGeometry, const QRectF &oldGe
                                        ((newSize - oldSize) * d->surfaceSizeRatio).toSize());
         }
     } else if (!d->surface && d->resizeMode != ManualResize) {
-        d->contentContainer->setSize(d->contentContainer->size() +
-                                     (newGeometry.size() - oldGeometry.size()) * d->surfaceSizeRatio);
+        if (d->contentContainer)
+            d->contentContainer->setSize(d->contentContainer->size() +
+                                         (newGeometry.size() - oldGeometry.size()) * d->surfaceSizeRatio);
     }
 }
 
