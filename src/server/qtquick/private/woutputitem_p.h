@@ -4,15 +4,13 @@
 #pragma once
 
 #include "woutputitem.h"
+#include "wcursor.h"
 
 #include <qwoutput.h>
 #include <qwtexture.h>
 
 #include <QQmlEngine>
 #include <QQuickTextureFactory>
-#include <private/qquickitem_p.h>
-
-Q_MOC_INCLUDE(<wcursor.h>)
 
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -39,7 +37,6 @@ private:
     WOutputItem *m_positioner = nullptr;
 };
 
-class WCursor;
 class Q_DECL_HIDDEN WOutputCursor : public QObject
 {
     friend class WOutputItem;
