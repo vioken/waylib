@@ -886,7 +886,8 @@ bool WSurfaceItem::resizeSurface(const QSizeF &newSize)
     Q_D(const WSurfaceItem);
     if (!d->shellSurface || !d->contentContainer)
         return false;
-    const QRectF tmp(0, 0, newSize.width(), newSize.height());
+    QRectF tmp(0, 0, newSize.width(), newSize.height());
+    tmp -= d->paddings;
     // See surfaceSizeRatio, the content item maybe has been scaled.
     const QSize mappedSize = d->contentContainer->mapRectFromItem(this, tmp).size().toSize();
     if (!d->shellSurface->checkNewSize(mappedSize))

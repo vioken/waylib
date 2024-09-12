@@ -274,13 +274,16 @@ void RootSurfaceContainer::removeBySubContainer(SurfaceContainer *sub, SurfaceWr
     SurfaceContainer::removeBySubContainer(sub, surface);
 }
 
-bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry)
+bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRectF &newGeometry, const QRectF &oldGeometry)
 {
     if (surface != moveResizeState.surface)
         return false;
+    if (moveResizeState.setSurfacePositionForAnchorEdgets) {
+        Q_ASSERT(newGeometry.size() == oldGeometry.size());
+        return true;
+    }
 
-    if (moveResizeState.resizeEdges != 0
-        && !moveResizeState.setSurfacePositionForAnchorEdgets) {
+    if (moveResizeState.resizeEdges != 0) {
         QRectF geometry = newGeometry;
         if (moveResizeState.resizeEdges & Qt::RightEdge)
             geometry.moveLeft(oldGeometry.left());
@@ -292,10 +295,10 @@ bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface,
             geometry.moveBottom(oldGeometry.bottom());
 
         if (geometry.topLeft() != newGeometry.topLeft()) {
+            newGeometry = geometry;
             moveResizeState.setSurfacePositionForAnchorEdgets = true;
             surface->setPosition(geometry.topLeft());
             moveResizeState.setSurfacePositionForAnchorEdgets = false;
-            return true;
         }
     }
 
