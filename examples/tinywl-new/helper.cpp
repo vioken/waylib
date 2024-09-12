@@ -135,6 +135,7 @@ void Helper::init()
     auto engine = qmlEngine();
     engine->setContextForObject(m_renderWindow, engine->rootContext());
     engine->setContextForObject(m_renderWindow->contentItem(), engine->rootContext());
+    m_surfaceContainer->setQmlEngine(engine);
 
     m_seat = m_server->attach<WSeat>();
     m_seat->setEventFilter(this);

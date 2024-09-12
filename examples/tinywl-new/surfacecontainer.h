@@ -99,6 +99,7 @@ public:
     SurfaceContainer *rootContainer() const;
     SurfaceContainer *parentContainer() const;
     QList<SurfaceContainer*> subContainers() const;
+    void setQmlEngine(QQmlEngine *engine);
 
     virtual void addSurface(SurfaceWrapper *surface);
     virtual void removeSurface(SurfaceWrapper *surface);
@@ -125,7 +126,7 @@ protected:
     virtual void addBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
     virtual void removeBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
 
-    virtual bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry);
+    virtual bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRectF &newGeometry, const QRectF &oldGeometry);
 
     SurfaceListModel *m_model = nullptr;
 };

@@ -30,6 +30,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WToplevelSurface* shellSurface READ shellSurface CONSTANT)
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WSurfaceItem* surfaceItem READ surfaceItem CONSTANT)
     Q_PROPERTY(QRectF boundingRect READ boundingRect NOTIFY boundingRectChanged)
+    Q_PROPERTY(QRectF geometry READ geometry NOTIFY geometryChanged FINAL)
     Q_PROPERTY(QRectF normalGeometry READ normalGeometry NOTIFY normalGeometryChanged FINAL)
     Q_PROPERTY(QRectF maximizedGeometry READ maximizedGeometry NOTIFY maximizedGeometryChanged FINAL)
     Q_PROPERTY(QRectF fullscreenGeometry READ fullscreenGeometry NOTIFY fullscreenGeometryChanged FINAL)
@@ -191,7 +192,12 @@ private:
     void updateVisible();
     void updateSubSurfaceStacking();
     void updateClipRect();
-    void geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry) override;
+    void geometryChange(const QRectF &newGeo, const QRectF &oldGeometry) override;
+
+    void doSetSurfaceState(State newSurfaceState);
+    Q_SLOT void onAnimationStarted();
+    Q_SLOT void onAnimationFinished();
+    bool startStateChangeAnimation(SurfaceWrapper::State targetState, const QRectF &targetGeometry);
 
     QmlEngine *m_engine;
     QPointer<SurfaceContainer> m_container;
@@ -202,6 +208,7 @@ private:
     WSurfaceItem *m_surfaceItem = nullptr;
     QPointer<QQuickItem> m_titleBar;
     QPointer<QQuickItem> m_decoration;
+    QPointer<QQuickItem> m_geometryAnimation;
     QRectF m_boundedRect;
     QRectF m_normalGeometry;
     QRectF m_maximizedGeometry;
@@ -210,7 +217,8 @@ private:
     Type m_type;
     QPointer<Output> m_ownsOutput;
     QPointF m_positionInOwnsOutput;
-    Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_pendingSurfaceState, State::Normal)
+    SurfaceWrapper::State m_pendingState;
+    QRectF m_pendingGeometry;
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_previousSurfaceState, State::Normal, &SurfaceWrapper::previousSurfaceStateChanged)
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_surfaceState, State::Normal, &SurfaceWrapper::surfaceStateChanged)
     qreal m_radius = 18.0;

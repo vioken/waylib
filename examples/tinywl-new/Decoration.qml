@@ -64,8 +64,8 @@ Item {
 
     Shadow {
         id: shadow
-        width: surface.implicitWidth
-        height: surface.implicitHeight
+        width: surface.width
+        height: surface.height
         radius: surface.radius
         anchors.centerIn: parent
     }
