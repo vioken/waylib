@@ -48,6 +48,7 @@ qt_add_qml_module(${TARGET}
     QML_FILES SurfaceContent.qml
     QML_FILES Shadow.qml
     QML_FILES Border.qml
+    QML_FILES GeometryAnimation.qml
 
     RESOURCES
     "res/xx.jpg"

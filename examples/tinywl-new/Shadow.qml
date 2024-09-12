@@ -29,7 +29,9 @@ Item {
         id: shadow
         x: blurMax
         y: blurMax
-        anchors.fill: parent
+        anchors.centerIn: parent
+        width: parent.width
+        height: parent.height
         shadowColor: shadowSource.color
         shadowBlur: 1.0
         blurMax: 64
