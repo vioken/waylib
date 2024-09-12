@@ -252,11 +252,6 @@ WLayerSurface::~WLayerSurface()
 
 }
 
-bool WLayerSurface::isPopup() const
-{
-    return false;
-}
-
 bool WLayerSurface::doesNotAcceptFocus() const
 {
     W_DC(WLayerSurface);
