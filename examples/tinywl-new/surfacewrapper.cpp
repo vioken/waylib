@@ -437,6 +437,7 @@ void SurfaceWrapper::updateTitleBar()
     if (m_titleBar) {
         m_titleBar->deleteLater();
         m_titleBar = nullptr;
+        m_surfaceItem->setTopPadding(0);
     } else {
         m_titleBar = m_engine->createTitleBar(this, m_surfaceItem);
         m_titleBar->setZ(static_cast<int>(WSurfaceItem::ZOrder::ContentItem));
@@ -462,7 +463,7 @@ void SurfaceWrapper::updateBoundingRect()
     QRectF rect(QRectF(QPointF(0, 0), size()));
     rect |= m_surfaceItem->boundingRect();
 
-    if (!m_decoration) {
+    if (!m_decoration || !m_visibleDecoration) {
         setBoundedRect(rect);
         return;
     }
@@ -751,6 +752,7 @@ void SurfaceWrapper::setVisibleDecoration(bool newVisibleDecoration)
     if (m_visibleDecoration == newVisibleDecoration)
         return;
     m_visibleDecoration = newVisibleDecoration;
+    updateBoundingRect();
     emit visibleDecorationChanged();
 }
 
