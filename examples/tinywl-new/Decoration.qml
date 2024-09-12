@@ -13,10 +13,10 @@ Item {
     readonly property SurfaceItem surfaceItem: surface.surfaceItem
 
     visible: surface && surface.visibleDecoration
-    x: shadow.boundedRect.x
-    y: shadow.boundedRect.y
-    width: shadow.boundedRect.width
-    height: shadow.boundedRect.height
+    x: shadow.boundingRect.x
+    y: shadow.boundingRect.y
+    width: shadow.boundingRect.width
+    height: shadow.boundingRect.height
 
     MouseArea {
         property int edges: 0

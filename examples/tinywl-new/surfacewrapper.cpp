@@ -52,6 +52,7 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     shellSurface->safeConnect(&WToplevelSurface::requestFullscreen, this, &SurfaceWrapper::requestFullscreen);
     shellSurface->safeConnect(&WToplevelSurface::requestCancelFullscreen, this, &SurfaceWrapper::requestCancelFullscreen);
 
+    connect(m_surfaceItem, &WSurfaceItem::boundingRectChanged, this, &SurfaceWrapper::updateBoundingRect);
     connect(m_surfaceItem, &WSurfaceItem::implicitWidthChanged, this, [this] {
         setImplicitWidth(m_surfaceItem->implicitWidth());
     });
@@ -128,7 +129,7 @@ QRectF SurfaceWrapper::titlebarGeometry() const
     return m_titleBar ? QRectF({0, 0}, m_titleBar->size()) : QRectF();
 }
 
-QRectF SurfaceWrapper::boundedRect() const
+QRectF SurfaceWrapper::boundingRect() const
 {
     return m_boundedRect;
 }
@@ -418,13 +419,13 @@ void SurfaceWrapper::setNoDecoration(bool newNoDecoration)
         Q_ASSERT(!m_decoration);
         m_decoration = m_engine->createDecoration(this, this);
         m_decoration->stackBefore(m_surfaceItem);
-        connect(m_decoration, &QQuickItem::xChanged, this, &SurfaceWrapper::updateBoundedRect);
-        connect(m_decoration, &QQuickItem::yChanged, this, &SurfaceWrapper::updateBoundedRect);
-        connect(m_decoration, &QQuickItem::widthChanged, this, &SurfaceWrapper::updateBoundedRect);
-        connect(m_decoration, &QQuickItem::heightChanged, this, &SurfaceWrapper::updateBoundedRect);
+        connect(m_decoration, &QQuickItem::xChanged, this, &SurfaceWrapper::updateBoundingRect);
+        connect(m_decoration, &QQuickItem::yChanged, this, &SurfaceWrapper::updateBoundingRect);
+        connect(m_decoration, &QQuickItem::widthChanged, this, &SurfaceWrapper::updateBoundingRect);
+        connect(m_decoration, &QQuickItem::heightChanged, this, &SurfaceWrapper::updateBoundingRect);
     }
 
-    updateBoundedRect();
+    updateBoundingRect();
     emit noDecorationChanged();
 }
 
@@ -453,12 +454,14 @@ void SurfaceWrapper::setBoundedRect(const QRectF &newBoundedRect)
     if (m_boundedRect == newBoundedRect)
         return;
     m_boundedRect = newBoundedRect;
-    emit boundedRectChanged();
+    emit boundingRectChanged();
 }
 
-void SurfaceWrapper::updateBoundedRect()
+void SurfaceWrapper::updateBoundingRect()
 {
-    const QRectF rect(QRectF(QPointF(0, 0), size()));
+    QRectF rect(QRectF(QPointF(0, 0), size()));
+    rect |= m_surfaceItem->boundingRect();
+
     if (!m_decoration) {
         setBoundedRect(rect);
         return;
@@ -511,7 +514,9 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &old
 
     Q_EMIT geometryChanged();
     QQuickItem::geometryChange(newGeometry, oldGeometry);
-    updateBoundedRect();
+
+    if (newGeometry.size() != oldGeometry.size())
+        updateBoundingRect();
     updateClipRect();
 }
 
