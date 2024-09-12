@@ -29,7 +29,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WSurface* surface READ surface CONSTANT)
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WToplevelSurface* shellSurface READ shellSurface CONSTANT)
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WSurfaceItem* surfaceItem READ surfaceItem CONSTANT)
-    Q_PROPERTY(QRectF boundedRect READ boundedRect NOTIFY boundedRectChanged)
+    Q_PROPERTY(QRectF boundingRect READ boundingRect NOTIFY boundingRectChanged)
     Q_PROPERTY(QRectF normalGeometry READ normalGeometry NOTIFY normalGeometryChanged FINAL)
     Q_PROPERTY(QRectF maximizedGeometry READ maximizedGeometry NOTIFY maximizedGeometryChanged FINAL)
     Q_PROPERTY(QRectF fullscreenGeometry READ fullscreenGeometry NOTIFY fullscreenGeometryChanged FINAL)
@@ -77,7 +77,7 @@ public:
     bool resize(const QSizeF &size);
 
     QRectF titlebarGeometry() const;
-    QRectF boundedRect() const;
+    QRectF boundingRect() const override;
 
     Type type() const;
     SurfaceWrapper *parentSurface() const;
@@ -157,7 +157,7 @@ public Q_SLOTS:
     void stackToLast();
 
 signals:
-    void boundedRectChanged();
+    void boundingRectChanged();
     void ownsOutputChanged();
     void normalGeometryChanged();
     void maximizedGeometryChanged();
@@ -187,7 +187,7 @@ private:
     void setBoundedRect(const QRectF &newBoundedRect);
     void setContainer(SurfaceContainer *newContainer);
     void setVisibleDecoration(bool newVisibleDecoration);
-    void updateBoundedRect();
+    void updateBoundingRect();
     void updateVisible();
     void updateSubSurfaceStacking();
     void updateClipRect();
