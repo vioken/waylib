@@ -106,9 +106,10 @@ void Output::removeSurface(SurfaceWrapper *surface)
     surface->disconnect(this);
 
     if (surface->type() == SurfaceWrapper::Type::Layer) {
-        if (auto ss = surface->shellSurface())
+        if (auto ss = surface->shellSurface()) {
             ss->safeDisconnect(this);
-
+            removeExclusiveZone(ss);
+        }
         layoutLayerSurfaces();
     }
 }
@@ -125,9 +126,10 @@ WOutputItem *Output::outputItem() const
     return m_item;
 }
 
-void Output::addExclusiveZone(Qt::Edge edge, QObject *object, int value)
+void Output::setExclusiveZone(Qt::Edge edge, QObject *object, int value)
 {
     Q_ASSERT(value > 0);
+    removeExclusiveZone(object);
     switch (edge) {
     case Qt::TopEdge:
         m_topExclusiveZones.append(std::make_pair(object, value));
@@ -192,7 +194,6 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
 {
     WLayerSurface* layer = qobject_cast<WLayerSurface*>(surface->shellSurface());
     Q_ASSERT(layer);
-    removeExclusiveZone(layer);
 
     auto validGeo = layer->exclusiveZone() == -1 ? this->rect() : validRect();
     validGeo = validGeo.marginsRemoved(QMargins(layer->leftMargin(),
@@ -229,16 +230,16 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
         switch (layer->getExclusiveZoneEdge()) {
             using enum WLayerSurface::AnchorType;
         case Top:
-            addExclusiveZone(Qt::TopEdge, layer, layer->exclusiveZone());
+            setExclusiveZone(Qt::TopEdge, layer, layer->exclusiveZone());
             break;
         case Bottom:
-            addExclusiveZone(Qt::BottomEdge, layer, layer->exclusiveZone());
+            setExclusiveZone(Qt::BottomEdge, layer, layer->exclusiveZone());
             break;
         case Left:
-            addExclusiveZone(Qt::LeftEdge, layer, layer->exclusiveZone());
+            setExclusiveZone(Qt::LeftEdge, layer, layer->exclusiveZone());
             break;
         case Right:
-            addExclusiveZone(Qt::RightEdge, layer, layer->exclusiveZone());
+            setExclusiveZone(Qt::RightEdge, layer, layer->exclusiveZone());
             break;
         default:
             qCWarning(qLcLayerShell) << layer->appId() << " has set exclusive zone, but exclusive edge is invalid!";
@@ -253,11 +254,12 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
 void Output::layoutLayerSurfaces()
 {
     auto oldExclusiveZone = m_exclusiveZone;
-    m_exclusiveZone = QMargins();
-    m_topExclusiveZones.clear();
-    m_bottomExclusiveZones.clear();
-    m_leftExclusiveZones.clear();
-    m_rightExclusiveZones.clear();
+
+    for (auto *s : surfaces()) {
+        if (s->type() != SurfaceWrapper::Type::Layer)
+            continue;
+        removeExclusiveZone(s->shellSurface());
+    }
 
     for (auto *s : surfaces()) {
         if (s->type() != SurfaceWrapper::Type::Layer)
