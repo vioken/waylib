@@ -70,7 +70,6 @@ public:
     };
     Q_ENUM(KeyboardInteractivity)
 
-    bool isPopup() const;
     bool doesNotAcceptFocus() const override;
     bool isActivated() const override;
     WSurface *surface() const override;
