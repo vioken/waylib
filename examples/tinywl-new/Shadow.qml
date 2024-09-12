@@ -10,9 +10,9 @@ Item {
     property alias color: shadowSource.color
     property alias shadowEnabled: shadow.shadowEnabled
     property alias radius: shadowSource.radius
-    readonly property rect boundedRect: Qt.rect(-shadow.blurMax, -shadow.blurMax,
-                                                width + 2 * shadow.blurMax,
-                                                height + 2 * shadow.blurMax)
+    readonly property rect boundingRect: Qt.rect(-shadow.blurMax, -shadow.blurMax,
+                                                 width + 2 * shadow.blurMax,
+                                                 height + 2 * shadow.blurMax)
 
     Rectangle {
         id: shadowSource
