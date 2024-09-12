@@ -63,7 +63,7 @@ signals:
 private:
     friend class SurfaceWrapper;
 
-    void addExclusiveZone(Qt::Edge edge, QObject *object, int value);
+    void setExclusiveZone(Qt::Edge edge, QObject *object, int value);
     bool removeExclusiveZone(QObject *object);
     void layoutLayerSurface(SurfaceWrapper *surface);
     void layoutLayerSurfaces();
