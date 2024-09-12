@@ -50,7 +50,7 @@ qt_add_qml_module(${TARGET}
     QML_FILES Border.qml
 
     RESOURCES
-    "res/gezi.png"
+    "res/xx.jpg"
 )
 
 target_compile_definitions(${TARGET}

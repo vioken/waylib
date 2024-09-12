@@ -98,7 +98,7 @@ QString WallpaperImageProvider::parseFilePath(const QString &id)
     }
 
     if (!(fi.exists() && fi.isFile())) {
-        img_path = ":/qt/qml/Tinywl/res/gezi.png";
+        img_path = ":/qt/qml/Tinywl/res/xx.jpg";
     }
 
     return img_path;
