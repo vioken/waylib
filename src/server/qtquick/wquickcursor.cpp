@@ -577,6 +577,9 @@ QSGNode *WQuickCursor::updatePaintNode(QSGNode *node, UpdatePaintNodeData *)
     }
 
     auto texture = tp->WSGTextureProvider::texture();
+    // texture is created from cursorImage, when image is null, texture is also null
+    if (!texture)
+        return nullptr;
     auto imageNode = static_cast<QSGImageNode*>(node);
     if (!imageNode)
         imageNode = window()->createImageNode();
