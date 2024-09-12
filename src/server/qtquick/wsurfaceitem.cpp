@@ -653,8 +653,10 @@ void WSurfaceItem::setDelegate(QQmlComponent *newDelegate)
     if (d->componentComplete)
         d->initForDelegate();
 
-    for (auto sub : std::as_const(d->subsurfaces))
-        sub->setDelegate(newDelegate);
+    if (flags() & DelegateForSubsurface) {
+        for (auto sub : std::as_const(d->subsurfaces))
+            sub->setDelegate(newDelegate);
+    }
 
     Q_EMIT delegateChanged();
 }

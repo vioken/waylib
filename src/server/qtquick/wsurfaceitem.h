@@ -117,6 +117,7 @@ public:
         DontCacheLastBuffer = 0x1,
         RejectEvent = 0x2,
         NonLive = 0x4,
+        DelegateForSubsurface = 0x8,
     };
     Q_ENUM(Flag)
     Q_DECLARE_FLAGS(Flags, Flag)
@@ -177,8 +178,8 @@ public:
 
 Q_SIGNALS:
     void surfaceChanged();
-    void subsurfaceAdded(WSurfaceItem *item);
-    void subsurfaceRemoved(WSurfaceItem *item);
+    void subsurfaceAdded(WAYLIB_SERVER_NAMESPACE::WSurfaceItem *item);
+    void subsurfaceRemoved(WAYLIB_SERVER_NAMESPACE::WSurfaceItem *item);
     void resizeModeChanged();
     void effectiveVisibleChanged();
     void eventItemChanged();
