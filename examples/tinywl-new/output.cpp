@@ -7,13 +7,14 @@
 #include "rootsurfacecontainer.h"
 
 #include <woutputitem.h>
-#include <wlayersurface.h>
 #include <wsurfaceitem.h>
-#include <wlayersurface.h>
 #include <woutputrenderwindow.h>
 #include <wxdgsurface.h>
+#include <wlayersurface.h>
 
 #include <QQmlEngine>
+
+Q_LOGGING_CATEGORY(qLcLayerShell, "tinywl.shell.layer", QtWarningMsg)
 
 Output *Output::createPrimary(WOutput *output, QQmlEngine *engine, QObject *parent)
 {
@@ -126,8 +127,7 @@ WOutputItem *Output::outputItem() const
 
 void Output::addExclusiveZone(Qt::Edge edge, QObject *object, int value)
 {
-    removeExclusiveZone(object);
-
+    Q_ASSERT(value > 0);
     switch (edge) {
     case Qt::TopEdge:
         m_topExclusiveZones.append(std::make_pair(object, value));
@@ -192,6 +192,7 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
 {
     WLayerSurface* layer = qobject_cast<WLayerSurface*>(surface->shellSurface());
     Q_ASSERT(layer);
+    removeExclusiveZone(layer);
 
     auto validGeo = layer->exclusiveZone() == -1 ? this->rect() : validRect();
     validGeo = validGeo.marginsRemoved(QMargins(layer->leftMargin(),
@@ -199,54 +200,53 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
                                                 layer->rightMargin(),
                                                 layer->bottomMargin()));
     auto anchor = layer->ancher();
+    QRectF surfaceGeo(QPointF(0, 0), layer->desiredSize());
 
-    if (anchor == WLayerSurface::AnchorType::None) {
-        surface->resetWidth();
-        surface->resetHeight();
-        QRectF surfaceGeo = surface->normalGeometry();
-        surfaceGeo.moveCenter(validGeo.center());
-        surface->moveNormalGeometryInOutput(surfaceGeo.topLeft());
-        return;
-    }
-
-    // update surface size
     if (anchor.testFlags(WLayerSurface::AnchorType::Left | WLayerSurface::AnchorType::Right)) {
-        surface->setWidth(validGeo.width());
-    } else {
-        surface->resetWidth();
-    }
-    if (anchor.testFlags(WLayerSurface::AnchorType::Top | WLayerSurface::AnchorType::Bottom)) {
-        surface->setHeight(validGeo.height());
-    } else {
-        surface->resetHeight();
-    }
-
-    // update surface position
-    QRectF surfaceGeo(QPointF(0, 0), surface->size());
-    if (anchor & WLayerSurface::AnchorType::Top) {
-        surfaceGeo.moveTop(validGeo.top());
-        if (!(anchor & WLayerSurface::AnchorType::Bottom)) {
-            if (layer->exclusiveZone() > 0)
-                addExclusiveZone(Qt::TopEdge, layer, layer->exclusiveZone());
-        }
-    } else if (anchor & WLayerSurface::AnchorType::Bottom) {
-        surfaceGeo.moveBottom(validGeo.bottom());
-        if (layer->exclusiveZone() > 0)
-            addExclusiveZone(Qt::BottomEdge, layer, layer->exclusiveZone());
-    }
-
-    if (anchor & WLayerSurface::AnchorType::Left) {
         surfaceGeo.moveLeft(validGeo.left());
-        if (!(anchor & WLayerSurface::AnchorType::Right)) {
-            if (layer->exclusiveZone() > 0)
-                addExclusiveZone(Qt::LeftEdge, layer, layer->exclusiveZone());
-        }
+        surfaceGeo.setWidth(validGeo.width());
+    } else if (anchor & WLayerSurface::AnchorType::Left) {
+        surfaceGeo.moveLeft(validGeo.left());
     } else if (anchor & WLayerSurface::AnchorType::Right) {
         surfaceGeo.moveRight(validGeo.right());
-        if (layer->exclusiveZone() > 0)
-            addExclusiveZone(Qt::RightEdge, layer, layer->exclusiveZone());
+    } else {
+        surfaceGeo.moveLeft(validGeo.left() + (validGeo.width() - surfaceGeo.width()) / 2);
     }
 
+    if (anchor.testFlags(WLayerSurface::AnchorType::Top | WLayerSurface::AnchorType::Bottom)) {
+        surfaceGeo.moveTop(validGeo.top());
+        surfaceGeo.setHeight(validGeo.height());
+    } else if (anchor & WLayerSurface::AnchorType::Top) {
+        surfaceGeo.moveTop(validGeo.top());
+    } else if (anchor & WLayerSurface::AnchorType::Bottom) {
+        surfaceGeo.moveBottom(validGeo.bottom());
+    } else {
+        surfaceGeo.moveTop(validGeo.top() + (validGeo.height() - surfaceGeo.height()) / 2);
+    }
+
+    if (layer->exclusiveZone() > 0) {
+        // TODO:: support `set_exclusive_edge` in layer-shell v5, need wlroots 0.19
+        switch (layer->getExclusiveZoneEdge()) {
+            using enum WLayerSurface::AnchorType;
+        case Top:
+            addExclusiveZone(Qt::TopEdge, layer, layer->exclusiveZone());
+            break;
+        case Bottom:
+            addExclusiveZone(Qt::BottomEdge, layer, layer->exclusiveZone());
+            break;
+        case Left:
+            addExclusiveZone(Qt::LeftEdge, layer, layer->exclusiveZone());
+            break;
+        case Right:
+            addExclusiveZone(Qt::RightEdge, layer, layer->exclusiveZone());
+            break;
+        default:
+            qCWarning(qLcLayerShell) << layer->appId() << " has set exclusive zone, but exclusive edge is invalid!";
+            break;
+        }
+    }
+
+    surface->resizeNormalGeometryInOutput(surfaceGeo.size());
     surface->moveNormalGeometryInOutput(surfaceGeo.topLeft());
 }
 
