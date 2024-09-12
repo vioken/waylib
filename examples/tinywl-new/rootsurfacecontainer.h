@@ -70,7 +70,7 @@ private:
     void addBySubContainer(SurfaceContainer *, SurfaceWrapper *surface) override;
     void removeBySubContainer(SurfaceContainer *, SurfaceWrapper *surface) override;
 
-    bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry) override;
+    bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRectF &newGeometry, const QRectF &oldGeometry) override;
 
     void ensureCursorVisible();
     void updateSurfaceOutputs(SurfaceWrapper *surface);
