@@ -103,6 +103,7 @@ class WAYLIB_SERVER_EXPORT WSurfaceItem : public QQuickItem
     Q_PROPERTY(qreal surfaceSizeRatio READ surfaceSizeRatio WRITE setSurfaceSizeRatio NOTIFY surfaceSizeRatioChanged)
     Q_PROPERTY(qreal bufferScale READ bufferScale NOTIFY bufferScaleChanged)
     Q_PROPERTY(QQmlComponent* delegate READ delegate WRITE setDelegate NOTIFY delegateChanged FINAL)
+    Q_PROPERTY(QRectF boundingRect READ boundingRect NOTIFY boundingRectChanged)
     QML_NAMED_ELEMENT(SurfaceItem)
 
 public:
@@ -132,6 +133,8 @@ public:
 
     explicit WSurfaceItem(QQuickItem *parent = nullptr);
     ~WSurfaceItem();
+
+    QRectF boundingRect() const override;
 
     static WSurfaceItem *fromFocusObject(QObject *focusObject);
 
@@ -193,6 +196,7 @@ Q_SIGNALS:
     void contentItemChanged();
     void delegateChanged();
     void shellSurfaceChanged();
+    void boundingRectChanged();
 
 protected:
     explicit WSurfaceItem(WSurfaceItemPrivate &dd, QQuickItem *parent = nullptr);

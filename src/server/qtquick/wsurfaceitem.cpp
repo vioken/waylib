@@ -470,6 +470,12 @@ WSurfaceItem::~WSurfaceItem()
 
 }
 
+QRectF WSurfaceItem::boundingRect() const
+{
+    W_DC(WSurfaceItem);
+    return d->boundingRect;
+}
+
 WSurfaceItem *WSurfaceItem::fromFocusObject(QObject *focusObject)
 {
     if (auto item = qobject_cast<EventItem*>(focusObject))
@@ -745,6 +751,8 @@ void WSurfaceItem::geometryChange(const QRectF &newGeometry, const QRectF &oldGe
             d->contentContainer->setSize(d->contentContainer->size() +
                                          (newGeometry.size() - oldGeometry.size()) * d->surfaceSizeRatio);
     }
+
+    d->updateBoundingRect();
 }
 
 void WSurfaceItem::itemChange(ItemChange change, const ItemChangeData &data)
@@ -761,6 +769,7 @@ void WSurfaceItem::itemChange(ItemChange change, const ItemChangeData &data)
                 if (d->resizeMode != ManualResize)
                     d->doResize(d->resizeMode);
                 d->contentContainer->setSize(d->surfaceState->contentSize);
+                d->updateBoundingRect();
             }
         }
 
@@ -770,6 +779,7 @@ void WSurfaceItem::itemChange(ItemChange change, const ItemChangeData &data)
         // Use static_cast to avoid convert failed.
         auto item = static_cast<WSurfaceItem*>(data.item);
         if (item && d->subsurfaces.removeOne(item)) {
+            d->updateBoundingRect();
             Q_EMIT subsurfaceRemoved(item);
         }
     }
@@ -1030,6 +1040,7 @@ void WSurfaceItemPrivate::initForDelegate()
     }
     contentContainer = newContentContainer.release();
     updateEventItem(false);
+    updateBoundingRect();
     if (eventItem)
         updateEventItemGeometry();
 
@@ -1086,6 +1097,8 @@ void WSurfaceItemPrivate::updateSubsurfaceItem()
         const QPointF pos = contentContainer->position() + QPointF(subsurface->current.x, subsurface->current.y) / surfaceSizeRatio;
         item->setPosition(pos);
     }
+
+    updateBoundingRect();
 }
 
 void WSurfaceItemPrivate::onPaddingsChanged()
@@ -1108,6 +1121,7 @@ void WSurfaceItemPrivate::updateContentPosition()
     Q_ASSERT(surfaceState);
     contentContainer->setPosition(-surfaceState->contentGeometry.topLeft() / surfaceSizeRatio
                                   + QPointF(paddings.left(), paddings.top()));
+    updateBoundingRect();
 }
 
 WSurfaceItem *WSurfaceItemPrivate::ensureSubsurfaceItem(WSurface *subsurfaceSurface)
@@ -1137,6 +1151,9 @@ WSurfaceItem *WSurfaceItemPrivate::ensureSubsurfaceItem(WSurface *subsurfaceSurf
     surfaceItem->setSurface(subsurfaceSurface);
     surfaceItem->setSmooth(q->smooth());
     QObject::connect(q, &WSurfaceItem::smoothChanged, surfaceItem, &WSurfaceItem::setSmooth);
+    QObject::connect(surfaceItem, &WSurfaceItem::boundingRectChanged, q, [this] {
+        updateBoundingRect();
+    });
     // remove list element in WSurfaceItem::itemChange
     subsurfaces.append(surfaceItem);
     Q_EMIT q->subsurfaceAdded(surfaceItem);
@@ -1153,12 +1170,14 @@ void WSurfaceItemPrivate::resizeSurfaceToItemSize(const QSize &itemSize, const Q
 
     if (!surface) {
         contentContainer->setSize(contentContainer->size() + sizeDiff);
+        updateBoundingRect();
         return;
     }
 
     if (q->resizeSurface(itemSize)) {
         contentContainer->setSize(contentContainer->size() + sizeDiff);
         beforeRequestResizeSurfaceStateSeq = surface->handle()->handle()->pending.seq;
+        updateBoundingRect();
     }
 }
 
@@ -1231,6 +1250,31 @@ qreal WSurfaceItemPrivate::calculateImplicitHeight() const
         return ps.height();
 
     return surfaceState->contentGeometry.height() + ps.height();
+}
+
+QRectF WSurfaceItemPrivate::calculateBoundingRect() const
+{
+    W_QC(WSurfaceItem);
+    QRectF rect = QRectF(0, 0, q->width(), q->height());
+
+    if (contentContainer)
+        rect |= q->mapFromItem(contentContainer, contentContainer->boundingRect());
+
+    for (auto sub : std::as_const(subsurfaces))
+        rect |= sub->boundingRect().translated(sub->position());
+
+    return rect;
+}
+
+void WSurfaceItemPrivate::updateBoundingRect()
+{
+    auto newBoundingRect = calculateBoundingRect();
+    if (newBoundingRect == boundingRect)
+        return;
+    boundingRect = newBoundingRect;
+
+    W_Q(WSurfaceItem);
+    Q_EMIT q->boundingRectChanged();
 }
 
 WToplevelSurface *WSurfaceItem::shellSurface() const
