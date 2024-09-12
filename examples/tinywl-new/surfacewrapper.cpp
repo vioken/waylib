@@ -74,6 +74,8 @@ SurfaceWrapper::~SurfaceWrapper()
         delete m_titleBar;
     if (m_decoration)
         delete m_decoration;
+    if (m_geometryAnimation)
+        delete m_geometryAnimation;
 
     if (m_ownsOutput) {
         m_ownsOutput->removeSurface(this);
@@ -124,8 +126,7 @@ WSurfaceItem *SurfaceWrapper::surfaceItem() const
 
 bool SurfaceWrapper::resize(const QSizeF &size)
 {
-    QSizeF surfaceSize = m_titleBar ? QSizeF(size.width(), size.height() - m_titleBar->height()) : size;
-    return m_surfaceItem->resizeSurface(surfaceSize);
+    return m_surfaceItem->resizeSurface(size);
 }
 
 QRectF SurfaceWrapper::titlebarGeometry() const
@@ -314,67 +315,30 @@ SurfaceWrapper::State SurfaceWrapper::surfaceState() const
 
 void SurfaceWrapper::setSurfaceState(State newSurfaceState)
 {
-    if (m_surfaceState == newSurfaceState
-        || m_pendingSurfaceState == newSurfaceState) {
+    if (m_surfaceState == newSurfaceState)
         return;
-    }
-    m_pendingSurfaceState.setValueBypassingBindings(newSurfaceState);
-    updateVisible();
-    setVisibleDecoration(newSurfaceState == State::Minimized
-                         || newSurfaceState == State::Normal);
+
+    QRectF targetGeometry;
 
     if (newSurfaceState == State::Maximized) {
-        setPosition(m_maximizedGeometry.topLeft());
-        setSize(m_maximizedGeometry.size());
+        targetGeometry = m_maximizedGeometry;
     } else if (newSurfaceState == State::Fullscreen) {
-        setPosition(m_fullscreenGeometry.topLeft());
-        setSize(m_fullscreenGeometry.size());
+        targetGeometry = m_fullscreenGeometry;
     } else if (newSurfaceState == State::Normal) {
-        setPosition(m_normalGeometry.topLeft());
-        setSize(m_normalGeometry.size());
+        targetGeometry = m_normalGeometry;
     } else if (newSurfaceState == State::Tiling) {
-        setPosition(m_tilingGeometry.topLeft());
-        setSize(m_tilingGeometry.size());
+        targetGeometry = m_tilingGeometry;
     }
 
-    m_previousSurfaceState.setValueBypassingBindings(m_surfaceState);
-    m_surfaceState.setValueBypassingBindings(newSurfaceState);
+    if (targetGeometry.isValid()) {
+        startStateChangeAnimation(newSurfaceState, targetGeometry);
+    } else {
+        if (m_geometryAnimation) {
+            m_geometryAnimation->deleteLater();
+        }
 
-    switch (m_previousSurfaceState.value()) {
-    case State::Maximized:
-        m_shellSurface->setMaximize(false);
-        break;
-    case State::Minimized:
-        m_shellSurface->setMinimize(false);
-        break;
-    case State::Fullscreen:
-        m_shellSurface->setFullScreen(false);
-        break;
-    case State::Normal: [[fallthrough]];
-    case State::Tiling: [[fallthrough]];
-    default:
-        break;
+        doSetSurfaceState(newSurfaceState);
     }
-    m_previousSurfaceState.notify();
-
-    switch (m_surfaceState.value()) {
-    case State::Maximized:
-        m_shellSurface->setMaximize(true);
-        break;
-    case State::Minimized:
-        m_shellSurface->setMinimize(true);
-        break;
-    case State::Fullscreen:
-        m_shellSurface->setFullScreen(true);
-        break;
-    case State::Normal: [[fallthrough]];
-    case State::Tiling: [[fallthrough]];
-    default:
-        break;
-    }
-    m_surfaceState.notify();
-
-    updateVisible();
 }
 
 QBindable<SurfaceWrapper::State> SurfaceWrapper::bindableSurfaceState()
@@ -384,26 +348,22 @@ QBindable<SurfaceWrapper::State> SurfaceWrapper::bindableSurfaceState()
 
 bool SurfaceWrapper::isNormal() const
 {
-    return m_surfaceState == State::Normal
-           && m_pendingSurfaceState == State::Normal;
+    return m_surfaceState == State::Normal;
 }
 
 bool SurfaceWrapper::isMaximized() const
 {
-    return m_surfaceState == State::Maximized
-           && m_pendingSurfaceState == State::Maximized;
+    return m_surfaceState == State::Maximized;
 }
 
 bool SurfaceWrapper::isMinimized() const
 {
-    return m_surfaceState == State::Minimized
-           && m_pendingSurfaceState == State::Minimized;
+    return m_surfaceState == State::Minimized;
 }
 
 bool SurfaceWrapper::isTiling() const
 {
-    return m_surfaceState == State::Tiling
-           && m_pendingSurfaceState == State::Tiling;
+    return m_surfaceState == State::Tiling;
 }
 
 void SurfaceWrapper::setNoDecoration(bool newNoDecoration)
@@ -499,8 +459,9 @@ void SurfaceWrapper::updateClipRect()
     rw->markItemClipRectDirty(this);
 }
 
-void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &oldGeometry)
+void SurfaceWrapper::geometryChange(const QRectF &newGeo, const QRectF &oldGeometry)
 {
+    QRectF newGeometry = newGeo;
     if (m_container && m_container->filterSurfaceGeometryChanged(this, newGeometry, oldGeometry))
         return;
 
@@ -508,7 +469,7 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &old
         setNormalGeometry(newGeometry);
     }
 
-    const qreal contentHeight = m_titleBar ? newGeometry.height() - m_titleBar->height() : newGeometry.height();
+    const qreal contentHeight = newGeometry.height();
     if (widthValid() && heightValid()) {
         m_surfaceItem->resizeSurface({newGeometry.width(), contentHeight});
     } else if (widthValid()) {
@@ -519,10 +480,86 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeometry, const QRectF &old
 
     Q_EMIT geometryChanged();
     QQuickItem::geometryChange(newGeometry, oldGeometry);
-
     if (newGeometry.size() != oldGeometry.size())
         updateBoundingRect();
     updateClipRect();
+}
+
+void SurfaceWrapper::doSetSurfaceState(State newSurfaceState)
+{
+    setVisibleDecoration(newSurfaceState == State::Normal);
+
+    m_previousSurfaceState.setValueBypassingBindings(m_surfaceState);
+    m_surfaceState.setValueBypassingBindings(newSurfaceState);
+
+    switch (m_previousSurfaceState.value()) {
+    case State::Maximized:
+        m_shellSurface->setMaximize(false);
+        break;
+    case State::Minimized:
+        m_shellSurface->setMinimize(false);
+        break;
+    case State::Fullscreen:
+        m_shellSurface->setFullScreen(false);
+        break;
+    case State::Normal: [[fallthrough]];
+    case State::Tiling: [[fallthrough]];
+    default:
+        break;
+    }
+    m_previousSurfaceState.notify();
+
+    switch (m_surfaceState.value()) {
+    case State::Maximized:
+        m_shellSurface->setMaximize(true);
+        break;
+    case State::Minimized:
+        m_shellSurface->setMinimize(true);
+        break;
+    case State::Fullscreen:
+        m_shellSurface->setFullScreen(true);
+        break;
+    case State::Normal: [[fallthrough]];
+    case State::Tiling: [[fallthrough]];
+    default:
+        break;
+    }
+    m_surfaceState.notify();
+    updateVisible();
+}
+
+void SurfaceWrapper::onAnimationStarted()
+{
+    Q_ASSERT(m_pendingState != m_surfaceState);
+    doSetSurfaceState(m_pendingState);
+    Q_ASSERT(m_pendingGeometry.isValid());
+    resize(m_pendingGeometry.size());
+    setPosition(m_pendingGeometry.topLeft());
+}
+
+void SurfaceWrapper::onAnimationFinished()
+{
+    Q_ASSERT(m_geometryAnimation);
+    m_geometryAnimation->deleteLater();
+}
+
+bool SurfaceWrapper::startStateChangeAnimation(State targetState, const QRectF &targetGeometry)
+{
+    if (m_geometryAnimation) // animation running
+        return false;
+
+    m_geometryAnimation = m_engine->createGeometryAnimation(this, container());
+    m_pendingState = targetState;
+    m_pendingGeometry = targetGeometry;
+    bool ok = connect(m_geometryAnimation, SIGNAL(started()), this, SLOT(onAnimationStarted()));
+    Q_ASSERT(ok);
+    ok = connect(m_geometryAnimation, SIGNAL(finished()), this, SLOT(onAnimationFinished()));
+    Q_ASSERT(ok);
+
+    ok = QMetaObject::invokeMethod(m_geometryAnimation, "start",
+                                   Q_ARG(QVariant, targetGeometry));
+    Q_ASSERT(ok);
+    return ok;
 }
 
 qreal SurfaceWrapper::radius() const

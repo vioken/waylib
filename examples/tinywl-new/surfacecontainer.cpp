@@ -185,6 +185,16 @@ QList<SurfaceContainer*> SurfaceContainer::subContainers() const
     return findChildren<SurfaceContainer*>(Qt::FindDirectChildrenOnly);
 }
 
+void SurfaceContainer::setQmlEngine(QQmlEngine *engine)
+{
+    engine->setContextForObject(this, engine->rootContext());
+
+    const auto subContainers = this->subContainers();
+    for (auto sub : subContainers) {
+        sub->setQmlEngine(engine);
+    }
+}
+
 void SurfaceContainer::addSurface(SurfaceWrapper *surface)
 {
     doAddSurface(surface, true);
@@ -274,7 +284,7 @@ void SurfaceContainer::removeBySubContainer(SurfaceContainer *sub, SurfaceWrappe
     doRemoveSurface(surface, false);
 }
 
-bool SurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface, const QRectF &newGeometry, const QRectF &oldGeometry)
+bool SurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRectF &newGeometry, const QRectF &oldGeometry)
 {
     if (auto p = parentContainer())
         return p->filterSurfaceGeometryChanged(surface, newGeometry, oldGeometry);

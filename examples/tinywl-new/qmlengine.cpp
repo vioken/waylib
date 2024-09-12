@@ -15,6 +15,7 @@ QmlEngine::QmlEngine(QObject *parent)
     , taskBarComponent(this, "Tinywl", "TaskBar")
     , surfaceContent(this, "Tinywl", "SurfaceContent")
     , shadowComponent(this, "Tinywl", "Shadow")
+    , geometryAnimationComponent(this, "Tinywl", "GeometryAnimation")
 {
 }
 
@@ -92,6 +93,22 @@ QQuickItem *QmlEngine::createShadow(QQuickItem *parent)
     item->setParent(parent);
     item->setParentItem(parent);
     shadowComponent.completeCreate();
+
+    return item;
+}
+
+QQuickItem *QmlEngine::createGeometryAnimation(SurfaceWrapper *surface, QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = geometryAnimationComponent.beginCreate(context);
+    geometryAnimationComponent.setInitialProperties(obj, {
+        {"surface", QVariant::fromValue(surface)}
+    });
+    auto item = qobject_cast<QQuickItem*>(obj);
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    geometryAnimationComponent.completeCreate();
 
     return item;
 }
