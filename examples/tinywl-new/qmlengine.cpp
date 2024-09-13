@@ -97,12 +97,17 @@ QQuickItem *QmlEngine::createShadow(QQuickItem *parent)
     return item;
 }
 
-QQuickItem *QmlEngine::createGeometryAnimation(SurfaceWrapper *surface, QQuickItem *parent)
+QQuickItem *QmlEngine::createGeometryAnimation(SurfaceWrapper *surface,
+                                               const QRectF &startGeo,
+                                               const QRectF &endGeo,
+                                               QQuickItem *parent)
 {
     auto context = qmlContext(parent);
     auto obj = geometryAnimationComponent.beginCreate(context);
     geometryAnimationComponent.setInitialProperties(obj, {
-        {"surface", QVariant::fromValue(surface)}
+        {"surface", QVariant::fromValue(surface)},
+        {"fromGeometry", QVariant::fromValue(startGeo)},
+        {"toGeometry", QVariant::fromValue(endGeo)},
     });
     auto item = qobject_cast<QQuickItem*>(obj);
     Q_ASSERT(item);

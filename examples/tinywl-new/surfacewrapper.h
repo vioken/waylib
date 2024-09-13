@@ -195,7 +195,7 @@ private:
     void geometryChange(const QRectF &newGeo, const QRectF &oldGeometry) override;
 
     void doSetSurfaceState(State newSurfaceState);
-    Q_SLOT void onAnimationStarted();
+    Q_SLOT void onAnimationReady();
     Q_SLOT void onAnimationFinished();
     bool startStateChangeAnimation(SurfaceWrapper::State targetState, const QRectF &targetGeometry);
 

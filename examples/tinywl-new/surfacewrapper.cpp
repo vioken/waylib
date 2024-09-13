@@ -528,7 +528,7 @@ void SurfaceWrapper::doSetSurfaceState(State newSurfaceState)
     updateVisible();
 }
 
-void SurfaceWrapper::onAnimationStarted()
+void SurfaceWrapper::onAnimationReady()
 {
     Q_ASSERT(m_pendingState != m_surfaceState);
     doSetSurfaceState(m_pendingState);
@@ -548,16 +548,15 @@ bool SurfaceWrapper::startStateChangeAnimation(State targetState, const QRectF &
     if (m_geometryAnimation) // animation running
         return false;
 
-    m_geometryAnimation = m_engine->createGeometryAnimation(this, container());
+    m_geometryAnimation = m_engine->createGeometryAnimation(this, geometry(), targetGeometry, container());
     m_pendingState = targetState;
     m_pendingGeometry = targetGeometry;
-    bool ok = connect(m_geometryAnimation, SIGNAL(started()), this, SLOT(onAnimationStarted()));
+    bool ok = connect(m_geometryAnimation, SIGNAL(ready()), this, SLOT(onAnimationReady()));
     Q_ASSERT(ok);
     ok = connect(m_geometryAnimation, SIGNAL(finished()), this, SLOT(onAnimationFinished()));
     Q_ASSERT(ok);
 
-    ok = QMetaObject::invokeMethod(m_geometryAnimation, "start",
-                                   Q_ARG(QVariant, targetGeometry));
+    ok = QMetaObject::invokeMethod(m_geometryAnimation, "start");
     Q_ASSERT(ok);
     return ok;
 }
