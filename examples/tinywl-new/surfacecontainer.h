@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 #pragma once
 
+#include "surfacewrapper.h"
+
 #include <QQuickItem>
 #include <QAbstractListModel>
 #include <QProperty>
@@ -9,7 +11,6 @@
 
 #include <functional>
 
-class SurfaceWrapper;
 class SurfaceListModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -127,6 +128,7 @@ protected:
     virtual void removeBySubContainer(SurfaceContainer *sub, SurfaceWrapper *surface);
 
     virtual bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRectF &newGeometry, const QRectF &oldGeometry);
+    virtual bool filterSurfaceStateChange(SurfaceWrapper *surface, SurfaceWrapper::State newState, SurfaceWrapper::State oldState);
 
     SurfaceListModel *m_model = nullptr;
 };

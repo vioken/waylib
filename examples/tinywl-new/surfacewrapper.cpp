@@ -320,6 +320,9 @@ void SurfaceWrapper::setSurfaceState(State newSurfaceState)
     if (m_surfaceState == newSurfaceState)
         return;
 
+    if (container()->filterSurfaceStateChange(this, newSurfaceState, m_surfaceState))
+        return;
+
     QRectF targetGeometry;
 
     if (newSurfaceState == State::Maximized) {
@@ -366,6 +369,11 @@ bool SurfaceWrapper::isMinimized() const
 bool SurfaceWrapper::isTiling() const
 {
     return m_surfaceState == State::Tiling;
+}
+
+bool SurfaceWrapper::isAnimationRunning() const
+{
+    return m_geometryAnimation;
 }
 
 void SurfaceWrapper::setNoDecoration(bool newNoDecoration)
