@@ -131,6 +131,10 @@ void RootSurfaceContainer::removeOutput(Output *output)
 
 void RootSurfaceContainer::beginMoveResize(SurfaceWrapper *surface, Qt::Edges edges)
 {
+    if (surface->surfaceState() != SurfaceWrapper::State::Normal
+        || surface->isAnimationRunning())
+        return;
+
     Q_ASSERT(!moveResizeState.surface);
     moveResizeState.surface = surface;
     moveResizeState.startGeometry = surface->geometry();
@@ -303,6 +307,13 @@ bool RootSurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface,
     }
 
     return false;
+}
+
+bool RootSurfaceContainer::filterSurfaceStateChange(SurfaceWrapper *surface, SurfaceWrapper::State newState, SurfaceWrapper::State oldState)
+{
+    Q_UNUSED(oldState);
+    Q_UNUSED(newState);
+    return surface == moveResizeState.surface;
 }
 
 WOutputLayout *RootSurfaceContainer::outputLayout() const
