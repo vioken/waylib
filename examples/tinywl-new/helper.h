@@ -149,6 +149,7 @@ private:
     Workspace *m_workspace = nullptr;
     LayerSurfaceContainer *m_topContainer = nullptr;
     LayerSurfaceContainer *m_overlayContainer = nullptr;
+    SurfaceContainer *m_popupContainer = nullptr;
 };
 
 Q_DECLARE_OPAQUE_POINTER(RootSurfaceContainer*)
