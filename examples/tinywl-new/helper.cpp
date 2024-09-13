@@ -83,6 +83,7 @@ Helper::Helper(QObject *parent)
     , m_workspace(new Workspace(m_surfaceContainer))
     , m_topContainer(new LayerSurfaceContainer(m_surfaceContainer))
     , m_overlayContainer(new LayerSurfaceContainer(m_surfaceContainer))
+    , m_popupContainer(new SurfaceContainer(m_surfaceContainer))
 {
     Q_ASSERT(!m_instance);
     m_instance = this;
@@ -96,6 +97,7 @@ Helper::Helper(QObject *parent)
     m_workspace->setZ(RootSurfaceContainer::NormalZOrder);
     m_topContainer->setZ(RootSurfaceContainer::TopZOrder);
     m_overlayContainer->setZ(RootSurfaceContainer::OverlayZOrder);
+    m_popupContainer->setZ(RootSurfaceContainer::PopupZOrder);
 }
 
 Helper::~Helper()
@@ -188,14 +190,32 @@ void Helper::init()
         wrapper->setNoDecoration(m_xdgDecorationManager->modeBySurface(surface->surface())
                                  != WXdgDecorationManager::Server);
 
-        if (auto parent = surface->parentSurface()) {
+        if (surface->isPopup()) {
+            auto parent = surface->parentSurface();;
             auto parentWrapper = m_surfaceContainer->getSurface(parent);
-            auto container = parentWrapper->container();
-            Q_ASSERT(container);
             parentWrapper->addSubSurface(wrapper);
-            container->addSurface(wrapper);
+            m_popupContainer->addSurface(wrapper);
+            wrapper->setOwnsOutput(parentWrapper->ownsOutput());
         } else {
-            m_workspace->addSurface(wrapper);
+            auto updateSurfaceWithParentContainer = [this, wrapper, surface] {
+                if (wrapper->parentSurface())
+                    wrapper->parentSurface()->removeSubSurface(wrapper);
+                if (wrapper->container())
+                    wrapper->container()->removeSurface(wrapper);
+
+                if (auto parent = surface->parentSurface()) {
+                    auto parentWrapper = m_surfaceContainer->getSurface(parent);
+                    auto container = parentWrapper->container();
+                    Q_ASSERT(container);
+                    parentWrapper->addSubSurface(wrapper);
+                    container->addSurface(wrapper);
+                } else {
+                    m_workspace->addSurface(wrapper);
+                }
+            };
+
+            surface->safeConnect(&WXdgSurface::parentXdgSurfaceChanged, this, updateSurfaceWithParentContainer);
+            updateSurfaceWithParentContainer();
         }
 
         Q_ASSERT(wrapper->parentItem());
