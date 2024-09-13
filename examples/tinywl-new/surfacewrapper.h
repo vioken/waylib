@@ -114,6 +114,7 @@ public:
     bool isMaximized() const;
     bool isMinimized() const;
     bool isTiling() const;
+    bool isAnimationRunning() const;
 
     qreal radius() const;
     void setRadius(qreal newRadius);
