@@ -247,8 +247,8 @@ void Output::layoutLayerSurface(SurfaceWrapper *surface)
         }
     }
 
-    surface->resizeNormalGeometryInOutput(surfaceGeo.size());
-    surface->moveNormalGeometryInOutput(surfaceGeo.topLeft());
+    surface->setSize(surfaceGeo.size());
+    surface->setPosition(surfaceGeo.topLeft());
 }
 
 void Output::layoutLayerSurfaces()
@@ -299,9 +299,9 @@ void Output::layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDi
                     topLeft.setY(parentSurfaceWrapper->y() + parentSurfaceWrapper->surfaceItem()->y() + dPos.y());
                     auto output = surface->ownsOutput()->outputItem();
 
-                    normalGeo.setWidth(std::min(output->width(), surface->implicitWidth()));
-                    normalGeo.setHeight(std::min(output->height(), surface->implicitHeight()));
-                    surface->resizeNormalGeometryInOutput(normalGeo.size());
+                    normalGeo.setWidth(std::min(output->width(), surface->width()));
+                    normalGeo.setHeight(std::min(output->height(), surface->height()));
+                    surface->setSize(normalGeo.size());
 
                     if (topLeft.x() + normalGeo.width() > output->x() + output->width())
                         topLeft.setX(output->x() + output->width() - normalGeo.width());
@@ -311,8 +311,8 @@ void Output::layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDi
                     surface->moveNormalGeometryInOutput(normalGeo.topLeft());
                 } else {
                     QPointF dPos {
-                        (parentSurfaceWrapper->implicitWidth() - surface->implicitWidth()) / 2,
-                        (parentSurfaceWrapper->implicitHeight() - surface->implicitHeight()) / 2
+                        (parentSurfaceWrapper->width() - surface->width()) / 2,
+                        (parentSurfaceWrapper->height() - surface->height()) / 2
                     };
                     QPointF topLeft;
                     topLeft.setX(parentSurfaceWrapper->x() + dPos.x());

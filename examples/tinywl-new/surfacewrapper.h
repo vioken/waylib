@@ -90,7 +90,6 @@ public:
     QRectF geometry() const;
     QRectF normalGeometry() const;
     void moveNormalGeometryInOutput(const QPointF &position);
-    void resizeNormalGeometryInOutput(const QSizeF &size);
 
     QRectF maximizedGeometry() const;
     void setMaximizedGeometry(const QRectF &newMaximizedGeometry);
