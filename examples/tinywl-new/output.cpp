@@ -290,8 +290,6 @@ void Output::layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDi
             if (parentSurfaceWrapper) {
                 auto xdgSurface = qobject_cast<WXdgSurface*>(surface->shellSurface());
                 if (xdgSurface && xdgSurface->isPopup()) {
-                    if (!surface->positionAutomatic())
-                        return;
                     QPointF dPos = xdgSurface->getPopupPosition();
                     QPointF topLeft;
                     // TODO: remove parentSurfaceWrapper->surfaceItem()->x()

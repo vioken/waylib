@@ -369,8 +369,7 @@ WSurface *WXdgSurface::parentSurface() const
         return WSurface::fromHandle(parent->base->surface);
     } else if (isPopup()) {
         auto parent = d->nativeHandle()->popup->parent;
-        if (!parent)
-            return nullptr;
+        Q_ASSERT(parent);
         return WSurface::fromHandle(parent);
     }
     return nullptr;

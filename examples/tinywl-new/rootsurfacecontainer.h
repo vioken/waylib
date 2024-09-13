@@ -33,6 +33,7 @@ public:
         TopZOrder = 1,
         OverlayZOrder = 2,
         TaskBarZOrder = 3,
+        PopupZOrder = 4,
     };
 
     SurfaceWrapper *getSurface(WSurface *surface) const;
