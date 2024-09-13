@@ -8,17 +8,36 @@ Item {
     id: root
 
     required property SurfaceWrapper surface
+    required property rect fromGeometry
+    required property rect toGeometry
     property int duration: 200
-    property rect fromGeometry
-    property rect toGeometry
 
-    signal started
+    signal ready
     signal finished
 
-    function start(targetGeometry) {
-        fromGeometry = surface.geometry;
-        toGeometry = targetGeometry;
+    x: fromGeometry.x
+    y: fromGeometry.y
+    width: fromGeometry.width
+    height: fromGeometry.height
+
+    function start() {
         animation.start();
+    }
+
+    ShaderEffectSource {
+        id: backgroundEffect
+
+        readonly property real xScale: root.width / surface.width
+        readonly property real yScale: root.height / surface.height
+
+        live: true
+        sourceItem: surface
+        hideSource: true
+        sourceRect: surface.boundingRect
+        width: sourceRect.width * xScale
+        height: sourceRect.height * yScale
+        x: sourceRect.x * xScale
+        y: sourceRect.y * yScale
     }
 
     ShaderEffectSource {
@@ -35,28 +54,12 @@ Item {
         y: sourceRect.y * yScale
 
         onScheduledUpdateCompleted: {
-            root.started();
+            root.ready();
         }
 
         Component.onCompleted: {
             sourceRect = surface.boundingRect
         }
-    }
-
-    ShaderEffectSource {
-        id: backgroundEffect
-
-        readonly property real xScale: root.width / toGeometry.width
-        readonly property real yScale: root.height / toGeometry.height
-
-        live: true
-        sourceItem: surface
-        hideSource: true
-        sourceRect: surface.boundingRect
-        width: sourceRect.width * xScale
-        height: sourceRect.height * yScale
-        x: sourceRect.x * xScale
-        y: sourceRect.y * yScale
     }
 
     ParallelAnimation {
@@ -98,18 +101,10 @@ Item {
 
         OpacityAnimator {
             target: frontEffect
-            duration: root.duration
-            easing.type: Easing.InCubic
+            duration: root.duration / 2
+            easing.type: Easing.OutCubic
             from: 1.0
             to: 0.0
-        }
-
-        OpacityAnimator {
-            target: backgroundEffect
-            duration: root.duration
-            easing.type: Easing.OutCubic
-            from: 0.5
-            to: 1.0
         }
 
         onFinished: {
