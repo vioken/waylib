@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "surfacecontainer.h"
-#include "surfacewrapper.h"
 #include "output.h"
 
 SurfaceListModel::SurfaceListModel(QObject *parent)
@@ -288,5 +287,12 @@ bool SurfaceContainer::filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRe
 {
     if (auto p = parentContainer())
         return p->filterSurfaceGeometryChanged(surface, newGeometry, oldGeometry);
+    return false;
+}
+
+bool SurfaceContainer::filterSurfaceStateChange(SurfaceWrapper *surface, SurfaceWrapper::State newState, SurfaceWrapper::State oldState)
+{
+    if (auto p = parentContainer())
+        return p->filterSurfaceStateChange(surface, newState, oldState);
     return false;
 }

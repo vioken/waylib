@@ -71,6 +71,7 @@ private:
     void removeBySubContainer(SurfaceContainer *, SurfaceWrapper *surface) override;
 
     bool filterSurfaceGeometryChanged(SurfaceWrapper *surface, QRectF &newGeometry, const QRectF &oldGeometry) override;
+    bool filterSurfaceStateChange(SurfaceWrapper *surface, SurfaceWrapper::State newState, SurfaceWrapper::State oldState) override;
 
     void ensureCursorVisible();
     void updateSurfaceOutputs(SurfaceWrapper *surface);
