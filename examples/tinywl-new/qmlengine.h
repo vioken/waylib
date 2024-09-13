@@ -24,7 +24,8 @@ public:
     QQuickItem *createBorder(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
     QQuickItem *createShadow(QQuickItem *parent);
-    QQuickItem *createGeometryAnimation(SurfaceWrapper *surface, QQuickItem *parent);
+    QQuickItem *createGeometryAnimation(SurfaceWrapper *surface, const QRectF &startGeo,
+                                        const QRectF &endGeo, QQuickItem *parent);
     QQmlComponent *surfaceContentComponent() { return &surfaceContent; }
     WallpaperImageProvider *wallpaperImageProvider();
 
