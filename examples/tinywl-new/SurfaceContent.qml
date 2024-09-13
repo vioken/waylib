@@ -26,7 +26,12 @@ Item {
         id: effectLoader
 
         anchors.fill: parent
-        active: cornerRadius > 0 && root.wrapper?.decoration && root.wrapper?.visibleDecoration
+        active: {
+            if (!root.wrapper)
+                return false;
+            return cornerRadius > 0 && root.wrapper.decoration && root.wrapper.visibleDecoration;
+        }
+
         sourceComponent: RoundedClipEffect {
             sourceItem: content
             radius: cornerRadius
