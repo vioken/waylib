@@ -146,16 +146,11 @@ QRectF SurfaceWrapper::normalGeometry() const
 
 void SurfaceWrapper::moveNormalGeometryInOutput(const QPointF &position)
 {
-    if (isNormal())
-        setPosition(position);
     setNormalGeometry(QRectF(position, m_normalGeometry.size()));
-}
-
-void SurfaceWrapper::resizeNormalGeometryInOutput(const QSizeF &size)
-{
-    Q_ASSERT(m_type == Type::Layer || m_type == Type::XdgPopup);
-    if (size.isValid()) {
-        setSize(size);
+    if (isNormal()) {
+        setPosition(position);
+    } else if (m_pendingState == State::Normal && m_geometryAnimation) {
+        m_geometryAnimation->setProperty("targetGeometry", m_normalGeometry);
     }
 }
 
@@ -179,7 +174,9 @@ void SurfaceWrapper::setMaximizedGeometry(const QRectF &newMaximizedGeometry)
     m_maximizedGeometry = newMaximizedGeometry;
     if (m_surfaceState == State::Maximized) {
         setPosition(newMaximizedGeometry.topLeft());
-        setSize(newMaximizedGeometry.size());
+        resize(newMaximizedGeometry.size());
+    } else if (m_pendingState == State::Maximized && m_geometryAnimation) {
+        m_geometryAnimation->setProperty("targetGeometry", newMaximizedGeometry);
     }
 
     emit maximizedGeometryChanged();
@@ -197,7 +194,9 @@ void SurfaceWrapper::setFullscreenGeometry(const QRectF &newFullscreenGeometry)
     m_fullscreenGeometry = newFullscreenGeometry;
     if (m_surfaceState == State::Fullscreen) {
         setPosition(newFullscreenGeometry.topLeft());
-        setSize(newFullscreenGeometry.size());
+        resize(newFullscreenGeometry.size());
+    } else if (m_pendingState == State::Fullscreen && m_geometryAnimation) {
+        m_geometryAnimation->setProperty("targetGeometry", newFullscreenGeometry);
     }
 
     emit fullscreenGeometryChanged();
@@ -217,7 +216,7 @@ void SurfaceWrapper::setTilingGeometry(const QRectF &newTilingGeometry)
     m_tilingGeometry = newTilingGeometry;
     if (m_surfaceState == State::Tiling) {
         setPosition(newTilingGeometry.topLeft());
-        setSize(newTilingGeometry.size());
+        resize(newTilingGeometry.size());
     }
 
     emit tilingGeometryChanged();
@@ -315,6 +314,9 @@ SurfaceWrapper::State SurfaceWrapper::surfaceState() const
 
 void SurfaceWrapper::setSurfaceState(State newSurfaceState)
 {
+    if (m_geometryAnimation)
+        return;
+
     if (m_surfaceState == newSurfaceState)
         return;
 
@@ -465,17 +467,12 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeo, const QRectF &oldGeome
     if (m_container && m_container->filterSurfaceGeometryChanged(this, newGeometry, oldGeometry))
         return;
 
-    if (isNormal()) {
+    if (isNormal() && !m_geometryAnimation) {
         setNormalGeometry(newGeometry);
     }
 
-    const qreal contentHeight = newGeometry.height();
     if (widthValid() && heightValid()) {
-        m_surfaceItem->resizeSurface({newGeometry.width(), contentHeight});
-    } else if (widthValid()) {
-        m_surfaceItem->resizeSurface({newGeometry.width(), m_surfaceItem->implicitHeight()});
-    } else if (heightValid()) {
-        m_surfaceItem->resizeSurface({m_surfaceItem->implicitWidth(), contentHeight});
+        resize(newGeometry.size());
     }
 
     Q_EMIT geometryChanged();
@@ -525,16 +522,23 @@ void SurfaceWrapper::doSetSurfaceState(State newSurfaceState)
         break;
     }
     m_surfaceState.notify();
+    updateTitleBar();
     updateVisible();
 }
 
 void SurfaceWrapper::onAnimationReady()
 {
     Q_ASSERT(m_pendingState != m_surfaceState);
-    doSetSurfaceState(m_pendingState);
     Q_ASSERT(m_pendingGeometry.isValid());
-    resize(m_pendingGeometry.size());
+
+    if (!resize(m_pendingGeometry.size())) {
+        // abort change state if resize failed
+        m_geometryAnimation->deleteLater();
+        return;
+    }
+
     setPosition(m_pendingGeometry.topLeft());
+    doSetSurfaceState(m_pendingState);
 }
 
 void SurfaceWrapper::onAnimationFinished()
@@ -821,6 +825,8 @@ QRectF SurfaceWrapper::clipRect() const
 
 bool SurfaceWrapper::noTitleBar() const
 {
+    if (m_surfaceState == State::Fullscreen)
+        return true;
     if (m_titleBarState == TitleBarState::Visible)
         return false;
 
