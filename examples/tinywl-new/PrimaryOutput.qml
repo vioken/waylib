@@ -4,11 +4,11 @@
 import QtQuick
 import QtQuick.Controls
 import Waylib.Server
+import Tinywl
 
 OutputItem {
     id: rootOutputItem
     readonly property OutputViewport onscreenViewport: outputViewport
-    readonly property alias keepAllOutputRotation: rotationAllOutputsOption.checked
 
     devicePixelRatio: output?.scale ?? devicePixelRatio
 
@@ -88,63 +88,6 @@ OutputItem {
         asynchronous: true
         sourceSize: Qt.size(1920, 1080)
         anchors.fill: parent
-    }
-
-    Column {
-        anchors {
-            bottom: parent.bottom
-            right: parent.right
-            margins: 10
-        }
-
-        spacing: 10
-
-        Switch {
-            id: rotationAllOutputsOption
-            text: "Rotation All Outputs"
-        }
-
-        Button {
-            text: "1X"
-            onClicked: {
-                onscreenViewport.setOutputScale(1)
-            }
-        }
-
-        Button {
-            text: "1.5X"
-            onClicked: {
-                onscreenViewport.setOutputScale(1.5)
-            }
-        }
-
-        Button {
-            text: "Normal"
-            onClicked: {
-                outputViewport.rotationOutput(WaylandOutput.Normal)
-            }
-        }
-
-        Button {
-            text: "R90"
-            onClicked: {
-                outputViewport.rotationOutput(WaylandOutput.R90)
-            }
-        }
-
-        Button {
-            text: "R270"
-            onClicked: {
-                outputViewport.rotationOutput(WaylandOutput.R270)
-            }
-        }
-
-        Button {
-            text: "Quit"
-            onClicked: {
-                Qt.quit()
-            }
-        }
     }
 
     Text {
