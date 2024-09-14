@@ -9,6 +9,7 @@
 #include <wxdgsurfaceitem.h>
 #include <wlayersurfaceitem.h>
 #include <wxwaylandsurfaceitem.h>
+#include <winputpopupsurfaceitem.h>
 #include <wxwaylandsurface.h>
 #include <woutputitem.h>
 #include <woutputrenderwindow.h>
@@ -31,6 +32,8 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
         m_surfaceItem = new WXWaylandSurfaceItem(this);
     } else if (type == Type::Layer) {
         m_surfaceItem = new WLayerSurfaceItem(this);
+    } else if (type == Type::InputPopup) {
+        m_surfaceItem = new WInputPopupSurfaceItem(this);
     } else {
         m_surfaceItem = new WXdgSurfaceItem(this);
     }
