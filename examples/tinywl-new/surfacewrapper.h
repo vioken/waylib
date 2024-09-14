@@ -188,6 +188,7 @@ private:
     using QQuickItem::stackBefore;
     using QQuickItem::stackAfter;
     void setParent(QQuickItem *item);
+    void setActivate(bool activate);
     void setNormalGeometry(const QRectF &newNormalGeometry);
     void setNoDecoration(bool newNoDecoration);
     void updateTitleBar();
