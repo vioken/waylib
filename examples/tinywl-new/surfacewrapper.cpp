@@ -65,7 +65,7 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     });
     setImplicitSize(m_surfaceItem->implicitWidth(), m_surfaceItem->implicitHeight());
 
-    if (shellSurface->doesNotAcceptFocus()) {
+    if (!shellSurface->hasCapability(WToplevelSurface::Capability::Focus)) {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
         m_surfaceItem->setFocusPolicy(Qt::NoFocus);
 #endif
@@ -103,6 +103,16 @@ void SurfaceWrapper::setParent(QQuickItem *item)
 {
     QObject::setParent(item);
     setParentItem(item);
+}
+
+void SurfaceWrapper::setActivate(bool activate)
+{
+    m_shellSurface->setActivate(activate);
+    auto parent = parentSurface();
+    while (parent) {
+        parent->setActivate(activate);
+        parent = parent->parentSurface();
+    }
 }
 
 void SurfaceWrapper::setFocus(bool focus, Qt::FocusReason reason)
