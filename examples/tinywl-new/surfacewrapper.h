@@ -45,7 +45,8 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(QQuickItem* decoration READ decoration NOTIFY noDecorationChanged FINAL)
     Q_PROPERTY(bool visibleDecoration READ visibleDecoration NOTIFY visibleDecorationChanged FINAL)
     Q_PROPERTY(bool clipInOutput READ clipInOutput WRITE setClipInOutput NOTIFY clipInOutputChanged FINAL)
-    Q_PROPERTY(bool noTitleBar READ noTitleBar WRITE setNoTitleBar RESET resetNoTitleBar NOTIFY noTitleBarChanged FINAL)
+    Q_PROPERTY(bool noTitleBar READ noTitleBar RESET resetNoTitleBar NOTIFY noTitleBarChanged FINAL)
+    Q_PROPERTY(bool noCornerRadius READ noCornerRadius NOTIFY noCornerRadiusChanged FINAL)
 
 public:
     enum class Type {
@@ -142,6 +143,9 @@ public:
     void setNoTitleBar(bool newNoTitleBar);
     void resetNoTitleBar();
 
+    bool noCornerRadius() const;
+    void setNoCornerRadius(bool newNoCornerRadius);
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
@@ -176,6 +180,7 @@ signals:
     void clipInOutputChanged();
     void noDecorationChanged();
     void noTitleBarChanged();
+    void noCornerRadiusChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -234,4 +239,5 @@ private:
     uint m_clipInOutput:1;
     uint m_noDecoration:1;
     uint m_titleBarState:2;
+    uint m_noCornerRadius:1;
 };

@@ -34,6 +34,7 @@ void SurfaceProxy::setSurface(SurfaceWrapper *newSurface)
         m_proxySurface->setTransformOrigin(QQuickItem::TransformOrigin::TopLeft);
         Q_ASSERT(!m_shadow);
         m_shadow = m_sourceSurface->m_engine->createShadow(this);
+        m_shadow->setProperty("radius", radius());
         m_shadow->stackBefore(m_proxySurface);
 
         auto item = m_proxySurface->surfaceItem();
@@ -55,7 +56,7 @@ void SurfaceProxy::setSurface(SurfaceWrapper *newSurface)
             m_proxySurface->surfaceItem()->setDelegate(sender->delegate());
         });
         connect(m_sourceSurface, &SurfaceWrapper::noTitleBarChanged,
-                this, &SurfaceProxy::updateProxySurfaceTitleBar);
+                this, &SurfaceProxy::updateProxySurfaceTitleBarAndDecoration);
         connect(m_sourceSurface, &SurfaceWrapper::radiusChanged, this, &SurfaceProxy::onSourceRadiusChanged);
 
         connect(m_proxySurface, &SurfaceWrapper::widthChanged, this, &SurfaceProxy::updateImplicitSize);
@@ -63,7 +64,7 @@ void SurfaceProxy::setSurface(SurfaceWrapper *newSurface)
 
         updateImplicitSize();
         updateProxySurfaceScale();
-        updateProxySurfaceTitleBar();
+        updateProxySurfaceTitleBarAndDecoration();
     } else {
         m_shadow->deleteLater();
         m_shadow = nullptr;
@@ -99,10 +100,11 @@ void SurfaceProxy::updateProxySurfaceScale()
     }
 }
 
-void SurfaceProxy::updateProxySurfaceTitleBar()
+void SurfaceProxy::updateProxySurfaceTitleBarAndDecoration()
 {
     m_proxySurface->setNoTitleBar(m_sourceSurface->noTitleBar());
     m_proxySurface->setNoDecoration(true);
+    m_proxySurface->setNoCornerRadius(false);
 }
 
 void SurfaceProxy::updateImplicitSize()
@@ -124,6 +126,7 @@ void SurfaceProxy::updateImplicitSize()
 void SurfaceProxy::onSourceRadiusChanged()
 {
     m_proxySurface->setRadius(radius() / m_proxySurface->scale());
+    m_shadow->setProperty("radius", radius());
     if (m_radius < 0)
         emit radiusChanged();
 }
@@ -142,6 +145,7 @@ void SurfaceProxy::setRadius(qreal newRadius)
     m_radius = newRadius;
     if (m_proxySurface) {
         m_proxySurface->setRadius(radius() / m_proxySurface->scale());
+        m_shadow->setProperty("radius", radius());
     }
 
     emit radiusChanged();
