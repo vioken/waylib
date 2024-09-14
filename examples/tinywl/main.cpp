@@ -750,7 +750,7 @@ void Helper::setActivateSurface(WToplevelSurface *newActivate)
     if (m_activateSurface == newActivate)
         return;
 
-    if (newActivate && newActivate->doesNotAcceptFocus())
+    if (newActivate && !newActivate->hasCapability(WToplevelSurface::Capability::Focus))
         return;
 
     if (m_activateSurface) {

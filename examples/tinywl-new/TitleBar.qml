@@ -27,7 +27,7 @@ Item {
     Rectangle {
         id: titlebar
         anchors.fill: parent
-        color: Helper.activatedSurface === surface ? "white" : "gray"
+        color: surface.shellSurface.isActivated ? "white" : "gray"
 
         Row {
             anchors {

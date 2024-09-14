@@ -211,10 +211,22 @@ bool WXdgSurface::isToplevel() const
     return d->isToplevel();
 }
 
-bool WXdgSurface::doesNotAcceptFocus() const
+bool WXdgSurface::hasCapability(Capability cap) const
 {
     W_DC(WXdgSurface);
-    return d->nativeHandle()->role == WLR_XDG_SURFACE_ROLE_NONE;
+    switch (cap) {
+        using enum Capability;
+    case Resize:
+        return d->nativeHandle()->role != WLR_XDG_SURFACE_ROLE_NONE;
+    case Focus:
+    case Activate:
+    case Maximized:
+    case FullScreen:
+        return isToplevel();
+    default:
+        break;
+    }
+    Q_UNREACHABLE();
 }
 
 WSurface *WXdgSurface::surface() const

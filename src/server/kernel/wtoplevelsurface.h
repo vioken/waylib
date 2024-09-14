@@ -26,9 +26,17 @@ class WAYLIB_SERVER_EXPORT WToplevelSurface : public WWrapObject
     QML_UNCREATABLE("Only create in C++")
 
 public:
-    virtual bool doesNotAcceptFocus() const {
+    enum class Capability {
+        Focus,
+        Activate,
+        Maximized,
+        FullScreen,
+        Resize,
+    };
+
+    virtual bool hasCapability([[maybe_unused]] Capability cap) const {
         return false;
-    }
+    };
 
     virtual WSurface *surface() const {
         return nullptr;

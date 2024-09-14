@@ -402,8 +402,10 @@ void Helper::setSocketEnabled(bool newEnabled)
 
 void Helper::activeSurface(SurfaceWrapper *wrapper, Qt::FocusReason reason)
 {
-    setActivatedSurface(wrapper);
-    setKeyboardFocusSurface(wrapper, reason);
+    if (!wrapper || wrapper->shellSurface()->hasCapability(WToplevelSurface::Capability::Activate))
+        setActivatedSurface(wrapper);
+    if (!wrapper || wrapper->shellSurface()->hasCapability(WToplevelSurface::Capability::Focus))
+        setKeyboardFocusSurface(wrapper, reason);
 }
 
 RootSurfaceContainer *Helper::rootContainer() const
@@ -484,12 +486,6 @@ bool Helper::afterHandleEvent(WSeat *seat, WSurface *watched, QObject *surfaceIt
         if (!toplevelSurface)
             return false;
         Q_ASSERT(toplevelSurface->surface() == watched);
-        if (auto *xdgSurface = qobject_cast<WXdgSurface *>(toplevelSurface)) {
-            // TODO: popupSurface should not inherit WToplevelSurface
-            if (xdgSurface->isPopup()) {
-                return false;
-            }
-        }
 
         auto surface = m_surfaceContainer->getSurface(watched);
         activeSurface(surface, Qt::MouseFocusReason);
@@ -519,7 +515,7 @@ void Helper::setKeyboardFocusSurface(SurfaceWrapper *newActivate, Qt::FocusReaso
     if (m_keyboardFocusSurface == newActivate)
         return;
 
-    if (newActivate && newActivate->shellSurface()->doesNotAcceptFocus())
+    if (newActivate && !newActivate->shellSurface()->hasCapability(WToplevelSurface::Capability::Focus))
         return;
 
     if (m_keyboardFocusSurface) {
@@ -561,9 +557,9 @@ void Helper::setActivatedSurface(SurfaceWrapper *newActivateSurface)
     }
 
     if (m_activatedSurface)
-        m_activatedSurface->shellSurface()->setActivate(false);
+        m_activatedSurface->setActivate(false);
     if (newActivateSurface)
-        newActivateSurface->shellSurface()->setActivate(true);
+        newActivateSurface->setActivate(true);
     m_activatedSurface = newActivateSurface;
     Q_EMIT activatedSurfaceChanged();
 }
