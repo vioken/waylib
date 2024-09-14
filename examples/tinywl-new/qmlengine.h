@@ -6,9 +6,17 @@
 #include <QQmlApplicationEngine>
 #include <QQmlComponent>
 
+#include <wglobal.h>
+
 QT_BEGIN_NAMESPACE
 class QQuickItem;
 QT_END_NAMESPACE
+
+WAYLIB_SERVER_BEGIN_NAMESPACE
+class WOutputItem;
+WAYLIB_SERVER_END_NAMESPACE
+
+WAYLIB_SERVER_USE_NAMESPACE
 
 class WallpaperImageProvider;
 class SurfaceWrapper;
@@ -26,6 +34,7 @@ public:
     QQuickItem *createShadow(QQuickItem *parent);
     QQuickItem *createGeometryAnimation(SurfaceWrapper *surface, const QRectF &startGeo,
                                         const QRectF &endGeo, QQuickItem *parent);
+    QQuickItem *createMenuBar(WOutputItem *output, QQuickItem *parent);
     QQmlComponent *surfaceContentComponent() { return &surfaceContent; }
     WallpaperImageProvider *wallpaperImageProvider();
 
@@ -37,5 +46,6 @@ private:
     QQmlComponent surfaceContent;
     QQmlComponent shadowComponent;
     QQmlComponent geometryAnimationComponent;
+    QQmlComponent menuBarComponent;
     WallpaperImageProvider *wallpaperProvider = nullptr;
 };

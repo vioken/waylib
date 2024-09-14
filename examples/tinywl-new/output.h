@@ -76,6 +76,7 @@ private:
     Output *m_proxy = nullptr;
     SurfaceFilterModel *minimizedSurfaces;
     QPointer<QQuickItem> m_taskBar;
+    QPointer<QQuickItem> m_menuBar;
 
     QMargins m_exclusiveZone;
     QList<std::pair<QObject*, int>> m_topExclusiveZones;
