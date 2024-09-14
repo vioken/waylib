@@ -29,7 +29,7 @@ Item {
         active: {
             if (!root.wrapper)
                 return false;
-            return cornerRadius > 0 && root.wrapper.decoration && root.wrapper.visibleDecoration;
+            return cornerRadius > 0 && !root.wrapper.noCornerRadius;
         }
 
         sourceComponent: RoundedClipEffect {
