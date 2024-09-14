@@ -29,6 +29,20 @@ Output *Output::createPrimary(WOutput *output, QQmlEngine *engine, QObject *pare
     o->m_type = Type::Primary;
     obj->setParent(o);
 
+    o->minimizedSurfaces->setFilter([] (SurfaceWrapper *s) {
+        return s->isMinimized();
+    });
+
+    o->connect(outputItem, &WOutputItem::geometryChanged, o, &Output::layoutAllSurfaces);
+
+    auto contentItem = Helper::instance()->window()->contentItem();
+    o->m_taskBar = Helper::instance()->qmlEngine()->createTaskBar(o, contentItem);
+    o->m_taskBar->setZ(RootSurfaceContainer::TaskBarZOrder);
+
+    o->m_menuBar = Helper::instance()->qmlEngine()->createMenuBar(outputItem, contentItem);
+    o->m_menuBar->setZ(RootSurfaceContainer::MenuBarZOrder);
+    o->setExclusiveZone(Qt::TopEdge, o->m_menuBar, o->m_menuBar->height());
+
     return o;
 }
 
@@ -54,15 +68,7 @@ Output::Output(WOutputItem *output, QObject *parent)
     , m_item(output)
     , minimizedSurfaces(new SurfaceFilterModel(this))
 {
-    minimizedSurfaces->setFilter([] (SurfaceWrapper *s) {
-        return s->isMinimized();
-    });
 
-    connect(output, &WOutputItem::geometryChanged, this, &Output::layoutAllSurfaces);
-
-    auto contentItem = Helper::instance()->window()->contentItem();
-    m_taskBar = Helper::instance()->qmlEngine()->createTaskBar(this, contentItem);
-    m_taskBar->setZ(RootSurfaceContainer::TaskBarZOrder);
 }
 
 Output::~Output()
@@ -70,6 +76,11 @@ Output::~Output()
     if (m_taskBar) {
         delete m_taskBar;
         m_taskBar = nullptr;
+    }
+
+    if (m_menuBar) {
+        delete m_menuBar;
+        m_menuBar = nullptr;
     }
 }
 
