@@ -289,13 +289,19 @@ void Helper::init()
 
     m_inputMethodHelper = new WInputMethodHelper(m_server, m_seat);
 
-    // connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Added, this, [this](WInputPopupSurface *inputPopup) {
-    //     auto initProperties = m_qmlEngine->newObject();
-    //     initProperties.setProperty("popupSurface", m_qmlEngine->toScriptValue(inputPopup));
-    //     m_inputPopupCreator->add(inputPopup, initProperties);
-    // });
+    connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Added, this, [this](WInputPopupSurface *inputPopup) {
+        auto wrapper = new SurfaceWrapper(qmlEngine(), inputPopup, SurfaceWrapper::Type::InputPopup);
+        auto parent = inputPopup->parentSurface();;
+        auto parentWrapper = m_surfaceContainer->getSurface(parent);
+        parentWrapper->addSubSurface(wrapper);
+        m_popupContainer->addSurface(wrapper);
+        wrapper->setOwnsOutput(parentWrapper->ownsOutput());
+        Q_ASSERT(wrapper->parentItem());
+    });
 
-    // connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Removed, m_inputPopupCreator, &WQmlCreator::removeByOwner);
+    connect(m_inputMethodHelper, &WInputMethodHelper::inputPopupSurfaceV2Removed, this, [this](WInputPopupSurface *inputPopup) {
+        m_surfaceContainer->destroyForSurface(inputPopup->surface());
+    });
 
     m_xdgDecorationManager = m_server->attach<WXdgDecorationManager>();
     connect(m_xdgDecorationManager, &WXdgDecorationManager::surfaceModeChanged,
