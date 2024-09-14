@@ -23,6 +23,7 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     , m_clipInOutput(false)
     , m_noDecoration(true)
     , m_titleBarState(TitleBarState::Default)
+    , m_noCornerRadius(false)
 {
     QQmlEngine::setContextForObject(this, qmlEngine->rootContext());
 
@@ -378,6 +379,7 @@ bool SurfaceWrapper::isAnimationRunning() const
 
 void SurfaceWrapper::setNoDecoration(bool newNoDecoration)
 {
+    setNoCornerRadius(newNoDecoration);
     if (m_noDecoration == newNoDecoration)
         return;
 
@@ -493,6 +495,7 @@ void SurfaceWrapper::geometryChange(const QRectF &newGeo, const QRectF &oldGeome
 void SurfaceWrapper::doSetSurfaceState(State newSurfaceState)
 {
     setVisibleDecoration(newSurfaceState == State::Normal);
+    setNoCornerRadius(newSurfaceState != State::Normal);
 
     m_previousSurfaceState.setValueBypassingBindings(m_surfaceState);
     m_surfaceState.setValueBypassingBindings(newSurfaceState);
@@ -855,4 +858,17 @@ void SurfaceWrapper::resetNoTitleBar()
 {
     m_titleBarState = TitleBarState::Default;
     updateTitleBar();
+}
+
+bool SurfaceWrapper::noCornerRadius() const
+{
+    return m_noCornerRadius;
+}
+
+void SurfaceWrapper::setNoCornerRadius(bool newNoCornerRadius)
+{
+    if (m_noCornerRadius == newNoCornerRadius)
+        return;
+    m_noCornerRadius = newNoCornerRadius;
+    emit noCornerRadiusChanged();
 }
