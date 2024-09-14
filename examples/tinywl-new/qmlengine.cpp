@@ -6,6 +6,8 @@
 #include "surfacewrapper.h"
 #include "wallpaperprovider.h"
 
+#include <woutputitem.h>
+
 #include <QQuickItem>
 
 QmlEngine::QmlEngine(QObject *parent)
@@ -16,6 +18,7 @@ QmlEngine::QmlEngine(QObject *parent)
     , surfaceContent(this, "Tinywl", "SurfaceContent")
     , shadowComponent(this, "Tinywl", "Shadow")
     , geometryAnimationComponent(this, "Tinywl", "GeometryAnimation")
+    , menuBarComponent(this, "Tinywl", "OutputMenuBar")
 {
 }
 
@@ -114,6 +117,22 @@ QQuickItem *QmlEngine::createGeometryAnimation(SurfaceWrapper *surface,
     item->setParent(parent);
     item->setParentItem(parent);
     geometryAnimationComponent.completeCreate();
+
+    return item;
+}
+
+QQuickItem *QmlEngine::createMenuBar(WOutputItem *output, QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = menuBarComponent.beginCreate(context);
+    menuBarComponent.setInitialProperties(obj, {
+        {"output", QVariant::fromValue(output)}
+    });
+    auto item = qobject_cast<QQuickItem*>(obj);
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    menuBarComponent.completeCreate();
 
     return item;
 }
