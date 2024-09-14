@@ -70,8 +70,7 @@ public:
     };
     Q_ENUM(KeyboardInteractivity)
 
-    bool doesNotAcceptFocus() const override;
-    bool isActivated() const override;
+    bool hasCapability(Capability cap) const override;
     WSurface *surface() const override;
     QW_NAMESPACE::qw_layer_surface_v1 *handle() const;
     wlr_layer_surface_v1 *nativeHandle() const;
@@ -116,7 +115,6 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     bool checkNewSize(const QSize &size) override;
-    void setActivate(bool on) override;
 };
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(WLayerSurface::AnchorTypes)
