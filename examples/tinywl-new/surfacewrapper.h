@@ -54,6 +54,7 @@ public:
         XdgPopup,
         XWayland,
         Layer,
+        InputPopup,
     };
     Q_ENUM(Type)
 
