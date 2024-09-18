@@ -10,7 +10,7 @@ Item {
     required property SurfaceWrapper surface
     required property rect fromGeometry
     required property rect toGeometry
-    property int duration: 200
+    property int duration: 200 * Helper.animationSpeed
 
     signal ready
     signal finished

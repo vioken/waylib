@@ -21,6 +21,8 @@ WAYLIB_SERVER_USE_NAMESPACE
 class WallpaperImageProvider;
 class SurfaceWrapper;
 class Output;
+class Workspace;
+class WorkspaceContainer;
 class QmlEngine : public QQmlApplicationEngine
 {
     Q_OBJECT
@@ -35,6 +37,7 @@ public:
     QQuickItem *createGeometryAnimation(SurfaceWrapper *surface, const QRectF &startGeo,
                                         const QRectF &endGeo, QQuickItem *parent);
     QQuickItem *createMenuBar(WOutputItem *output, QQuickItem *parent);
+    QQuickItem *createWorkspaceSwitcher(Workspace *parent, WorkspaceContainer *from, WorkspaceContainer *to);
     QQmlComponent *surfaceContentComponent() { return &surfaceContent; }
     WallpaperImageProvider *wallpaperImageProvider();
 
@@ -47,5 +50,6 @@ private:
     QQmlComponent shadowComponent;
     QQmlComponent geometryAnimationComponent;
     QQmlComponent menuBarComponent;
+    QQmlComponent workspaceSwitcher;
     WallpaperImageProvider *wallpaperProvider = nullptr;
 };

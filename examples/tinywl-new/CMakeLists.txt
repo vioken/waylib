@@ -50,6 +50,8 @@ qt_add_qml_module(${TARGET}
     QML_FILES Border.qml
     QML_FILES GeometryAnimation.qml
     QML_FILES OutputMenuBar.qml
+    QML_FILES WorkspaceSwitcher.qml
+    QML_FILES WorkspaceProxy.qml
 
     RESOURCES
     "res/xx.jpg"

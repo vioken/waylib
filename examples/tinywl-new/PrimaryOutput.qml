@@ -9,6 +9,7 @@ import Tinywl
 OutputItem {
     id: rootOutputItem
     readonly property OutputViewport onscreenViewport: outputViewport
+    property alias wallpaperVisible: wallpaper.visible
 
     devicePixelRatio: output?.scale ?? devicePixelRatio
 
@@ -78,15 +79,10 @@ OutputItem {
     }
 
     Wallpaper {
-        id: background
-        userId: 1000
+        id: wallpaper
+        userId: Helper.currentUserId
         output: rootOutputItem.output
-        workspace: Helper.workspace.currentIndex
-
-        fillMode: Image.Tile
-        cache: false
-        asynchronous: true
-        sourceSize: Qt.size(1920, 1080)
+        workspace: Helper.workspace.current
         anchors.fill: parent
     }
 
