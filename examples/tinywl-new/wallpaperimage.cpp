@@ -4,17 +4,23 @@
 #include "wallpaperprovider.h"
 #include "wallpaperimage.h"
 #include "helper.h"
-#include "output.h"
-#include "woutput.h"
 #include "workspace.h"
 
+#include <woutput.h>
+
 #include <QDir>
+
+WAYLIB_SERVER_USE_NAMESPACE
 
 WallpaperImage::WallpaperImage(QQuickItem *parent)
     : QQuickImage(parent)
 {
     auto provider = Helper::instance()->qmlEngine()->wallpaperImageProvider();
     connect(provider, &WallpaperImageProvider::wallpaperTextureUpdate, this, &WallpaperImage::updateWallpaperTexture);
+
+    setFillMode(Tile);
+    setCache(false);
+    setAsynchronous(true);
 }
 
 WallpaperImage::~WallpaperImage()
@@ -36,15 +42,15 @@ void WallpaperImage::setUserId(const int id)
     }
 }
 
-int WallpaperImage::workspace()
+WorkspaceContainer *WallpaperImage::workspace()
 {
-    return m_workspaceId;
+    return m_workspace;
 }
 
-void WallpaperImage::setWorkspace(const int id)
+void WallpaperImage::setWorkspace(WorkspaceContainer *workspace)
 {
-    if (m_workspaceId != id) {
-        m_workspaceId = id;
+    if (m_workspace != workspace) {
+        m_workspace = workspace;
         Q_EMIT workspaceChanged();
         updateSource();
     }
@@ -58,8 +64,18 @@ WOutput* WallpaperImage::output()
 void WallpaperImage::setOutput(WOutput* output)
 {
     if (m_output != output) {
+        if (m_output)
+            QObject::disconnect(m_output, nullptr, this, nullptr);
+
         m_output = output;
         Q_EMIT outputChanged();
+
+        if (output) {
+            setSourceSize(output->transformedSize());
+            connect(output, &WOutput::transformedSizeChanged, this, [this] {
+                setSourceSize(m_output->transformedSize());
+            });
+        }
         updateSource();
     }
 }
@@ -68,12 +84,12 @@ void WallpaperImage::updateSource()
 {
     if (m_userId == -1 ||
         !m_output ||
-        m_workspaceId == -1) {
+        !m_workspace) {
         return;
     }
 
     QStringList paras;
-    paras << QString::number(m_userId) << m_output->name() << QString::number(m_workspaceId);
+    paras << QString::number(m_userId) << m_output->name() << m_workspace->name();
     QString source = "image://wallpaper/" + paras.join("/");
     setSource(source);
 }

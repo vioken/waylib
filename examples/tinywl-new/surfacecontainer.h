@@ -11,7 +11,82 @@
 
 #include <functional>
 
-class SurfaceListModel : public QAbstractListModel
+Q_MOC_INCLUDE("rootsurfacecontainer.h")
+
+template <typename T>
+class ObjectListModel : public QAbstractListModel
+{
+public:
+    explicit ObjectListModel(QByteArrayView objectName, QObject *parent = nullptr)
+        : QAbstractListModel(parent)
+        , m_name(objectName.toByteArray())
+    {
+
+    }
+
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+        if (parent.isValid())
+            return 0;
+
+        return m_objects.count();
+    }
+
+    QVariant data(const QModelIndex &index, int role) const override {
+        if (!index.isValid() || index.row() >= m_objects.count())
+            return {};
+
+        if (role == Qt::DisplayRole)
+            return QVariant::fromValue(m_objects.at(index.row()));
+
+        return {};
+    }
+    QMap<int, QVariant> itemData(const QModelIndex &index) const override {
+        if (!index.isValid() || index.row() >= m_objects.count())
+            return {};
+
+        QMap<int, QVariant> data;
+        data.insert(Qt::DisplayRole, QVariant::fromValue(m_objects.at(index.row())));
+        return data;
+    }
+    Qt::ItemFlags flags(const QModelIndex &index) const override {
+        Q_UNUSED(index);
+        return Qt::ItemIsSelectable|Qt::ItemIsEnabled;
+    }
+    QHash<int, QByteArray> roleNames() const override {
+        return {{Qt::DisplayRole, m_name}};
+    }
+
+    bool addObject(T *object) {
+        if (m_objects.contains(object))
+            return false;
+
+        beginInsertRows(QModelIndex(), m_objects.count(), m_objects.count());
+        m_objects.append(object);
+        endInsertRows();
+        return true;
+    }
+    bool removeObject(T *object) {
+        int index = m_objects.indexOf(object);
+        if (index < 0)
+            return false;
+        beginRemoveRows({}, index, index);
+        m_objects.removeAt(index);
+        endRemoveRows();
+        return true;
+    }
+    bool hasObject(T *object) const {
+        return m_objects.contains(object);
+    }
+    const QList<T*> &objects() const {
+        return m_objects;
+    }
+
+protected:
+    QByteArray m_name;
+    QList<T*> m_objects;
+};
+
+class SurfaceListModel : public ObjectListModel<SurfaceWrapper>
 {
     Q_OBJECT
     QML_ANONYMOUS
@@ -19,17 +94,21 @@ class SurfaceListModel : public QAbstractListModel
 public:
     explicit SurfaceListModel(QObject *parent = nullptr);
 
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    QMap<int, QVariant> itemData(const QModelIndex &index) const override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
-    QHash<int, QByteArray> roleNames() const override;
+    virtual void addSurface(SurfaceWrapper *surface) {
+        if (addObject(surface))
+            emit surfaceAdded(surface);
+    }
+    virtual void removeSurface(SurfaceWrapper *surface) {
+        if (removeObject(surface))
+            emit surfaceRemoved(surface);
+    }
 
-    virtual void addSurface(SurfaceWrapper *surface);
-    virtual void removeSurface(SurfaceWrapper *surface);
-    bool hasSurface(SurfaceWrapper *surface) const;
-    const QList<SurfaceWrapper*> &surfaces() const {
-        return m_surfaces;
+    inline const QList<SurfaceWrapper*> &surfaces() const {
+        return objects();
+    }
+
+    inline bool hasSurface(SurfaceWrapper *surface) const {
+        return hasObject(surface);
     }
 
 signals:
@@ -37,13 +116,15 @@ signals:
     void surfaceRemoved(SurfaceWrapper *surface);
 
 private:
-    QList<SurfaceWrapper*> m_surfaces;
+    using ObjectListModel<SurfaceWrapper>::addObject;
+    using ObjectListModel<SurfaceWrapper>::removeObject;
+    using ObjectListModel<SurfaceWrapper>::objects;
 };
 
 class SurfaceFilterModel : public SurfaceListModel
 {
     Q_OBJECT
-    QML_ELEMENT
+    QML_ANONYMOUS
 
 public:
     explicit SurfaceFilterModel(SurfaceListModel *parent);
@@ -87,17 +168,20 @@ private:
 };
 
 class Output;
+class RootSurfaceContainer;
 class SurfaceContainer : public QQuickItem
 {
     Q_OBJECT
-    QML_ELEMENT
+    Q_PROPERTY(SurfaceListModel* model READ model CONSTANT FINAL)
+    Q_PROPERTY(RootSurfaceContainer* root READ rootContainer CONSTANT FINAL)
+    QML_ANONYMOUS
 
 public:
     explicit SurfaceContainer(QQuickItem *parent = nullptr);
     explicit SurfaceContainer(SurfaceContainer *parent);
     ~SurfaceContainer() override;
 
-    SurfaceContainer *rootContainer() const;
+    RootSurfaceContainer *rootContainer() const;
     SurfaceContainer *parentContainer() const;
     QList<SurfaceContainer*> subContainers() const;
     void setQmlEngine(QQmlEngine *engine);
@@ -110,6 +194,10 @@ public:
 
     const QList<SurfaceWrapper*> &surfaces() const {
         return m_model->surfaces();
+    }
+
+    SurfaceListModel *model() const {
+        return m_model;
     }
 
 signals:

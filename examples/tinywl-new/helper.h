@@ -62,6 +62,8 @@ class Helper : public WSeatEventFilter
     Q_PROPERTY(SurfaceWrapper* activatedSurface READ activatedSurface NOTIFY activatedSurfaceChanged FINAL)
     Q_PROPERTY(RootSurfaceContainer* rootContainer READ rootContainer CONSTANT FINAL)
     Q_PROPERTY(Workspace* workspace READ workspace CONSTANT FINAL)
+    Q_PROPERTY(int currentUserId READ currentUserId WRITE setCurrentUserId NOTIFY currentUserIdChanged FINAL)
+    Q_PROPERTY(float animationSpeed READ animationSpeed WRITE setAnimationSpeed NOTIFY animationSpeedChanged FINAL)
     QML_ELEMENT
     QML_SINGLETON
 
@@ -85,6 +87,12 @@ public:
     RootSurfaceContainer *rootContainer() const;
     Output *getOutput(WOutput *output) const;
 
+    int currentUserId() const;
+    void setCurrentUserId(int uid);
+
+    float animationSpeed() const;
+    void setAnimationSpeed(float newAnimationSpeed);
+
 public Q_SLOTS:
     void activeSurface(SurfaceWrapper *wrapper);
 
@@ -93,6 +101,9 @@ signals:
     void keyboardFocusSurfaceChanged();
     void activatedSurfaceChanged();
     void primaryOutputChanged();
+    void currentUserIdChanged();
+
+    void animationSpeedChanged();
 
 private:
     void allowNonDrmOutputAutoChangeMode(WOutput *output);
@@ -150,6 +161,8 @@ private:
     LayerSurfaceContainer *m_topContainer = nullptr;
     LayerSurfaceContainer *m_overlayContainer = nullptr;
     SurfaceContainer *m_popupContainer = nullptr;
+    int m_currentUserId = -1;
+    float m_animationSpeed = 1.0;
 };
 
 Q_DECLARE_OPAQUE_POINTER(RootSurfaceContainer*)

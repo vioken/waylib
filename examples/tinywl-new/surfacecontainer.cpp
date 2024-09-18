@@ -3,80 +3,12 @@
 
 #include "surfacecontainer.h"
 #include "output.h"
+#include "rootsurfacecontainer.h"
 
 SurfaceListModel::SurfaceListModel(QObject *parent)
-    : QAbstractListModel(parent)
+    : ObjectListModel("surface", parent)
 {
 
-}
-
-int SurfaceListModel::rowCount(const QModelIndex &parent) const
-{
-    if (parent.isValid())
-        return 0;
-
-    return m_surfaces.count();
-}
-
-QVariant SurfaceListModel::data(const QModelIndex &index, int role) const
-{
-    if (!index.isValid() || index.row() >= m_surfaces.count())
-        return {};
-
-    if (role == Qt::DisplayRole)
-        return QVariant::fromValue(m_surfaces.at(index.row()));
-
-    return {};
-}
-
-QMap<int, QVariant> SurfaceListModel::itemData(const QModelIndex &index) const
-{
-    if (!index.isValid() || index.row() >= m_surfaces.count())
-        return {};
-
-    QMap<int, QVariant> data;
-    data.insert(Qt::DisplayRole, QVariant::fromValue(m_surfaces.at(index.row())));
-    return data;
-}
-
-Qt::ItemFlags SurfaceListModel::flags(const QModelIndex &index) const
-{
-    Q_UNUSED(index);
-    return Qt::ItemIsSelectable|Qt::ItemIsEnabled;
-}
-
-QHash<int, QByteArray> SurfaceListModel::roleNames() const
-{
-    return {{Qt::DisplayRole, "surface"}};
-}
-
-void SurfaceListModel::addSurface(SurfaceWrapper *surface)
-{
-    if (m_surfaces.contains(surface))
-        return;
-
-    beginInsertRows(QModelIndex(), m_surfaces.count(), m_surfaces.count());
-    m_surfaces.append(surface);
-    endInsertRows();
-
-    emit surfaceAdded(surface);
-}
-
-void SurfaceListModel::removeSurface(SurfaceWrapper *surface)
-{
-    int index = m_surfaces.indexOf(surface);
-    if (index < 0)
-        return;
-    beginRemoveRows({}, index, index);
-    m_surfaces.removeAt(index);
-    endRemoveRows();
-
-    emit surfaceRemoved(surface);
-}
-
-bool SurfaceListModel::hasSurface(SurfaceWrapper *surface) const
-{
-    return m_surfaces.contains(surface);
 }
 
 SurfaceFilterModel::SurfaceFilterModel(SurfaceListModel *parent)
@@ -165,13 +97,16 @@ SurfaceContainer::~SurfaceContainer()
     }
 }
 
-SurfaceContainer *SurfaceContainer::rootContainer() const
+RootSurfaceContainer *SurfaceContainer::rootContainer() const
 {
     SurfaceContainer *root = const_cast<SurfaceContainer*>(this);
     while (auto p = root->parentContainer()) {
         root = p;
     }
-    return root;
+
+    auto r = qobject_cast<RootSurfaceContainer*>(root);
+    Q_ASSERT(r);
+    return r;
 }
 
 SurfaceContainer *SurfaceContainer::parentContainer() const
