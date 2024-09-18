@@ -5,6 +5,7 @@
 #include "qmlengine.h"
 #include "surfacewrapper.h"
 #include "wallpaperprovider.h"
+#include "workspace.h"
 
 #include <woutputitem.h>
 
@@ -19,6 +20,7 @@ QmlEngine::QmlEngine(QObject *parent)
     , shadowComponent(this, "Tinywl", "Shadow")
     , geometryAnimationComponent(this, "Tinywl", "GeometryAnimation")
     , menuBarComponent(this, "Tinywl", "OutputMenuBar")
+    , workspaceSwitcher(this, "Tinywl", "WorkspaceSwitcher")
 {
 }
 
@@ -137,12 +139,31 @@ QQuickItem *QmlEngine::createMenuBar(WOutputItem *output, QQuickItem *parent)
     return item;
 }
 
+QQuickItem *QmlEngine::createWorkspaceSwitcher(Workspace *parent, WorkspaceContainer *from, WorkspaceContainer *to)
+{
+    auto context = qmlContext(parent);
+    auto obj = workspaceSwitcher.beginCreate(context);
+    workspaceSwitcher.setInitialProperties(obj, {
+        {"parent", QVariant::fromValue(parent)},
+        {"from", QVariant::fromValue(from)},
+        {"to", QVariant::fromValue(to)},
+    });
+    auto item = qobject_cast<QQuickItem*>(obj);
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    workspaceSwitcher.completeCreate();
+
+    return item;
+}
+
 WallpaperImageProvider *QmlEngine::wallpaperImageProvider()
 {
-    Q_ASSERT(!this->imageProvider("wallpaper"));
     if (!wallpaperProvider) {
         wallpaperProvider = new WallpaperImageProvider;
         addImageProvider("wallpaper", wallpaperProvider);
+    } else {
+        // Q_ASSERT(!this->imageProvider("wallpaper"));
     }
 
     return wallpaperProvider;

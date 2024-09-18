@@ -85,9 +85,12 @@ Helper::Helper(QObject *parent)
     , m_overlayContainer(new LayerSurfaceContainer(m_surfaceContainer))
     , m_popupContainer(new SurfaceContainer(m_surfaceContainer))
 {
+    setCurrentUserId(getuid());
+
     Q_ASSERT(!m_instance);
     m_instance = this;
 
+    m_renderWindow->setColor(Qt::black);
     m_surfaceContainer->setFlag(QQuickItem::ItemIsFocusScope, true);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     m_surfaceContainer->setFocusPolicy(Qt::StrongFocus);
@@ -442,6 +445,14 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *, QInputEvent *event)
         if (QKeySequence(kevent->keyCombination()) == QKeySequence::Quit) {
             qApp->quit();
             return true;
+        } else if (event->modifiers() == Qt::MetaModifier) {
+            if (kevent->key() == Qt::Key_Right) {
+                m_workspace->switchToNext();
+                return true;
+            } else if (kevent->key() == Qt::Key_Left) {
+                m_workspace->switchToPrev();
+                return true;
+            }
         }
     }
 
@@ -660,4 +671,30 @@ void Helper::updateLayerSurfaceContainer(SurfaceWrapper *surface)
     default:
         Q_UNREACHABLE_RETURN();
     }
+}
+
+int Helper::currentUserId() const
+{
+    return m_currentUserId;
+}
+
+void Helper::setCurrentUserId(int uid)
+{
+    if (m_currentUserId == uid)
+        return;
+    m_currentUserId = uid;
+    Q_EMIT currentUserIdChanged();
+}
+
+float Helper::animationSpeed() const
+{
+    return m_animationSpeed;
+}
+
+void Helper::setAnimationSpeed(float newAnimationSpeed)
+{
+    if (qFuzzyCompare(m_animationSpeed, newAnimationSpeed))
+        return;
+    m_animationSpeed = newAnimationSpeed;
+    emit animationSpeedChanged();
 }

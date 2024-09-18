@@ -111,7 +111,7 @@ void LayerSurfaceContainer::addSurfaceToContainer(SurfaceWrapper *surface)
 {
     Q_ASSERT(!surface->container());
     auto shell = qobject_cast<WLayerSurface*>(surface->shellSurface());
-    auto output = shell->output() ? shell->output() : Helper::instance()->rootContainer()->primaryOutput()->output();
+    auto output = shell->output() ? shell->output() : rootContainer()->primaryOutput()->output();
     if (!output) {
         qCWarning(qLcLayerShell) << "No output, will close layer surface!";
         shell->closed();

@@ -16,9 +16,16 @@
 
 WAYLIB_SERVER_USE_NAMESPACE
 
+OutputListModel::OutputListModel(QObject *parent)
+    : ObjectListModel("output", parent)
+{
+
+}
+
 RootSurfaceContainer::RootSurfaceContainer(QQuickItem *parent)
     : SurfaceContainer(parent)
     , m_outputLayout(new WOutputLayout(this))
+    , m_outputModel(new OutputListModel(this))
     , m_cursor(new WCursor(this))
 {
     m_cursor->setLayout(m_outputLayout);
@@ -89,7 +96,7 @@ void RootSurfaceContainer::destroyForSurface(WSurface *surface)
 
 void RootSurfaceContainer::addOutput(Output *output)
 {
-    m_outputList << output;
+    m_outputModel->addObject(output);
     m_outputLayout->autoAdd(output->output());
     if (!m_primaryOutput)
         setPrimaryOutput(output);
@@ -99,7 +106,7 @@ void RootSurfaceContainer::addOutput(Output *output)
 
 void RootSurfaceContainer::removeOutput(Output *output)
 {
-    m_outputList.removeOne(output);
+    m_outputModel->removeObject(output);
     SurfaceContainer::removeOutput(output);
 
     if (moveResizeState.surface && moveResizeState.surface->ownsOutput() == output) {
@@ -249,8 +256,7 @@ void RootSurfaceContainer::addBySubContainer(SurfaceContainer *sub, SurfaceWrapp
 
     if (!surface->ownsOutput()) {
         auto parentSurface = surface->parentSurface();
-        auto output = parentSurface ? parentSurface->ownsOutput() :
-            Helper::instance()->rootContainer()->primaryOutput();
+        auto output = parentSurface ? parentSurface->ownsOutput() : primaryOutput();
 
         if (auto xdgSurface = qobject_cast<WXdgSurface*>(surface->shellSurface())) {
             if (xdgSurface->isPopup() && parentSurface->type() != SurfaceWrapper::Type::Layer) {
@@ -350,6 +356,11 @@ void RootSurfaceContainer::setPrimaryOutput(Output *newPrimaryOutput)
     emit primaryOutputChanged();
 }
 
+const QList<Output*> &RootSurfaceContainer::outputs() const
+{
+    return m_outputModel->objects();
+}
+
 void RootSurfaceContainer::ensureCursorVisible()
 {
     const auto cursorPos = m_cursor->position();
@@ -421,8 +432,8 @@ void RootSurfaceContainer::ensureSurfaceNormalPositionValid(SurfaceWrapper *surf
         return;
 
     QList<QRectF> outputRects;
-    outputRects.reserve(m_outputList.size());
-    for (auto o : std::as_const(m_outputList))
+    outputRects.reserve(outputs().size());
+    for (auto o : outputs())
         outputRects << o->validGeometry();
 
     // Ensure window is not outside the screen
@@ -449,4 +460,9 @@ void RootSurfaceContainer::ensureSurfaceNormalPositionValid(SurfaceWrapper *surf
     }
 
     surface->moveNormalGeometryInOutput(normalGeo.topLeft());
+}
+
+OutputListModel *RootSurfaceContainer::outputModel() const
+{
+    return m_outputModel;
 }

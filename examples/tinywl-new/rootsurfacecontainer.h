@@ -16,12 +16,22 @@ WAYLIB_SERVER_END_NAMESPACE
 
 WAYLIB_SERVER_USE_NAMESPACE
 
+class OutputListModel : public ObjectListModel<Output>
+{
+    Q_OBJECT
+    QML_ANONYMOUS
+
+public:
+    explicit OutputListModel(QObject *parent = nullptr);
+};
+
 class RootSurfaceContainer : public SurfaceContainer
 {
     Q_OBJECT
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WOutputLayout *outputLayout READ outputLayout CONSTANT FINAL)
     Q_PROPERTY(WAYLIB_SERVER_NAMESPACE::WCursor *cursor READ cursor CONSTANT FINAL)
     Q_PROPERTY(Output *primaryOutput READ primaryOutput WRITE setPrimaryOutput NOTIFY primaryOutputChanged FINAL)
+    Q_PROPERTY(OutputListModel* outputModel READ outputModel CONSTANT FINAL)
 
 public:
     explicit RootSurfaceContainer(QQuickItem *parent);
@@ -47,6 +57,7 @@ public:
     Output *cursorOutput() const;
     Output *primaryOutput() const;
     void setPrimaryOutput(Output *newPrimaryOutput);
+    const QList<Output*> &outputs() const;
 
     void addOutput(Output *output) override;
     void removeOutput(Output *output) override;
@@ -55,6 +66,8 @@ public:
     void doMoveResize(const QPointF &incrementPos);
     void endMoveResize();
     SurfaceWrapper *moveResizeSurface() const;
+
+    OutputListModel *outputModel() const;
 
 public slots:
     void startMove(SurfaceWrapper *surface);
@@ -80,7 +93,7 @@ private:
     void ensureSurfaceNormalPositionValid(SurfaceWrapper *surface);
 
     WOutputLayout *m_outputLayout = nullptr;
-    QList<Output*> m_outputList;
+    OutputListModel *m_outputModel = nullptr;
     QPointer<Output> m_primaryOutput;
     WCursor *m_cursor = nullptr;
     WSurfaceItem *m_dargSurfaceItem = nullptr;
