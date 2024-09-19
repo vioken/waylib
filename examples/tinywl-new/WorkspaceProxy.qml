@@ -18,9 +18,11 @@ Item {
             id: loader
 
             required property SurfaceWrapper surface
+            required property int orderIndex
 
             x: surface.x - output.outputItem.x
             y: surface.y - output.outputItem.y
+            z: orderIndex
             active: surface.ownsOutput === output
                     && surface.surfaceState !== SurfaceWrapper.State.Minimized
             sourceComponent: SurfaceProxy {

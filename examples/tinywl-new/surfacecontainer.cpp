@@ -11,6 +11,45 @@ SurfaceListModel::SurfaceListModel(QObject *parent)
 
 }
 
+QHash<int, QByteArray> SurfaceListModel::roleNames() const
+{
+    auto roleMap = ObjectListModel::roleNames();
+    roleMap.insert(Qt::InitialSortOrderRole, "orderIndex");
+
+    return roleMap;
+}
+
+QMap<int, QVariant> SurfaceListModel::itemData(const QModelIndex &index) const
+{
+    auto datas = ObjectListModel::itemData(index);
+    if (datas.isEmpty())
+        return datas;
+
+    auto surface = surfaces().at(index.row());
+    auto container = surface->container();
+    const auto orderIndex = container->childItems().indexOf(surface);
+    Q_ASSERT(orderIndex >= 0);
+    datas.insert(Qt::InitialSortOrderRole, orderIndex);
+
+    return datas;
+}
+
+QVariant SurfaceListModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid() || index.row() >= m_objects.count())
+        return {};
+
+    if (role == Qt::InitialSortOrderRole) {
+        auto surface = surfaces().at(index.row());
+        auto container = surface->container();
+        const auto orderIndex = container->childItems().indexOf(surface);
+        Q_ASSERT(orderIndex >= 0);
+        return orderIndex;
+    }
+
+    return ObjectListModel::data(index, role);
+}
+
 SurfaceFilterModel::SurfaceFilterModel(SurfaceListModel *parent)
     : SurfaceListModel(parent)
 {
