@@ -52,8 +52,8 @@ public:
 
     int currentIndex() const;
     void setCurrentIndex(int newCurrentIndex);
-    void switchToNext();
-    void switchToPrev();
+    Q_INVOKABLE void switchToNext();
+    Q_INVOKABLE void switchToPrev();
     void switchTo(int index);
 
     WorkspaceContainer *current() const;
