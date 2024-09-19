@@ -163,8 +163,6 @@ WallpaperImageProvider *QmlEngine::wallpaperImageProvider()
         wallpaperProvider = new WallpaperImageProvider;
         Q_ASSERT(!this->imageProvider("wallpaper"));
         addImageProvider("wallpaper", wallpaperProvider);
-    } else {
-        // Q_ASSERT(!this->imageProvider("wallpaper"));
     }
 
     return wallpaperProvider;
