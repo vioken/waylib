@@ -103,6 +103,10 @@ public:
             emit surfaceRemoved(surface);
     }
 
+    QHash<int, QByteArray> roleNames() const override;
+    QMap<int, QVariant> itemData(const QModelIndex &index) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+
     inline const QList<SurfaceWrapper*> &surfaces() const {
         return objects();
     }
