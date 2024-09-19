@@ -139,9 +139,9 @@ QQuickItem *QmlEngine::createMenuBar(WOutputItem *output, QQuickItem *parent)
 
 WallpaperImageProvider *QmlEngine::wallpaperImageProvider()
 {
-    Q_ASSERT(!this->imageProvider("wallpaper"));
     if (!wallpaperProvider) {
         wallpaperProvider = new WallpaperImageProvider;
+        Q_ASSERT(!this->imageProvider("wallpaper"));
         addImageProvider("wallpaper", wallpaperProvider);
     }
 
