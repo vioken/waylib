@@ -155,21 +155,24 @@ void Helper::init()
         m_seat->detachInputDevice(device);
     });
 
-    connect(m_backend, &WBackend::outputAdded, this, [this] (WOutput *output) {
+    auto wOutputManager = m_server->attach<WOutputManagerV1>();
+    connect(m_backend, &WBackend::outputAdded, this, [this, wOutputManager] (WOutput *output) {
         allowNonDrmOutputAutoChangeMode(output);
         auto o = Output::createPrimary(output, qmlEngine(), this);
         o->outputItem()->setParentItem(m_renderWindow->contentItem());
         o->outputItem()->stackBefore(m_surfaceContainer);
         m_outputList.append(o);
+        wOutputManager->newOutput(output);
 
         m_surfaceContainer->addOutput(o);
         enableOutput(output);
     });
 
-    connect(m_backend, &WBackend::outputRemoved, this, [this] (WOutput *output) {
+    connect(m_backend, &WBackend::outputRemoved, this, [this, wOutputManager] (WOutput *output) {
         auto index = indexOfOutput(output);
         Q_ASSERT(index >= 0);
         const auto o = m_outputList.takeAt(index);
+        wOutputManager->removeOutput(output);
         m_surfaceContainer->removeOutput(o);
         delete o;
     });
@@ -343,7 +346,6 @@ void Helper::init()
         }
     });
 
-    auto wOutputManager = m_server->attach<WOutputManagerV1>();
     connect(wOutputManager, &WOutputManagerV1::requestTestOrApply, this, [this, wOutputManager]
             (qw_output_configuration_v1 *config, bool onlyTest) {
         QList<WOutputState> states = wOutputManager->stateListPending();
