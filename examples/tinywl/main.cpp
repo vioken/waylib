@@ -100,6 +100,7 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
         qFatal("Failed to create renderer");
     }
 
+    m_wOutputManager = m_server->attach<WOutputManagerV1>();
     connect(backend, &WBackend::outputAdded, this, [backend, this, window, qmlEngine] (WOutput *output) {
         allowNonDrmOutputAutoChangeMode(output);
 
@@ -109,10 +110,12 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
         initProperties.setProperty("x", qmlEngine->toScriptValue(outputLayout()->implicitWidth()));
 
         m_outputCreator->add(output, initProperties);
+        m_wOutputManager->newOutput(output);
     });
 
     connect(backend, &WBackend::outputRemoved, this, [this] (WOutput *output) {
         m_outputCreator->removeByOwner(output);
+        m_wOutputManager->newOutput(output);
     });
 
     connect(backend, &WBackend::inputAdded, this, [this] (WInputDevice *device) {
@@ -236,7 +239,7 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
             }
         }
     });
-    m_wOutputManager = m_server->attach<WOutputManagerV1>();
+
     connect(m_wOutputManager, &WOutputManagerV1::requestTestOrApply, this, [this]
             (qw_output_configuration_v1 *config, bool onlyTest) {
         QList<WOutputState> states = m_wOutputManager->stateListPending();
