@@ -234,9 +234,9 @@ void Helper::initProtocols(WOutputRenderWindow *window, QQmlEngine *qmlEngine)
             r = gamma_control->table;
             g = gamma_control->table + gamma_control->ramp_size;
             b = gamma_control->table + 2 * gamma_control->ramp_size;
-            if (!wOutput->setGammaLut(ramp_size, r, g, b)) {
-                qw_gamma_control_v1::from(gamma_control)->send_failed_and_destroy();
-            }
+        }
+        if (!wOutput->setGammaLut(ramp_size, r, g, b)) {
+            qw_gamma_control_v1::from(gamma_control)->send_failed_and_destroy();
         }
     });
 
