@@ -51,7 +51,7 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
         Q_EMIT requestMove();
     });
     shellSurface->safeConnect(&WToplevelSurface::requestResize, this, [this](WSeat *, Qt::Edges edge, quint32) {
-        requestResize(edge);
+        Q_EMIT requestResize(edge);
     });
     shellSurface->safeConnect(&WToplevelSurface::requestFullscreen, this, &SurfaceWrapper::requestFullscreen);
     shellSurface->safeConnect(&WToplevelSurface::requestCancelFullscreen, this, &SurfaceWrapper::requestCancelFullscreen);
@@ -69,6 +69,13 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
         m_surfaceItem->setFocusPolicy(Qt::NoFocus);
 #endif
+    }
+
+    if (type == Type::XdgToplevel || type == Type::XWayland) {
+        shellSurface->safeConnect(&WToplevelSurface::requestShowWindowMenu, this, [this](WSeat *, QPoint pos, quint32) {
+            Q_EMIT requestShowWindowMenu(pos);
+        });
+        m_windowMenu = m_engine->createWindowMenu(this, this);
     }
 }
 
@@ -428,7 +435,7 @@ void SurfaceWrapper::updateTitleBar()
         m_titleBar = nullptr;
         m_surfaceItem->setTopPadding(0);
     } else {
-        m_titleBar = m_engine->createTitleBar(this, m_surfaceItem);
+        m_titleBar = m_engine->createTitleBar(this, m_surfaceItem, m_windowMenu);
         m_titleBar->setZ(static_cast<int>(WSurfaceItem::ZOrder::ContentItem));
         m_surfaceItem->setTopPadding(m_titleBar->height());
         connect(m_titleBar, &QQuickItem::heightChanged, this, [this] {
@@ -904,3 +911,17 @@ void SurfaceWrapper::setNoCornerRadius(bool newNoCornerRadius)
     m_noCornerRadius = newNoCornerRadius;
     emit noCornerRadiusChanged();
 }
+
+int SurfaceWrapper::workspaceId() const
+{
+    return m_workspaceId;
+}
+
+void SurfaceWrapper::setWorkspaceId(int newWorkspaceId)
+{
+    if (m_workspaceId == newWorkspaceId)
+        return;
+    m_workspaceId = newWorkspaceId;
+    Q_EMIT workspaceIdChanged();
+}
+

@@ -47,6 +47,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(bool clipInOutput READ clipInOutput WRITE setClipInOutput NOTIFY clipInOutputChanged FINAL)
     Q_PROPERTY(bool noTitleBar READ noTitleBar RESET resetNoTitleBar NOTIFY noTitleBarChanged FINAL)
     Q_PROPERTY(bool noCornerRadius READ noCornerRadius NOTIFY noCornerRadiusChanged FINAL)
+    Q_PROPERTY(int workspaceId READ workspaceId NOTIFY workspaceIdChanged FINAL)
 
 public:
     enum class Type {
@@ -147,6 +148,9 @@ public:
     bool noCornerRadius() const;
     void setNoCornerRadius(bool newNoCornerRadius);
 
+    int workspaceId() const;
+    void setWorkspaceId(int newWorkspaceId);
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
@@ -162,7 +166,7 @@ public Q_SLOTS:
     bool stackAfter(QQuickItem *item);
     void stackToLast();
 
-signals:
+Q_SIGNALS:
     void boundingRectChanged();
     void ownsOutputChanged();
     void normalGeometryChanged();
@@ -175,6 +179,7 @@ signals:
     void radiusChanged();
     void requestMove(); // for titlebar
     void requestResize(Qt::Edges edges);
+    void requestShowWindowMenu(QPoint pos);
     void geometryChanged();
     void containerChanged();
     void visibleDecorationChanged();
@@ -182,6 +187,7 @@ signals:
     void noDecorationChanged();
     void noTitleBarChanged();
     void noCornerRadiusChanged();
+    void workspaceIdChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -215,6 +221,7 @@ private:
     WSurfaceItem *m_surfaceItem = nullptr;
     QPointer<QQuickItem> m_titleBar;
     QPointer<QQuickItem> m_decoration;
+    QPointer<QObject> m_windowMenu;
     QPointer<QQuickItem> m_geometryAnimation;
     QRectF m_boundedRect;
     QRectF m_normalGeometry;
@@ -229,6 +236,7 @@ private:
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_previousSurfaceState, State::Normal, &SurfaceWrapper::previousSurfaceStateChanged)
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_surfaceState, State::Normal, &SurfaceWrapper::surfaceStateChanged)
     qreal m_radius = 18.0;
+    int m_workspaceId = -1;
 
     struct TitleBarState {
         constexpr static uint Default = 0;

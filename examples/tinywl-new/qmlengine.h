@@ -29,8 +29,9 @@ class QmlEngine : public QQmlApplicationEngine
 public:
     explicit QmlEngine(QObject *parent = nullptr);
 
-    QQuickItem *createTitleBar(SurfaceWrapper *surface, QQuickItem *parent);
+    QQuickItem *createTitleBar(SurfaceWrapper *surface, QQuickItem *parent, QObject *windowMenu);
     QQuickItem *createDecoration(SurfaceWrapper *surface, QQuickItem *parent);
+    QObject *createWindowMenu(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createBorder(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
     QQuickItem *createShadow(QQuickItem *parent);
@@ -44,6 +45,7 @@ public:
 private:
     QQmlComponent titleBarComponent;
     QQmlComponent decorationComponent;
+    QQmlComponent windowMenuComponent;
     QQmlComponent borderComponent;
     QQmlComponent taskBarComponent;
     QQmlComponent surfaceContent;

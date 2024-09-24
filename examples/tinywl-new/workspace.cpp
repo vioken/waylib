@@ -41,9 +41,10 @@ Workspace::Workspace(SurfaceContainer *parent)
 void Workspace::addSurface(SurfaceWrapper *surface, int workspaceIndex)
 {
     doAddSurface(surface, false);
-    auto container = workspaceIndex >= 0
-                         ? m_containers.at(workspaceIndex)
-                         : m_containers.at(m_currentIndex);
+    if (workspaceIndex < 0)
+        workspaceIndex = m_currentIndex;
+
+    auto container = m_containers.at(workspaceIndex);
 
     if (container->m_model->hasSurface(surface))
         return;
@@ -58,6 +59,7 @@ void Workspace::addSurface(SurfaceWrapper *surface, int workspaceIndex)
     }
 
     container->addSurface(surface);
+    surface->setWorkspaceId(workspaceIndex);
     if (!surface->ownsOutput())
         surface->setOwnsOutput(rootContainer()->primaryOutput());
 }
@@ -70,6 +72,7 @@ void Workspace::removeSurface(SurfaceWrapper *surface)
     for (auto container : std::as_const(m_containers)) {
         if (container->surfaces().contains(surface)) {
             container->removeSurface(surface);
+            surface->setWorkspaceId(-1);
             break;
         }
     }
@@ -131,6 +134,11 @@ WorkspaceContainer *Workspace::container(int index) const
     if (index < 0 || index >= m_containers.size())
         return nullptr;
     return m_containers.at(index);
+}
+
+int Workspace::count() const
+{
+    return m_containers.size();
 }
 
 int Workspace::currentIndex() const
