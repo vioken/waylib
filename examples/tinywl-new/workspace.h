@@ -37,19 +37,21 @@ class Workspace : public SurfaceContainer
     Q_OBJECT
     Q_PROPERTY(int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentChanged FINAL)
     Q_PROPERTY(WorkspaceContainer* current READ current WRITE setCurrent NOTIFY currentChanged FINAL)
+    Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
     QML_ANONYMOUS
 
 public:
     explicit Workspace(SurfaceContainer *parent);
 
-    void addSurface(SurfaceWrapper *surface, int workspaceIndex = -1);
+    Q_INVOKABLE void addSurface(SurfaceWrapper *surface, int workspaceIndex = -1);
     void removeSurface(SurfaceWrapper *surface) override;
     int containerIndexOfSurface(SurfaceWrapper *surface) const;
 
-    int createContainer(const QString &name, bool visible = false);
-    void removeContainer(int index);
+    Q_INVOKABLE int createContainer(const QString &name, bool visible = false);
+    Q_INVOKABLE void removeContainer(int index);
     WorkspaceContainer *container(int index) const;
 
+    int count() const;
     int currentIndex() const;
     void setCurrentIndex(int newCurrentIndex);
     Q_INVOKABLE void switchToNext();
@@ -61,6 +63,7 @@ public:
 
 signals:
     void currentChanged();
+    void countChanged();
 
 private:
     void updateSurfaceOwnsOutput(SurfaceWrapper *surface);

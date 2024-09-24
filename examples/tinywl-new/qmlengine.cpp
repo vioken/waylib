@@ -15,6 +15,7 @@ QmlEngine::QmlEngine(QObject *parent)
     : QQmlApplicationEngine(parent)
     , titleBarComponent(this, "Tinywl", "TitleBar")
     , decorationComponent(this, "Tinywl", "Decoration")
+    , windowMenuComponent(this, "Tinywl", "WindowMenu")
     , taskBarComponent(this, "Tinywl", "TaskBar")
     , surfaceContent(this, "Tinywl", "SurfaceContent")
     , shadowComponent(this, "Tinywl", "Shadow")
@@ -24,12 +25,13 @@ QmlEngine::QmlEngine(QObject *parent)
 {
 }
 
-QQuickItem *QmlEngine::createTitleBar(SurfaceWrapper *surface, QQuickItem *parent)
+QQuickItem *QmlEngine::createTitleBar(SurfaceWrapper *surface, QQuickItem *parent, QObject *windowMenu)
 {
     auto context = qmlContext(parent);
     auto obj = titleBarComponent.beginCreate(context);
     titleBarComponent.setInitialProperties(obj, {
-        {"surface", QVariant::fromValue(surface)}
+        {"surface", QVariant::fromValue(surface)},
+        {"menu", QVariant::fromValue(windowMenu)}
     });
     auto item = qobject_cast<QQuickItem*>(obj);
     Q_ASSERT(item);
@@ -45,7 +47,7 @@ QQuickItem *QmlEngine::createDecoration(SurfaceWrapper *surface, QQuickItem *par
     auto context = qmlContext(parent);
     auto obj = decorationComponent.beginCreate(context);
     decorationComponent.setInitialProperties(obj, {
-        {"surface", QVariant::fromValue(surface)}
+        {"surface", QVariant::fromValue(surface)},
     });
     auto item = qobject_cast<QQuickItem*>(obj);
     Q_ASSERT(item);
@@ -54,6 +56,19 @@ QQuickItem *QmlEngine::createDecoration(SurfaceWrapper *surface, QQuickItem *par
     decorationComponent.completeCreate();
 
     return item;
+}
+
+QObject *QmlEngine::createWindowMenu(SurfaceWrapper *surface, QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = windowMenuComponent.beginCreate(context);
+    windowMenuComponent.setInitialProperties(obj, {
+        {"surface", QVariant::fromValue(surface)}
+    });
+    obj->setParent(parent);
+    windowMenuComponent.completeCreate();
+
+    return obj;
 }
 
 QQuickItem *QmlEngine::createBorder(SurfaceWrapper *surface, QQuickItem *parent)
