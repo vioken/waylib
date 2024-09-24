@@ -691,14 +691,23 @@ bool SurfaceWrapper::stackBefore(QQuickItem *item)
     do {
         auto s = qobject_cast<SurfaceWrapper*>(item);
         if (s) {
-            if (hasChild(s) || s->hasChild(this))
+            if (s->hasChild(this))
                 return false;
+            if (hasChild(s)) {
+                QQuickItem::stackBefore(item);
+                break;
+            }
             item = s->stackFirstSurface();
 
             if (m_parentSurface && m_parentSurface == s->m_parentSurface) {
                 QQuickItem::stackBefore(item);
-                m_parentSurface->m_subSurfaces.removeOne(this);
-                m_parentSurface->m_subSurfaces.prepend(this);
+
+                int myIndex = m_parentSurface->m_subSurfaces.lastIndexOf(this);
+                int siblingIndex = m_parentSurface->m_subSurfaces.lastIndexOf(s);
+                Q_ASSERT(myIndex != -1 && siblingIndex != -1);
+                if (myIndex != siblingIndex - 1)
+                    m_parentSurface->m_subSurfaces.move(myIndex,
+                                                        myIndex < siblingIndex ? siblingIndex - 1 : siblingIndex);
                 break;
             }
         }
@@ -725,14 +734,24 @@ bool SurfaceWrapper::stackAfter(QQuickItem *item)
     do {
         auto s = qobject_cast<SurfaceWrapper*>(item);
         if (s) {
-            if (hasChild(s) || s->hasChild(this))
+            if (hasChild(s))
                 return false;
+            if (s->hasChild(this)) {
+                QQuickItem::stackAfter(item);
+                break;
+            }
             item = s->stackLastSurface();
 
             if (m_parentSurface && m_parentSurface == s->m_parentSurface) {
                 QQuickItem::stackAfter(item);
-                m_parentSurface->m_subSurfaces.removeOne(this);
-                m_parentSurface->m_subSurfaces.append(this);
+
+                int myIndex = m_parentSurface->m_subSurfaces.lastIndexOf(this);
+                int siblingIndex = m_parentSurface->m_subSurfaces.lastIndexOf(s);
+                Q_ASSERT(myIndex != -1 && siblingIndex != -1);
+                if (myIndex != siblingIndex + 1)
+                    m_parentSurface->m_subSurfaces.move(myIndex,
+                                                        myIndex > siblingIndex ? siblingIndex + 1 : siblingIndex);
+
                 break;
             }
         }
