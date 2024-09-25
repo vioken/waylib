@@ -12,6 +12,9 @@
 #include <wxdgsurface.h>
 #include <wlayersurface.h>
 #include <winputpopupsurface.h>
+#include <woutputviewport.h>
+#include <woutputlayout.h>
+#include <wquicktextureproxy.h>
 
 #include <QQmlEngine>
 
@@ -37,6 +40,8 @@ Output *Output::createPrimary(WOutput *output, QQmlEngine *engine, QObject *pare
     o->connect(outputItem, &WOutputItem::geometryChanged, o, &Output::layoutAllSurfaces);
 
     auto contentItem = Helper::instance()->window()->contentItem();
+    outputItem->setParentItem(contentItem);
+
     o->m_taskBar = Helper::instance()->qmlEngine()->createTaskBar(o, contentItem);
     o->m_taskBar->setZ(RootSurfaceContainer::TaskBarZOrder);
 
@@ -50,7 +55,10 @@ Output *Output::createPrimary(WOutput *output, QQmlEngine *engine, QObject *pare
 Output *Output::createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, QObject *parent)
 {
     QQmlComponent delegate(engine, "Tinywl", "CopyOutput");
-    QObject *obj = delegate.create(engine->rootContext());
+    QObject *obj = delegate.createWithInitialProperties({
+                                                         {"targetOutputItem", QVariant::fromValue(proxy->outputItem())},
+                                                         }, engine->rootContext());
+
     WOutputItem *outputItem = qobject_cast<WOutputItem *>(obj);
     Q_ASSERT(outputItem);
     QQmlEngine::setObjectOwnership(outputItem, QQmlEngine::CppOwnership);
@@ -61,7 +69,18 @@ Output *Output::createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, Q
     o->m_proxy = proxy;
     obj->setParent(o);
 
+    auto contentItem = Helper::instance()->window()->contentItem();
+    outputItem->setParentItem(contentItem);
+    o->updatePrimaryOutputHardwareLayers();
+    connect(getOnscreenViewport(proxy), &WOutputViewport::hardwareLayersChanged,
+            o, &Output::updatePrimaryOutputHardwareLayers);
+
     return o;
+}
+
+WOutputViewport *Output::getOnscreenViewport(Output *proxy)
+{
+    return proxy->outputItem()->property("onscreenViewport").value<WOutputViewport *>();
 }
 
 Output::Output(WOutputItem *output, QObject *parent)
@@ -82,6 +101,11 @@ Output::~Output()
     if (m_menuBar) {
         delete m_menuBar;
         m_menuBar = nullptr;
+    }
+
+    if (m_item) {
+        delete m_item;
+        m_item = nullptr;
     }
 }
 
@@ -369,6 +393,45 @@ void Output::layoutAllSurfaces()
 {
     layoutLayerSurfaces();
     layoutNonLayerSurfaces();
+}
+
+void Output::updatePositionFromLayout()
+{
+    WOutputLayout * layout = output()->layout();
+    Q_ASSERT(layout);
+
+    auto *layoutOutput = layout->get(output()->nativeHandle());
+    QPointF pos(layoutOutput->x, layoutOutput->y);
+    m_item->setPosition(pos);
+}
+
+std::pair<WOutputViewport*, QQuickItem*> Output::getOutputItemProperty()
+{
+    WOutputViewport *viewportCopy = outputItem()->findChild<WOutputViewport*>({}, Qt::FindDirectChildrenOnly);
+    Q_ASSERT(viewportCopy);
+    auto textureProxy = outputItem()->findChild<WQuickTextureProxy*>();
+    Q_ASSERT(textureProxy);
+
+    return std::make_pair(viewportCopy, textureProxy);
+}
+
+void Output::updatePrimaryOutputHardwareLayers()
+{
+    auto o = Helper::instance()->rootContainer()->primaryOutput();
+    WOutputViewport *viewportPrimary = getOnscreenViewport(o);
+    std::pair<WOutputViewport*, QQuickItem*> copyOutput = getOutputItemProperty();
+    const auto layers = viewportPrimary->hardwareLayers();
+    for (auto layer : layers) {
+        if (m_hardwareLayersOfPrimaryOutput.removeOne(layer))
+            continue;
+        Helper::instance()->window()->attach(layer, copyOutput.first, viewportPrimary, copyOutput.second);
+    }
+
+    for (auto oldLayer : std::as_const(m_hardwareLayersOfPrimaryOutput)) {
+        Helper::instance()->window()->detach(oldLayer, copyOutput.first);
+    }
+
+    m_hardwareLayersOfPrimaryOutput = layers;
 }
 
 QMargins Output::exclusiveZone() const
