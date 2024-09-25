@@ -31,7 +31,7 @@ void WOutputLayoutPrivate::doAdd(WOutput *output)
     outputs.append(output);
 
     W_Q(WOutputLayout);
-    output->setLayout(q);
+    Q_ASSERT(output->layout() == q);
 
     output->safeConnect(&WOutput::effectiveSizeChanged, q, [this] {
         updateImplicitSize();
@@ -82,6 +82,7 @@ const QList<WOutput*> &WOutputLayout::outputs() const
 void WOutputLayout::add(WOutput *output, const QPoint &pos)
 {
     W_D(WOutputLayout);
+    output->setLayout(this);
     qw_output_layout::add(output->nativeHandle(), pos.x(), pos.y());
     d->doAdd(output);
 }
@@ -89,6 +90,7 @@ void WOutputLayout::add(WOutput *output, const QPoint &pos)
 void WOutputLayout::autoAdd(WOutput *output)
 {
     W_D(WOutputLayout);
+    output->setLayout(this);
     qw_output_layout::add_auto(output->nativeHandle());
     d->doAdd(output);
 }
