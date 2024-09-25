@@ -7,8 +7,8 @@ import Waylib.Server
 OutputItem {
     id: outputItem
 
-    required property OutputItem targetOutputItem
-    required property OutputViewport targetViewport
+    required property PrimaryOutput targetOutputItem
+    property OutputViewport targetViewport: targetOutputItem.onscreenViewport
 
     devicePixelRatio: output?.scale ?? devicePixelRatio
 
@@ -40,7 +40,7 @@ OutputItem {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "I'm a duplicate of the primary screen"
             font.pointSize: 18
-            color: "yellow"
+            color: "red"
         }
     }
 

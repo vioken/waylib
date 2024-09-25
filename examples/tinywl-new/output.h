@@ -15,6 +15,10 @@ Q_DECLARE_LOGGING_CATEGORY(qLcLayerShell)
 WAYLIB_SERVER_BEGIN_NAMESPACE
 class WOutput;
 class WOutputItem;
+class WOutputViewport;
+class WOutputLayout;
+class WOutputLayer;
+class WQuickTextureProxy;
 class WSeat;
 WAYLIB_SERVER_END_NAMESPACE
 
@@ -38,6 +42,7 @@ public:
 
     static Output *createPrimary(WOutput *output, QQmlEngine *engine, QObject *parent = nullptr);
     static Output *createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, QObject *parent = nullptr);
+    static WOutputViewport *getOnscreenViewport(Output *proxy);
 
     explicit Output(WOutputItem *output, QObject *parent = nullptr);
     ~Output();
@@ -55,10 +60,14 @@ public:
     QRectF geometry() const;
     QRectF validRect() const;
     QRectF validGeometry() const;
+    void updatePositionFromLayout();
 
 signals:
     void exclusiveZoneChanged();
     void moveResizeFinised();
+
+public Q_SLOTS:
+    void updatePrimaryOutputHardwareLayers();
 
 private:
     friend class SurfaceWrapper;
@@ -70,6 +79,7 @@ private:
     void layoutNonLayerSurface(SurfaceWrapper *surface, const QSizeF &sizeDiff);
     void layoutNonLayerSurfaces();
     void layoutAllSurfaces();
+    std::pair<WOutputViewport*, QQuickItem*> getOutputItemProperty();
 
     Type m_type;
     WOutputItem *m_item;
@@ -85,6 +95,7 @@ private:
     QList<std::pair<QObject*, int>> m_rightExclusiveZones;
 
     QSizeF m_lastSizeOnLayoutNonLayerSurfaces;
+    QList<WOutputLayer *> m_hardwareLayersOfPrimaryOutput;
 };
 
 Q_DECLARE_OPAQUE_POINTER(WAYLIB_SERVER_NAMESPACE::WOutputItem*)
