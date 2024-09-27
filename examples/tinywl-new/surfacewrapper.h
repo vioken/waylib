@@ -48,6 +48,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(bool noTitleBar READ noTitleBar RESET resetNoTitleBar NOTIFY noTitleBarChanged FINAL)
     Q_PROPERTY(bool noCornerRadius READ noCornerRadius NOTIFY noCornerRadiusChanged FINAL)
     Q_PROPERTY(int workspaceId READ workspaceId NOTIFY workspaceIdChanged FINAL)
+    Q_PROPERTY(int alwaysOnTop READ alwaysOnTop WRITE setAlwaysOnTop NOTIFY alwaysOnTopChanged FINAL)
 
 public:
     enum class Type {
@@ -151,6 +152,9 @@ public:
     int workspaceId() const;
     void setWorkspaceId(int newWorkspaceId);
 
+    bool alwaysOnTop() const;
+    void setAlwaysOnTop(bool alwaysOnTop);
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
@@ -188,6 +192,7 @@ Q_SIGNALS:
     void noTitleBarChanged();
     void noCornerRadiusChanged();
     void workspaceIdChanged();
+    void alwaysOnTopChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -211,6 +216,7 @@ private:
     Q_SLOT void onAnimationReady();
     Q_SLOT void onAnimationFinished();
     bool startStateChangeAnimation(SurfaceWrapper::State targetState, const QRectF &targetGeometry);
+    void updateExplicitAlwaysOnTop();
 
     QmlEngine *m_engine;
     QPointer<SurfaceContainer> m_container;
@@ -237,6 +243,7 @@ private:
     Q_OBJECT_BINDABLE_PROPERTY_WITH_ARGS(SurfaceWrapper, SurfaceWrapper::State, m_surfaceState, State::Normal, &SurfaceWrapper::surfaceStateChanged)
     qreal m_radius = 18.0;
     int m_workspaceId = -1;
+    int m_explicitAlwaysOnTop = 0;
 
     struct TitleBarState {
         constexpr static uint Default = 0;
@@ -250,4 +257,5 @@ private:
     uint m_noDecoration:1;
     uint m_titleBarState:2;
     uint m_noCornerRadius:1;
+    uint m_alwaysOnTop:1;
 };

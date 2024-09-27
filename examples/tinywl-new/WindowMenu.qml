@@ -39,12 +39,12 @@ Menu {
     }
 
     MenuItem {
-        text: qsTr("Alway's on Top")
-        // TODO:: not support now
+        text: surface.alwaysOnTop ? qsTr("Not always on Top") : qsTr("Always on Top")
+        onTriggered: surface.alwaysOnTop = !surface.alwaysOnTop;
     }
 
     MenuItem {
-        text: qsTr("Alway's on Visible Workspace")
+        text: qsTr("Always on Visible Workspace")
         // TODO:: not support now
     }
 
