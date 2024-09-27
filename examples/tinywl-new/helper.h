@@ -107,6 +107,7 @@ public:
 
 public Q_SLOTS:
     void activeSurface(SurfaceWrapper *wrapper);
+    void fakePressSurfaceBottomRightToReszie(SurfaceWrapper *surface);
 
 signals:
     void socketEnabledChanged();
@@ -176,8 +177,8 @@ private:
     SurfaceContainer *m_popupContainer = nullptr;
     int m_currentUserId = -1;
     float m_animationSpeed = 1.0;
-
     OutputMode m_mode = OutputMode::Extension;
+    std::optional<QPointF> m_fakelastPressedPosition;
 };
 
 Q_DECLARE_OPAQUE_POINTER(RootSurfaceContainer*)
