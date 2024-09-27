@@ -49,13 +49,13 @@ Menu {
     }
 
     MenuItem {
-        text: qsTr("Move to Work Space Left")
+        text: qsTr("Move to Left Work Space")
         enabled: surface.workspaceId !== 0
         onTriggered: Helper.workspace.addSurface(surface, surface.workspaceId - 1)
     }
 
     MenuItem {
-        text: qsTr("Move to Work Space Right")
+        text: qsTr("Move to Right Work Space")
         enabled: surface.workspaceId !== Helper.workspace.count - 1
         onTriggered: Helper.workspace.addSurface(surface, surface.workspaceId + 1)
     }
