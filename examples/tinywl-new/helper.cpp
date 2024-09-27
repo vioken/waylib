@@ -424,6 +424,14 @@ void Helper::activeSurface(SurfaceWrapper *wrapper)
     activeSurface(wrapper, Qt::OtherFocusReason);
 }
 
+void Helper::fakePressSurfaceBottomRightToReszie(SurfaceWrapper *surface)
+{
+    auto position = surface->geometry().bottomRight();
+    m_fakelastPressedPosition = position;
+    m_seat->setCursorPosition(position);
+    surface->requestResize(Qt::BottomEdge | Qt::RightEdge);
+}
+
 bool Helper::startDemoClient()
 {
 #ifdef START_DEMO
@@ -478,12 +486,14 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *, QInputEvent *event)
                 return false;
             }
 
-            auto increment_pos = ev->globalPosition() - cursor->lastPressedOrTouchDownPosition();
+            auto lastPosition = m_fakelastPressedPosition.value_or(cursor->lastPressedOrTouchDownPosition());
+            auto increment_pos = ev->globalPosition() - lastPosition;
             m_surfaceContainer->doMoveResize(increment_pos);
 
             return true;
         } else if (event->type() == QEvent::MouseButtonRelease || event->type() == QEvent::TouchEnd) {
             m_surfaceContainer->endMoveResize();
+            m_fakelastPressedPosition.reset();
         }
     }
 

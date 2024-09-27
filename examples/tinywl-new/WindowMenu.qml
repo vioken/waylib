@@ -35,7 +35,7 @@ Menu {
 
     MenuItem {
         text: qsTr("Resize")
-        // TODO:: not support now
+        onTriggered: Helper.fakePressSurfaceBottomRightToReszie(surface)
     }
 
     MenuItem {
