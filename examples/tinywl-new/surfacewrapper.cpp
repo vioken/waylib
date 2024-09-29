@@ -26,6 +26,7 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     , m_titleBarState(TitleBarState::Default)
     , m_noCornerRadius(false)
     , m_alwaysOnTop(false)
+    , m_showOnAllWorkspace(false)
 {
     QQmlEngine::setContextForObject(this, qmlEngine->rootContext());
 
@@ -941,6 +942,19 @@ void SurfaceWrapper::setAlwaysOnTop(bool alwaysOnTop)
     updateExplicitAlwaysOnTop();
 
     Q_EMIT alwaysOnTopChanged();
+}
+
+bool SurfaceWrapper::showOnAllWorkspace() const
+{
+    return m_showOnAllWorkspace;
+}
+
+void SurfaceWrapper::setShowOnAllWorkspace(bool showOnAllWorkspace)
+{
+    if (m_showOnAllWorkspace == showOnAllWorkspace)
+        return;
+    m_showOnAllWorkspace = showOnAllWorkspace;
+    Q_EMIT showOnAllWorkspaceChanged();
 }
 
 void SurfaceWrapper::updateExplicitAlwaysOnTop()

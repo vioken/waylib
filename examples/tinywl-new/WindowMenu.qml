@@ -44,19 +44,19 @@ Menu {
     }
 
     MenuItem {
-        text: qsTr("Always on Visible Workspace")
-        // TODO:: not support now
+        text: surface.showOnAllWorkspace ? qsTr("Only on Current Workspace") : qsTr("Always on Visible Workspace")
+        onTriggered: surface.showOnAllWorkspace = !surface.showOnAllWorkspace
     }
 
     MenuItem {
         text: qsTr("Move to Left Work Space")
-        enabled: surface.workspaceId !== 0
+        enabled: surface.workspaceId !== 0 && !surface.showOnAllWorkspace
         onTriggered: Helper.workspace.addSurface(surface, surface.workspaceId - 1)
     }
 
     MenuItem {
         text: qsTr("Move to Right Work Space")
-        enabled: surface.workspaceId !== Helper.workspace.count - 1
+        enabled: surface.workspaceId !== Helper.workspace.count - 1 && !surface.showOnAllWorkspace
         onTriggered: Helper.workspace.addSurface(surface, surface.workspaceId + 1)
     }
 
