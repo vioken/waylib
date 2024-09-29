@@ -12,7 +12,6 @@
 #include <wxdgsurface.h>
 #include <wlayersurface.h>
 #include <winputpopupsurface.h>
-#include <woutputviewport.h>
 #include <woutputlayout.h>
 #include <wquicktextureproxy.h>
 
@@ -72,15 +71,10 @@ Output *Output::createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, Q
     auto contentItem = Helper::instance()->window()->contentItem();
     outputItem->setParentItem(contentItem);
     o->updatePrimaryOutputHardwareLayers();
-    connect(getOnscreenViewport(proxy), &WOutputViewport::hardwareLayersChanged,
+    connect(o->m_outputViewport, &WOutputViewport::hardwareLayersChanged,
             o, &Output::updatePrimaryOutputHardwareLayers);
 
     return o;
-}
-
-WOutputViewport *Output::getOnscreenViewport(Output *proxy)
-{
-    return proxy->outputItem()->property("onscreenViewport").value<WOutputViewport *>();
 }
 
 Output::Output(WOutputItem *output, QObject *parent)
@@ -88,7 +82,7 @@ Output::Output(WOutputItem *output, QObject *parent)
     , m_item(output)
     , minimizedSurfaces(new SurfaceFilterModel(this))
 {
-
+    m_outputViewport = output->property("screenViewport").value<WOutputViewport *>();
 }
 
 Output::~Output()
@@ -418,7 +412,7 @@ std::pair<WOutputViewport*, QQuickItem*> Output::getOutputItemProperty()
 void Output::updatePrimaryOutputHardwareLayers()
 {
     auto o = Helper::instance()->rootContainer()->primaryOutput();
-    WOutputViewport *viewportPrimary = getOnscreenViewport(o);
+    WOutputViewport *viewportPrimary = screenViewport();
     std::pair<WOutputViewport*, QQuickItem*> copyOutput = getOutputItemProperty();
     const auto layers = viewportPrimary->hardwareLayers();
     for (auto layer : layers) {
@@ -452,6 +446,11 @@ QRectF Output::geometry() const
 QRectF Output::validRect() const
 {
     return rect().marginsRemoved(m_exclusiveZone);
+}
+
+WOutputViewport *Output::screenViewport() const
+{
+    return m_outputViewport;
 }
 
 QRectF Output::validGeometry() const
