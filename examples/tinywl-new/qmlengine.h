@@ -34,6 +34,7 @@ public:
     QQuickItem *createBorder(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
     QQuickItem *createShadow(QQuickItem *parent);
+    QQuickItem *createTaskSwitcher(Output *output, QQuickItem *parent);
     QQuickItem *createGeometryAnimation(SurfaceWrapper *surface, const QRectF &startGeo,
                                         const QRectF &endGeo, QQuickItem *parent);
     QQuickItem *createMenuBar(WOutputItem *output, QQuickItem *parent);
@@ -48,6 +49,7 @@ private:
     QQmlComponent taskBarComponent;
     QQmlComponent surfaceContent;
     QQmlComponent shadowComponent;
+    QQmlComponent taskSwitchComponent;
     QQmlComponent geometryAnimationComponent;
     QQmlComponent menuBarComponent;
     QQmlComponent workspaceSwitcher;

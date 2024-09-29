@@ -434,7 +434,8 @@ bool Helper::startDemoClient()
     env.insert("WAYLAND_DISPLAY", m_socket->fullServerName());
 
     waylandClientDemo.setProcessEnvironment(env);
-    return waylandClientDemo.startDetached();
+    waylandClientDemo.startDetached();
+    return true;
 #else
     return false;
 #endif
@@ -455,6 +456,35 @@ bool Helper::beforeDisposeEvent(WSeat *seat, QWindow *, QInputEvent *event)
                 m_workspace->switchToPrev();
                 return true;
             }
+        } else if (event->modifiers() == Qt::AltModifier) {
+            if (kevent->key() == Qt::Key_Tab) {
+                if (m_taskSwitch.isNull()) {
+                    auto contentItem = window()->contentItem();
+                    auto output = rootContainer()->primaryOutput();
+                    m_taskSwitch = qmlEngine()->createTaskSwitcher(output, contentItem);
+                    m_taskSwitch->setZ(RootSurfaceContainer::OverlayZOrder);
+                    return true;
+                } else {
+                    QMetaObject::invokeMethod(m_taskSwitch, "next");
+                    return true;
+                }
+            } else if (kevent->key() == Qt::Key_Backtab) {
+                if (!m_taskSwitch.isNull()) {
+                    QMetaObject::invokeMethod(m_taskSwitch, "previous");
+                    return true;
+                }
+            }
+        }
+    }
+
+    if (event->type() == QEvent::MouseButtonPress) {
+        destoryTaskSwitcher();
+    }
+
+    if (event->type() == QEvent::KeyRelease) {
+        auto kevent = static_cast<QKeyEvent*>(event);
+        if (kevent->key() == Qt::Key_Alt) {
+            destoryTaskSwitcher();
         }
     }
 
@@ -699,4 +729,12 @@ void Helper::setAnimationSpeed(float newAnimationSpeed)
         return;
     m_animationSpeed = newAnimationSpeed;
     emit animationSpeedChanged();
+}
+
+void Helper::destoryTaskSwitcher()
+{
+    if (!m_taskSwitch.isNull()) {
+        m_taskSwitch->setVisible(false);
+        m_taskSwitch->deleteLater();
+    }
 }

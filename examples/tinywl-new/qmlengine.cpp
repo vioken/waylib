@@ -18,6 +18,7 @@ QmlEngine::QmlEngine(QObject *parent)
     , taskBarComponent(this, "Tinywl", "TaskBar")
     , surfaceContent(this, "Tinywl", "SurfaceContent")
     , shadowComponent(this, "Tinywl", "Shadow")
+    , taskSwitchComponent(this, "Tinywl", "TaskSwitcher")
     , geometryAnimationComponent(this, "Tinywl", "GeometryAnimation")
     , menuBarComponent(this, "Tinywl", "OutputMenuBar")
     , workspaceSwitcher(this, "Tinywl", "WorkspaceSwitcher")
@@ -98,6 +99,24 @@ QQuickItem *QmlEngine::createShadow(QQuickItem *parent)
     item->setParent(parent);
     item->setParentItem(parent);
     shadowComponent.completeCreate();
+
+    return item;
+}
+
+QQuickItem *QmlEngine::createTaskSwitcher(Output *output, QQuickItem *parent)
+{
+    auto context = qmlContext(parent);
+    auto obj = taskSwitchComponent.beginCreate(context);
+    taskSwitchComponent.setInitialProperties(obj, {
+        {"output", QVariant::fromValue(output)}
+    });
+
+    auto item = qobject_cast<QQuickItem*>(obj);
+    qDebug() << taskSwitchComponent.errorString();
+    Q_ASSERT(item);
+    item->setParent(parent);
+    item->setParentItem(parent);
+    taskSwitchComponent.completeCreate();
 
     return item;
 }

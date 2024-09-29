@@ -52,6 +52,7 @@ qt_add_qml_module(${TARGET}
     QML_FILES OutputMenuBar.qml
     QML_FILES WorkspaceSwitcher.qml
     QML_FILES WorkspaceProxy.qml
+    QML_FILES TaskSwitcher.qml
 
     RESOURCES
     "res/xx.jpg"
