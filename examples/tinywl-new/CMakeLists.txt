@@ -38,6 +38,7 @@ qt_add_qml_module(${TARGET}
     SOURCES surfaceproxy.h surfaceproxy.cpp
     SOURCES wallpaperprovider.h wallpaperprovider.cpp
     SOURCES wallpaperimage.h wallpaperimage.cpp
+    SOURCES workspacemodel.h workspacemodel.cpp
 
     QML_FILES PrimaryOutput.qml
     QML_FILES CopyOutput.qml

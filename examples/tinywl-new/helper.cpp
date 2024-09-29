@@ -9,6 +9,7 @@
 #include "surfacecontainer.h"
 #include "rootsurfacecontainer.h"
 #include "layersurfacecontainer.h"
+#include "workspacemodel.h"
 
 #include <WServer>
 #include <WOutput>
@@ -176,8 +177,9 @@ void Helper::init()
         auto index = indexOfOutput(output);
         Q_ASSERT(index >= 0);
         const auto o = m_outputList.takeAt(index);
-        wOutputManager->removeOutput(output);
         m_surfaceContainer->removeOutput(o);
+        wOutputManager->removeOutput(output);
+
         delete o;
     });
 
@@ -200,7 +202,7 @@ void Helper::init()
                                  != WXdgDecorationManager::Server);
 
         if (surface->isPopup()) {
-            auto parent = surface->parentSurface();;
+            auto parent = surface->parentSurface();
             auto parentWrapper = m_surfaceContainer->getSurface(parent);
             parentWrapper->addSubSurface(wrapper);
             m_popupContainer->addSurface(wrapper);
@@ -376,9 +378,9 @@ void Helper::init()
             }
 
             if (onlyTest)
-                ok &= output->test();
+               ok &= output->test();
             else
-                ok &= output->commit();
+               ok &= output->commit();
         }
         wOutputManager->sendResult(config, ok);
     });

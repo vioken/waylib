@@ -925,7 +925,12 @@ void SurfaceWrapper::setWorkspaceId(int newWorkspaceId)
 {
     if (m_workspaceId == newWorkspaceId)
         return;
+
+    bool onAllWorkspaceHasChanged = m_workspaceId == 0 || newWorkspaceId == 0;
     m_workspaceId = newWorkspaceId;
+
+    if (onAllWorkspaceHasChanged)
+        Q_EMIT showOnAllWorkspaceChanged();
     Q_EMIT workspaceIdChanged();
 }
 
@@ -946,15 +951,7 @@ void SurfaceWrapper::setAlwaysOnTop(bool alwaysOnTop)
 
 bool SurfaceWrapper::showOnAllWorkspace() const
 {
-    return m_showOnAllWorkspace;
-}
-
-void SurfaceWrapper::setShowOnAllWorkspace(bool showOnAllWorkspace)
-{
-    if (m_showOnAllWorkspace == showOnAllWorkspace)
-        return;
-    m_showOnAllWorkspace = showOnAllWorkspace;
-    Q_EMIT showOnAllWorkspaceChanged();
+    return m_workspaceId == 0;
 }
 
 void SurfaceWrapper::updateExplicitAlwaysOnTop()
