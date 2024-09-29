@@ -5,7 +5,7 @@ import QtQuick
 import Tinywl
 
 Item {
-    required property Item workspace
+    required property WorkspaceModel workspace
     required property QtObject output
 
     width: output.outputItem.width
@@ -14,6 +14,26 @@ Item {
 
     Repeater {
         model: workspace.model
+        delegate: Loader {
+            id: loader
+
+            required property SurfaceWrapper surface
+            required property int orderIndex
+
+            x: surface.x - output.outputItem.x
+            y: surface.y - output.outputItem.y
+            z: orderIndex
+            active: surface.ownsOutput === output
+                    && surface.surfaceState !== SurfaceWrapper.State.Minimized
+            sourceComponent: SurfaceProxy {
+                surface: loader.surface
+                fullProxy: true
+            }
+        }
+    }
+
+    Repeater {
+        model: Helper.workspace.showOnAllWorkspaceModel.model
         delegate: Loader {
             id: loader
 

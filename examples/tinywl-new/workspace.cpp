@@ -7,26 +7,6 @@
 #include "helper.h"
 #include "rootsurfacecontainer.h"
 
-WorkspaceContainer::WorkspaceContainer(Workspace *parent, int index)
-    : SurfaceContainer(parent)
-    , m_index(index)
-{
-
-}
-
-QString WorkspaceContainer::name() const
-{
-    return m_name;
-}
-
-void WorkspaceContainer::setName(const QString &newName)
-{
-    if (m_name == newName)
-        return;
-    m_name = newName;
-    emit nameChanged();
-}
-
 Workspace::Workspace(SurfaceContainer *parent)
     : SurfaceContainer(parent)
 {
@@ -34,13 +14,16 @@ Workspace::Workspace(SurfaceContainer *parent)
     static int workspaceGlobalIndex = 0;
 
     // TODO: save and restore workpsace's name from local storage
+    createContainer(QStringLiteral("show-on-all-workspace"), true);
     createContainer(QStringLiteral("workspace-%1").arg(++workspaceGlobalIndex), true);
     createContainer(QStringLiteral("workspace-%1").arg(++workspaceGlobalIndex));
 }
 
 void Workspace::addSurface(SurfaceWrapper *surface, int workspaceIndex)
 {
-    doAddSurface(surface, false);
+    qDebug() << "Move to surface!!!!!!!!!" << surface << workspaceIndex;
+    doAddSurface(surface, true);
+
     if (workspaceIndex < 0)
         workspaceIndex = m_currentIndex;
 
@@ -59,7 +42,6 @@ void Workspace::addSurface(SurfaceWrapper *surface, int workspaceIndex)
     }
 
     container->addSurface(surface);
-    surface->setWorkspaceId(workspaceIndex);
     if (!surface->ownsOutput())
         surface->setOwnsOutput(rootContainer()->primaryOutput());
 }
@@ -85,12 +67,15 @@ int Workspace::containerIndexOfSurface(SurfaceWrapper *surface) const
             return i;
     }
 
+    //if (m_showOnAllWorkspaceModel->m_model->hasSurface(surface))
+    //    return -2;
+
     return -1;
 }
 
 int Workspace::createContainer(const QString &name, bool visible)
 {
-    m_containers.append(new WorkspaceContainer(this, m_containers.size()));
+    m_containers.append(new WorkspaceModel(this, m_containers.size()));
     auto newContainer = m_containers.last();
     newContainer->setName(name);
     newContainer->setVisible(visible);
@@ -129,8 +114,10 @@ void Workspace::removeContainer(int index)
         emit currentChanged();
 }
 
-WorkspaceContainer *Workspace::container(int index) const
+WorkspaceModel *Workspace::container(int index) const
 {
+    //if (index == -2)
+    //    return m_showOnAllWorkspaceModel;
     if (index < 0 || index >= m_containers.size())
         return nullptr;
     return m_containers.at(index);
@@ -146,6 +133,11 @@ int Workspace::currentIndex() const
     return m_currentIndex;
 }
 
+WorkspaceModel *Workspace::showOnAllWorkspaceModel() const
+{
+    return m_containers.at(0);
+}
+
 void Workspace::setCurrentIndex(int newCurrentIndex)
 {
     if (newCurrentIndex < 0 || newCurrentIndex >= m_containers.size())
@@ -159,7 +151,7 @@ void Workspace::setCurrentIndex(int newCurrentIndex)
         m_switcher->deleteLater();
     }
 
-    for (int i = 0; i < m_containers.size(); ++i) {
+    for (int i = 1; i < m_containers.size(); ++i) {
         m_containers.at(i)->setVisible(i == m_currentIndex);
     }
 
@@ -174,7 +166,7 @@ void Workspace::switchToNext()
 
 void Workspace::switchToPrev()
 {
-    if (m_currentIndex > 0)
+    if (m_currentIndex > 1)
         switchTo(m_currentIndex - 1);
 }
 
@@ -184,27 +176,28 @@ void Workspace::switchTo(int index)
         return;
 
     Q_ASSERT(index != m_currentIndex);
-    Q_ASSERT(index >= 0 && index < m_containers.size());
+    Q_ASSERT(index > 0 && index < m_containers.size());
     auto from = current();
     auto to = m_containers.at(index);
     auto engine = Helper::instance()->qmlEngine();
     from->setVisible(false);
     to->setVisible(false);
+    showOnAllWorkspaceModel()->setVisible(false);
     m_switcher = engine->createWorkspaceSwitcher(this, from, to);
 }
 
-WorkspaceContainer *Workspace::current() const
+WorkspaceModel *Workspace::current() const
 {
-    if (m_currentIndex < 0 || m_currentIndex >= m_containers.size())
+    if (m_currentIndex < 1 || m_currentIndex >= m_containers.size())
         return nullptr;
 
     return m_containers.at(m_currentIndex);
 }
 
-void Workspace::setCurrent(WorkspaceContainer *container)
+void Workspace::setCurrent(WorkspaceModel *container)
 {
     int index = m_containers.indexOf(container);
-    if (index < 0)
+    if (index < 1)
         return;
     setCurrentIndex(index);
 }
@@ -234,15 +227,3 @@ void Workspace::updateSurfacesOwnsOutput()
     }
 }
 
-int WorkspaceContainer::index() const
-{
-    return m_index;
-}
-
-void WorkspaceContainer::setIndex(int newIndex)
-{
-    if (m_index == newIndex)
-        return;
-    m_index = newIndex;
-    emit indexChanged();
-}
