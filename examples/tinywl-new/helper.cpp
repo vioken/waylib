@@ -168,9 +168,8 @@ void Helper::init()
         }
 
         m_outputList.append(o);
-        wOutputManager->newOutput(output);
-
         enableOutput(output);
+        wOutputManager->newOutput(output);
     });
 
     connect(m_backend, &WBackend::outputRemoved, this, [this, wOutputManager] (WOutput *output) {
