@@ -49,7 +49,7 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(bool noCornerRadius READ noCornerRadius NOTIFY noCornerRadiusChanged FINAL)
     Q_PROPERTY(int workspaceId READ workspaceId NOTIFY workspaceIdChanged FINAL)
     Q_PROPERTY(bool alwaysOnTop READ alwaysOnTop WRITE setAlwaysOnTop NOTIFY alwaysOnTopChanged FINAL)
-    Q_PROPERTY(bool showOnAllWorkspace READ showOnAllWorkspace WRITE setShowOnAllWorkspace NOTIFY showOnAllWorkspaceChanged FINAL)
+    Q_PROPERTY(bool showOnAllWorkspace READ showOnAllWorkspace NOTIFY showOnAllWorkspaceChanged FINAL)
 
 public:
     enum class Type {
@@ -263,5 +263,4 @@ private:
     uint m_titleBarState:2;
     uint m_noCornerRadius:1;
     uint m_alwaysOnTop:1;
-    uint m_showOnAllWorkspace:1;
 };
