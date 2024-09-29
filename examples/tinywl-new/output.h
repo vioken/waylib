@@ -8,6 +8,7 @@
 #include <QMargins>
 #include <QObject>
 #include <QQmlComponent>
+#include <woutputviewport.h>
 Q_MOC_INCLUDE(<woutputitem_p.h>)
 
 Q_DECLARE_LOGGING_CATEGORY(qLcLayerShell)
@@ -33,6 +34,7 @@ class Output : public SurfaceListModel
     Q_PROPERTY(QRectF validRect READ validRect NOTIFY exclusiveZoneChanged FINAL)
     Q_PROPERTY(WOutputItem* outputItem MEMBER m_item CONSTANT)
     Q_PROPERTY(SurfaceListModel* minimizedSurfaces MEMBER minimizedSurfaces CONSTANT)
+    Q_PROPERTY(WOutputViewport* screenViewport MEMBER m_outputViewport CONSTANT)
 
 public:
     enum class Type {
@@ -42,7 +44,6 @@ public:
 
     static Output *createPrimary(WOutput *output, QQmlEngine *engine, QObject *parent = nullptr);
     static Output *createCopy(WOutput *output, Output *proxy, QQmlEngine *engine, QObject *parent = nullptr);
-    static WOutputViewport *getOnscreenViewport(Output *proxy);
 
     explicit Output(WOutputItem *output, QObject *parent = nullptr);
     ~Output();
@@ -60,6 +61,7 @@ public:
     QRectF geometry() const;
     QRectF validRect() const;
     QRectF validGeometry() const;
+    WOutputViewport *screenViewport() const;
     void updatePositionFromLayout();
 
 signals:
@@ -87,6 +89,7 @@ private:
     SurfaceFilterModel *minimizedSurfaces;
     QPointer<QQuickItem> m_taskBar;
     QPointer<QQuickItem> m_menuBar;
+    WOutputViewport *m_outputViewport;
 
     QMargins m_exclusiveZone;
     QList<std::pair<QObject*, int>> m_topExclusiveZones;

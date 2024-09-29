@@ -8,7 +8,7 @@ OutputItem {
     id: outputItem
 
     required property PrimaryOutput targetOutputItem
-    property OutputViewport targetViewport: targetOutputItem.onscreenViewport
+    property OutputViewport screenViewport: targetOutputItem.screenViewport
 
     devicePixelRatio: output?.scale ?? devicePixelRatio
 
@@ -19,11 +19,11 @@ OutputItem {
 
         TextureProxy {
             id: proxy
-            sourceItem: targetViewport
+            sourceItem: screenViewport
             anchors.centerIn: parent
-            rotation: targetOutputItem.keepAllOutputRotation ? 0 : targetViewport.rotation
-            width: targetViewport.implicitWidth
-            height: targetViewport.implicitHeight
+            rotation: targetOutputItem.keepAllOutputRotation ? 0 : screenViewport.rotation
+            width: screenViewport.implicitWidth
+            height: screenViewport.implicitHeight
             smooth: true
             transformOrigin: Item.Center
             scale: {
@@ -48,7 +48,7 @@ OutputItem {
         id: viewport
 
         anchors.centerIn: parent
-        depends: [targetViewport]
+        depends: [screenViewport]
         devicePixelRatio: outputItem.devicePixelRatio
         input: content
         output: outputItem.output
