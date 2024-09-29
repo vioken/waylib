@@ -365,7 +365,7 @@ void Helper::init()
 
                 output->enableAdaptiveSync(state.adaptiveSyncEnabled);
                 if (!onlyTest) {
-                    WOutputViewport *viewport = Output::getOnscreenViewport(getOutput(output));
+                    WOutputViewport *viewport = getOutput(output)->screenViewport();
                     if (viewport) {
                         viewport->rotateOutput(state.transform);
                         viewport->setOutputScale(state.scale);
