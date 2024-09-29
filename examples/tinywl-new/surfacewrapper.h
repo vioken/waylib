@@ -48,7 +48,8 @@ class SurfaceWrapper : public QQuickItem
     Q_PROPERTY(bool noTitleBar READ noTitleBar RESET resetNoTitleBar NOTIFY noTitleBarChanged FINAL)
     Q_PROPERTY(bool noCornerRadius READ noCornerRadius NOTIFY noCornerRadiusChanged FINAL)
     Q_PROPERTY(int workspaceId READ workspaceId NOTIFY workspaceIdChanged FINAL)
-    Q_PROPERTY(int alwaysOnTop READ alwaysOnTop WRITE setAlwaysOnTop NOTIFY alwaysOnTopChanged FINAL)
+    Q_PROPERTY(bool alwaysOnTop READ alwaysOnTop WRITE setAlwaysOnTop NOTIFY alwaysOnTopChanged FINAL)
+    Q_PROPERTY(bool showOnAllWorkspace READ showOnAllWorkspace WRITE setShowOnAllWorkspace NOTIFY showOnAllWorkspaceChanged FINAL)
 
 public:
     enum class Type {
@@ -155,6 +156,9 @@ public:
     bool alwaysOnTop() const;
     void setAlwaysOnTop(bool alwaysOnTop);
 
+    bool showOnAllWorkspace() const;
+    void setShowOnAllWorkspace(bool showOnAllWorkspace);
+
 public Q_SLOTS:
     // for titlebar
     void requestMinimize();
@@ -193,6 +197,7 @@ Q_SIGNALS:
     void noCornerRadiusChanged();
     void workspaceIdChanged();
     void alwaysOnTopChanged();
+    void showOnAllWorkspaceChanged();
 
 private:
     using QQuickItem::setParentItem;
@@ -258,4 +263,5 @@ private:
     uint m_titleBarState:2;
     uint m_noCornerRadius:1;
     uint m_alwaysOnTop:1;
+    uint m_showOnAllWorkspace:1;
 };
