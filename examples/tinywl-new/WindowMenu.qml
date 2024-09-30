@@ -9,13 +9,12 @@ import Tinywl
 Menu {
     id: menu
 
-    required property SurfaceWrapper surface
+    property SurfaceWrapper surface: null
 
-    Connections {
-        target: surface
-        function onRequestShowWindowMenu(pos) {
-            menu.popup(pos)
-        }
+    function showWindowMenu(surface, pos) {
+        menu.surface = surface
+        menu.parent = surface
+        menu.popup(pos)
     }
 
     MenuItem {
