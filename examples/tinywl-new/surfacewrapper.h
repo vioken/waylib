@@ -232,7 +232,6 @@ private:
     WSurfaceItem *m_surfaceItem = nullptr;
     QPointer<QQuickItem> m_titleBar;
     QPointer<QQuickItem> m_decoration;
-    QPointer<QObject> m_windowMenu;
     QPointer<QQuickItem> m_geometryAnimation;
     QRectF m_boundedRect;
     QRectF m_normalGeometry;

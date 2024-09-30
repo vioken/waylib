@@ -10,7 +10,6 @@ Item {
     id: root
 
     required property SurfaceWrapper surface
-    required property WindowMenu menu
     readonly property SurfaceItem surfaceItem: surface.surfaceItem
 
     height: 30
@@ -26,7 +25,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (eventPoint, button) => {
             if (button === Qt.RightButton) {
-                menu.popup(eventPoint.position)
+                surface.requestShowWindowMenu(eventPoint.position)
             } else {
                 Helper.activeSurface(surface)
             }

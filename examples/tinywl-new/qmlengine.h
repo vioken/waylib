@@ -29,9 +29,9 @@ class QmlEngine : public QQmlApplicationEngine
 public:
     explicit QmlEngine(QObject *parent = nullptr);
 
-    QQuickItem *createTitleBar(SurfaceWrapper *surface, QQuickItem *parent, QObject *windowMenu);
+    QQuickItem *createTitleBar(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createDecoration(SurfaceWrapper *surface, QQuickItem *parent);
-    QObject *createWindowMenu(SurfaceWrapper *surface, QQuickItem *parent);
+    QObject *createWindowMenu(QObject *parent);
     QQuickItem *createBorder(SurfaceWrapper *surface, QQuickItem *parent);
     QQuickItem *createTaskBar(Output *output, QQuickItem *parent);
     QQuickItem *createShadow(QQuickItem *parent);
