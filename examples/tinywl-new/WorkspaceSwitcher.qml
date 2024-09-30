@@ -107,7 +107,7 @@ Item {
 
                 onFinished: {
                     rootItem.outputItem.wallpaperVisible = true;
-                    Helper.workspace.showOnAllWorkspaceModel.visable = true;
+                    Helper.workspace.showOnAllWorkspaceModel.visible = true;
                     root.workspace.current = root.to;
                 }
             }

@@ -47,7 +47,7 @@ Item {
         acceptedButtons: Qt.NoButton
         acceptedDevices: PointerDevice.TouchScreen
         onDoubleTapped: surface.requestToggleMaximize()
-        onLongPressed: menu.popup(point.position)
+        onLongPressed: surface.requestShowWindowMenu(point.position)
     }
 
     Rectangle {
