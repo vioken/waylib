@@ -13,7 +13,7 @@ Item {
     clip: true
 
     Repeater {
-        model: workspace.model
+        model: workspace
         delegate: Loader {
             id: loader
 
@@ -33,7 +33,7 @@ Item {
     }
 
     Repeater {
-        model: Helper.workspace.showOnAllWorkspaceModel.model
+        model: Helper.workspace.showOnAllWorkspaceModel
         delegate: Loader {
             id: loader
 
