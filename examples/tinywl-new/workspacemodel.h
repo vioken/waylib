@@ -6,13 +6,12 @@
 
 class SurfaceWrapper;
 class Workspace;
-class WorkspaceModel : public QObject
+class WorkspaceModel : public SurfaceListModel
 {
     friend class Workspace;
     Q_OBJECT
     Q_PROPERTY(int index READ index NOTIFY indexChanged FINAL)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged FINAL)
-    Q_PROPERTY(SurfaceListModel* model READ model CONSTANT FINAL)
     Q_PROPERTY(bool visable READ visable WRITE setVisible NOTIFY visableChanged FINAL)
 
     QML_ELEMENT
@@ -29,16 +28,8 @@ public:
     bool visable() const;
     void setVisible(bool visible);
 
-    void addSurface(SurfaceWrapper *surface);
-    void removeSurface(SurfaceWrapper *surface);
-
-    const QList<SurfaceWrapper*> &surfaces() const {
-        return m_model->surfaces();
-    }
-
-    SurfaceListModel *model() const {
-        return m_model;
-    }
+    void addSurface(SurfaceWrapper *surface) override;
+    void removeSurface(SurfaceWrapper *surface) override;
 
 Q_SIGNALS:
     void nameChanged();
@@ -47,7 +38,6 @@ Q_SIGNALS:
 
 private:
     QString m_name;
-    SurfaceListModel *m_model = nullptr;
     int m_index = -1;
     bool m_visable;
 };

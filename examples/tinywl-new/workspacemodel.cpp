@@ -6,8 +6,7 @@
 #include "helper.h"
 
 WorkspaceModel::WorkspaceModel(QObject *parent, int index)
-    : QObject(parent)
-    , m_model(new SurfaceListModel(this))
+    : SurfaceListModel(parent)
     , m_index(index)
 {
 
@@ -49,19 +48,20 @@ void WorkspaceModel::setVisible(bool visible)
     if (m_visable == visible)
         return;
     m_visable = visible;
-    for (auto surface : m_model->surfaces())
+    for (auto surface : surfaces())
         surface->setVisible(visible);
     Q_EMIT visableChanged();
 }
 
 void WorkspaceModel::addSurface(SurfaceWrapper *surface)
 {
-    m_model->addSurface(surface);
+    SurfaceListModel::addSurface(surface);
     surface->setVisible(m_visable);
     surface->setWorkspaceId(m_index);
 }
 
 void WorkspaceModel::removeSurface(SurfaceWrapper *surface)
 {
-    m_model->removeSurface(surface);
+    SurfaceListModel::removeSurface(surface);
+    surface->setWorkspaceId(-1);
 }

@@ -50,6 +50,6 @@ private:
     // Workspace id starts from 1, the WorkspaceModel with id 0 is used to
     // store the surface that is always in the visible workspace.
     int m_currentIndex = 1;
-    QList<WorkspaceModel*> m_containers;
+    QList<WorkspaceModel*> m_models;
     QPointer<QQuickItem> m_switcher;
 };
