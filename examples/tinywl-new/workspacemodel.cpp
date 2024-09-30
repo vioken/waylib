@@ -38,25 +38,25 @@ void WorkspaceModel::setIndex(int newIndex)
     Q_EMIT indexChanged();
 }
 
-bool WorkspaceModel::visable() const
+bool WorkspaceModel::visible() const
 {
-    return m_visable;
+    return m_visible;
 }
 
 void WorkspaceModel::setVisible(bool visible)
 {
-    if (m_visable == visible)
+    if (m_visible == visible)
         return;
-    m_visable = visible;
+    m_visible = visible;
     for (auto surface : surfaces())
         surface->setVisible(visible);
-    Q_EMIT visableChanged();
+    Q_EMIT visibleChanged();
 }
 
 void WorkspaceModel::addSurface(SurfaceWrapper *surface)
 {
     SurfaceListModel::addSurface(surface);
-    surface->setVisible(m_visable);
+    surface->setVisible(m_visible);
     surface->setWorkspaceId(m_index);
 }
 

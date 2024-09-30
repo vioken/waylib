@@ -9,7 +9,6 @@
 #include "surfacecontainer.h"
 #include "rootsurfacecontainer.h"
 #include "layersurfacecontainer.h"
-#include "workspacemodel.h"
 
 #include <WServer>
 #include <WOutput>
@@ -177,9 +176,8 @@ void Helper::init()
         auto index = indexOfOutput(output);
         Q_ASSERT(index >= 0);
         const auto o = m_outputList.takeAt(index);
-        m_surfaceContainer->removeOutput(o);
         wOutputManager->removeOutput(output);
-
+        m_surfaceContainer->removeOutput(o);
         delete o;
     });
 
@@ -187,7 +185,7 @@ void Helper::init()
     m_foreignToplevel = m_server->attach<WForeignToplevel>(xdgShell);
     auto *layerShell = m_server->attach<WLayerShell>();
     auto *xdgOutputManager = m_server->attach<WXdgOutputManager>(m_surfaceContainer->outputLayout());
-    m_windowMenu = qmlEngine()->createWindowMenu(this);
+    m_windowMenu = engine->createWindowMenu(this);
 
     connect(xdgShell, &WXdgShell::surfaceAdded, this, [this] (WXdgSurface *surface) {
         SurfaceWrapper *wrapper = nullptr;
@@ -296,6 +294,9 @@ void Helper::init()
             m_foreignToplevel->addSurface(surface);
             m_workspace->addSurface(wrapper);
             Q_ASSERT(wrapper->parentItem());
+            connect(wrapper, &SurfaceWrapper::requestShowWindowMenu, m_windowMenu, [this, wrapper] (QPoint pos) {
+                QMetaObject::invokeMethod(m_windowMenu, "showWindowMenu", QVariant::fromValue(wrapper), QVariant::fromValue(pos));
+            });
         });
         surface->safeConnect(&qw_xwayland_surface::notify_dissociate, this, [this, surface] {
             m_foreignToplevel->removeSurface(surface);
@@ -383,9 +384,9 @@ void Helper::init()
             }
 
             if (onlyTest)
-               ok &= output->test();
+                ok &= output->test();
             else
-               ok &= output->commit();
+                ok &= output->commit();
         }
         wOutputManager->sendResult(config, ok);
     });
@@ -436,7 +437,7 @@ void Helper::fakePressSurfaceBottomRightToReszie(SurfaceWrapper *surface)
     auto position = surface->geometry().bottomRight();
     m_fakelastPressedPosition = position;
     m_seat->setCursorPosition(position);
-    surface->requestResize(Qt::BottomEdge | Qt::RightEdge);
+    Q_EMIT surface->requestResize(Qt::BottomEdge | Qt::RightEdge);
 }
 
 bool Helper::startDemoClient()

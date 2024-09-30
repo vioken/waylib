@@ -12,7 +12,7 @@ class WorkspaceModel : public SurfaceListModel
     Q_OBJECT
     Q_PROPERTY(int index READ index NOTIFY indexChanged FINAL)
     Q_PROPERTY(QString name READ name WRITE setName NOTIFY nameChanged FINAL)
-    Q_PROPERTY(bool visable READ visable WRITE setVisible NOTIFY visableChanged FINAL)
+    Q_PROPERTY(bool visible READ visible WRITE setVisible NOTIFY visibleChanged FINAL)
 
     QML_ELEMENT
 
@@ -25,7 +25,7 @@ public:
     int index() const;
     void setIndex(int newIndex);
 
-    bool visable() const;
+    bool visible() const;
     void setVisible(bool visible);
 
     void addSurface(SurfaceWrapper *surface) override;
@@ -34,10 +34,10 @@ public:
 Q_SIGNALS:
     void nameChanged();
     void indexChanged();
-    void visableChanged();
+    void visibleChanged();
 
 private:
     QString m_name;
     int m_index = -1;
-    bool m_visable;
+    bool m_visible = false;
 };

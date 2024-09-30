@@ -30,7 +30,7 @@ QQuickItem *QmlEngine::createTitleBar(SurfaceWrapper *surface, QQuickItem *paren
     auto context = qmlContext(parent);
     auto obj = titleBarComponent.beginCreate(context);
     titleBarComponent.setInitialProperties(obj, {
-        {"surface", QVariant::fromValue(surface)},
+        {"surface", QVariant::fromValue(surface)}
     });
     auto item = qobject_cast<QQuickItem*>(obj);
     Q_ASSERT(item);
@@ -46,7 +46,7 @@ QQuickItem *QmlEngine::createDecoration(SurfaceWrapper *surface, QQuickItem *par
     auto context = qmlContext(parent);
     auto obj = decorationComponent.beginCreate(context);
     decorationComponent.setInitialProperties(obj, {
-        {"surface", QVariant::fromValue(surface)},
+        {"surface", QVariant::fromValue(surface)}
     });
     auto item = qobject_cast<QQuickItem*>(obj);
     Q_ASSERT(item);
