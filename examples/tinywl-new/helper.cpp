@@ -187,6 +187,7 @@ void Helper::init()
     m_foreignToplevel = m_server->attach<WForeignToplevel>(xdgShell);
     auto *layerShell = m_server->attach<WLayerShell>();
     auto *xdgOutputManager = m_server->attach<WXdgOutputManager>(m_surfaceContainer->outputLayout());
+    m_windowMenu = qmlEngine()->createWindowMenu(this);
 
     connect(xdgShell, &WXdgShell::surfaceAdded, this, [this] (WXdgSurface *surface) {
         SurfaceWrapper *wrapper = nullptr;
@@ -227,6 +228,10 @@ void Helper::init()
 
             surface->safeConnect(&WXdgSurface::parentXdgSurfaceChanged, this, updateSurfaceWithParentContainer);
             updateSurfaceWithParentContainer();
+
+            connect(wrapper, &SurfaceWrapper::requestShowWindowMenu, m_windowMenu, [this, wrapper] (QPoint pos) {
+                QMetaObject::invokeMethod(m_windowMenu, "showWindowMenu", QVariant::fromValue(wrapper), QVariant::fromValue(pos));
+            });
         }
 
         Q_ASSERT(wrapper->parentItem());

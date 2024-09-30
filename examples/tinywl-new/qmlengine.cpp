@@ -25,13 +25,12 @@ QmlEngine::QmlEngine(QObject *parent)
 {
 }
 
-QQuickItem *QmlEngine::createTitleBar(SurfaceWrapper *surface, QQuickItem *parent, QObject *windowMenu)
+QQuickItem *QmlEngine::createTitleBar(SurfaceWrapper *surface, QQuickItem *parent)
 {
     auto context = qmlContext(parent);
     auto obj = titleBarComponent.beginCreate(context);
     titleBarComponent.setInitialProperties(obj, {
         {"surface", QVariant::fromValue(surface)},
-        {"menu", QVariant::fromValue(windowMenu)}
     });
     auto item = qobject_cast<QQuickItem*>(obj);
     Q_ASSERT(item);
@@ -58,13 +57,11 @@ QQuickItem *QmlEngine::createDecoration(SurfaceWrapper *surface, QQuickItem *par
     return item;
 }
 
-QObject *QmlEngine::createWindowMenu(SurfaceWrapper *surface, QQuickItem *parent)
+QObject *QmlEngine::createWindowMenu(QObject *parent)
 {
     auto context = qmlContext(parent);
     auto obj = windowMenuComponent.beginCreate(context);
-    windowMenuComponent.setInitialProperties(obj, {
-        {"surface", QVariant::fromValue(surface)}
-    });
+
     obj->setParent(parent);
     windowMenuComponent.completeCreate();
 

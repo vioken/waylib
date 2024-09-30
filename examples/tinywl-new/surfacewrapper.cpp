@@ -26,7 +26,6 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     , m_titleBarState(TitleBarState::Default)
     , m_noCornerRadius(false)
     , m_alwaysOnTop(false)
-    , m_showOnAllWorkspace(false)
 {
     QQmlEngine::setContextForObject(this, qmlEngine->rootContext());
 
@@ -57,6 +56,11 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
     });
     shellSurface->safeConnect(&WToplevelSurface::requestFullscreen, this, &SurfaceWrapper::requestFullscreen);
     shellSurface->safeConnect(&WToplevelSurface::requestCancelFullscreen, this, &SurfaceWrapper::requestCancelFullscreen);
+    if (type == Type::XdgToplevel) {
+        shellSurface->safeConnect(&WToplevelSurface::requestShowWindowMenu, this, [this](WSeat *, QPoint pos, quint32) {
+            Q_EMIT requestShowWindowMenu(pos);
+        });
+    }
 
     connect(m_surfaceItem, &WSurfaceItem::boundingRectChanged, this, &SurfaceWrapper::updateBoundingRect);
     connect(m_surfaceItem, &WSurfaceItem::implicitWidthChanged, this, [this] {
@@ -71,13 +75,6 @@ SurfaceWrapper::SurfaceWrapper(QmlEngine *qmlEngine, WToplevelSurface *shellSurf
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
         m_surfaceItem->setFocusPolicy(Qt::NoFocus);
 #endif
-    }
-
-    if (type == Type::XdgToplevel || type == Type::XWayland) {
-        shellSurface->safeConnect(&WToplevelSurface::requestShowWindowMenu, this, [this](WSeat *, QPoint pos, quint32) {
-            Q_EMIT requestShowWindowMenu(pos);
-        });
-        m_windowMenu = m_engine->createWindowMenu(this, this);
     }
 }
 
@@ -437,7 +434,7 @@ void SurfaceWrapper::updateTitleBar()
         m_titleBar = nullptr;
         m_surfaceItem->setTopPadding(0);
     } else {
-        m_titleBar = m_engine->createTitleBar(this, m_surfaceItem, m_windowMenu);
+        m_titleBar = m_engine->createTitleBar(this, m_surfaceItem);
         m_titleBar->setZ(static_cast<int>(WSurfaceItem::ZOrder::ContentItem));
         m_surfaceItem->setTopPadding(m_titleBar->height());
         connect(m_titleBar, &QQuickItem::heightChanged, this, [this] {
