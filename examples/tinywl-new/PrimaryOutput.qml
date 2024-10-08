@@ -10,6 +10,7 @@ OutputItem {
     id: rootOutputItem
     readonly property OutputViewport screenViewport: outputViewport
     property alias wallpaperVisible: wallpaper.visible
+    property bool forceSoftwareCursor: false
 
     devicePixelRatio: output?.scale ?? devicePixelRatio
 
@@ -24,7 +25,7 @@ OutputItem {
         x: position.x - hotSpot.x
         y: position.y - hotSpot.y
         visible: valid && outputCurosr.visible
-        OutputLayer.enabled: true
+        OutputLayer.enabled: !outputCursor.output.forceSoftwareCursor
         OutputLayer.keepLayer: true
         OutputLayer.outputs: [screenViewport]
         OutputLayer.flags: OutputLayer.Cursor
