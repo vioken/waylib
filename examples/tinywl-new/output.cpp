@@ -22,7 +22,11 @@ Q_LOGGING_CATEGORY(qLcLayerShell, "tinywl.shell.layer", QtWarningMsg)
 Output *Output::createPrimary(WOutput *output, QQmlEngine *engine, QObject *parent)
 {
     QQmlComponent delegate(engine, "Tinywl", "PrimaryOutput");
-    QObject *obj = delegate.create(engine->rootContext());
+    QObject *obj = delegate.beginCreate(engine->rootContext());
+    delegate.setInitialProperties(obj, {
+        {"forceSoftwareCursor", output->handle()->is_x11()}
+    });
+    delegate.completeCreate();
     WOutputItem *outputItem = qobject_cast<WOutputItem *>(obj);
     Q_ASSERT(outputItem);
     QQmlEngine::setObjectOwnership(outputItem, QQmlEngine::CppOwnership);
@@ -411,7 +415,6 @@ std::pair<WOutputViewport*, QQuickItem*> Output::getOutputItemProperty()
 
 void Output::updatePrimaryOutputHardwareLayers()
 {
-    auto o = Helper::instance()->rootContainer()->primaryOutput();
     WOutputViewport *viewportPrimary = screenViewport();
     std::pair<WOutputViewport*, QQuickItem*> copyOutput = getOutputItemProperty();
     const auto layers = viewportPrimary->hardwareLayers();
