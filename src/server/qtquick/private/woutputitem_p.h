@@ -37,7 +37,7 @@ private:
     WOutputItem *m_positioner = nullptr;
 };
 
-class Q_DECL_HIDDEN WOutputCursor : public QObject
+class WAYLIB_SERVER_EXPORT WOutputCursor : public QObject
 {
     friend class WOutputItem;
     friend class WOutputItemPrivate;

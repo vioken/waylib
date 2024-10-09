@@ -8,7 +8,6 @@
 #include <QQuickItem>
 
 Q_MOC_INCLUDE(<wquickoutputlayout.h>)
-Q_MOC_INCLUDE(<woutputitem_p.h>)
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
