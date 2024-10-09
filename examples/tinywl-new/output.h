@@ -9,7 +9,8 @@
 #include <QObject>
 #include <QQmlComponent>
 #include <woutputviewport.h>
-Q_MOC_INCLUDE(<woutputitem_p.h>)
+
+Q_MOC_INCLUDE(<woutputitem.h>)
 
 Q_DECLARE_LOGGING_CATEGORY(qLcLayerShell)
 
