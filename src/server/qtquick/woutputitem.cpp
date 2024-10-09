@@ -124,7 +124,7 @@ void WOutputItemPrivate::updateCursors()
 
             Q_ASSERT(q->window());
             auto obj = cursorDelegate->createWithInitialProperties({
-                {"outputCurosr", QVariant::fromValue(oc)},
+                {"outputCursor", QVariant::fromValue(oc)},
                 {"parent", QVariant::fromValue(q->window()->contentItem())},
             }, qmlContext(q));
             oc->item = qobject_cast<QQuickItem*>(obj);
