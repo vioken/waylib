@@ -16,24 +16,6 @@
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
-WOutputItemAttached::WOutputItemAttached(QObject *parent)
-    : QObject(parent)
-{
-
-}
-
-WOutputItem *WOutputItemAttached::item() const
-{
-    return m_positioner;
-}
-
-void WOutputItemAttached::setItem(WOutputItem *positioner)
-{
-    if (m_positioner == positioner)
-        return;
-    m_positioner = positioner;
-    Q_EMIT itemChanged();
-}
 
 #define DATA_OF_WOUPTUT "_WOutputItem"
 class Q_DECL_HIDDEN WOutputItemPrivate : public WObjectPrivate
@@ -244,17 +226,6 @@ WOutputItem::~WOutputItem()
 
 }
 
-WOutputItemAttached *WOutputItem::qmlAttachedProperties(QObject *target)
-{
-    auto output = qobject_cast<WOutput*>(target);
-    if (!output)
-        return nullptr;
-    auto attached = new WOutputItemAttached(output);
-    attached->setItem(getOutputItem(output));
-
-    return attached;
-}
-
 WOutputItem *WOutputItem::getOutputItem(WOutput *output)
 {
     return qvariant_cast<WOutputItem*>(output->property(DATA_OF_WOUPTUT)) ;
@@ -266,11 +237,6 @@ WOutput *WOutputItem::output() const
     return d->output.get();
 }
 
-inline static WOutputItemAttached *getAttached(WOutput *output)
-{
-    return output->findChild<WOutputItemAttached*>(QString(), Qt::FindDirectChildrenOnly);
-}
-
 void WOutputItem::setOutput(WOutput *newOutput)
 {
     W_D(WOutputItem);
@@ -279,11 +245,7 @@ void WOutputItem::setOutput(WOutput *newOutput)
     d->output = newOutput;
 
     if (newOutput) {
-        if (auto attached = getAttached(newOutput)) {
-            attached->setItem(this);
-        } else {
-            newOutput->setProperty(DATA_OF_WOUPTUT, QVariant::fromValue(this));
-        }
+        newOutput->setProperty(DATA_OF_WOUPTUT, QVariant::fromValue(this));
     }
 
     if (isComponentComplete()) {

@@ -13,8 +13,8 @@ WAYLIB_SERVER_BEGIN_NAMESPACE
 
 class WQuickSeat;
 class WOutput;
+class WOutputCursor;
 class WQuickOutputLayout;
-class WOutputItemAttached;
 class WOutputItemPrivate;
 class WAYLIB_SERVER_EXPORT WOutputItem : public WQuickObserver, public WObject
 {
@@ -26,13 +26,11 @@ class WAYLIB_SERVER_EXPORT WOutputItem : public WQuickObserver, public WObject
     Q_PROPERTY(QQmlComponent* cursorDelegate READ cursorDelegate WRITE setCursorDelegate NOTIFY cursorDelegateChanged)
     Q_PROPERTY(QList<QQuickItem*> cursorItems READ cursorItems NOTIFY cursorItemsChanged)
     QML_NAMED_ELEMENT(OutputItem)
-    QML_ATTACHED(WOutputItemAttached)
 
 public:
     explicit WOutputItem(QQuickItem *parent = nullptr);
     ~WOutputItem();
 
-    static WOutputItemAttached *qmlAttachedProperties(QObject *target);
     static WOutputItem *getOutputItem(WOutput *output);
 
     WOutput *output() const;
