@@ -519,7 +519,10 @@ void WCursor::setSeat(WSeat *seat)
     Q_EMIT seatChanged();
     Q_EMIT requestedCursorShapeChanged();
     Q_EMIT requestedCursorSurfaceChanged();
-    Q_EMIT requestedDragSurfaceChanged();
+
+    if (d->seat->nativeHandle()->drag) {
+        Q_EMIT requestedDragSurfaceChanged();
+    }
 }
 
 WSeat *WCursor::seat() const
