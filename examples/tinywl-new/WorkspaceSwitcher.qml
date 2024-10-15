@@ -51,12 +51,6 @@ Item {
                     workspace: root.leftWorkspace
                     width: rootItem.outputItem.width
                     height: rootItem.outputItem.height
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "red"
-                        opacity: 0.3
-                    }
                 }
 
                 Wallpaper {
@@ -65,12 +59,6 @@ Item {
                     workspace: root.rightWorkspace
                     width: rootItem.outputItem.width
                     height: rootItem.outputItem.height
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "blue"
-                        opacity: 0.3
-                    }
                 }
             }
 
