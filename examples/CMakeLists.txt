@@ -1,4 +1,3 @@
-add_subdirectory(tinywl-new)
 add_subdirectory(tinywl)
 add_subdirectory(blur)
 add_subdirectory(surface-delegate)
