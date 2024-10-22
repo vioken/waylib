@@ -142,6 +142,7 @@ void Helper::init()
     m_surfaceContainer->setQmlEngine(engine);
 
     m_seat = m_server->attach<WSeat>();
+    m_seat->setIgnoreSurfacePointerEventExclusiveGrabber(true);
     m_seat->setEventFilter(this);
     m_seat->setCursor(m_surfaceContainer->cursor());
     m_seat->setKeyboardFocusWindow(m_renderWindow);

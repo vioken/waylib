@@ -13,6 +13,7 @@ QW_END_NAMESPACE
 
 QT_BEGIN_NAMESPACE
 class QInputDevice;
+class QEventPoint;
 QT_END_NAMESPACE
 
 WAYLIB_SERVER_BEGIN_NAMESPACE
@@ -53,7 +54,13 @@ public:
 
 private:
     friend class QWlrootsIntegration;
+    friend class WSeat;
+    friend class WSeatPrivate;
     void setQtDevice(QInputDevice *device);
+
+    void setExclusiveGrabber(QObject *grabber);
+    QObject *currentExclusiveGrabber() const;
+    QObject *lastExclusiveGrabber() const;
 };
 
 WAYLIB_SERVER_END_NAMESPACE

@@ -57,6 +57,7 @@ class WAYLIB_SERVER_EXPORT WSeat : public WWrapObject, public WServerInterface
     W_DECLARE_PRIVATE(WSeat)
     Q_PROPERTY(WInputDevice* keyboard READ keyboard WRITE setKeyboard NOTIFY keyboardChanged FINAL)
     Q_PROPERTY(WSurface* keyboardFocus READ keyboardFocusSurface WRITE setKeyboardFocusSurface NOTIFY keyboardFocusSurfaceChanged FINAL)
+    Q_PROPERTY(bool ignoreSurfacePointerEventExclusiveGrabber READ ignoreSurfacePointerEventExclusiveGrabber WRITE setIgnoreSurfacePointerEventExclusiveGrabber NOTIFY ignoreSurfacePointerEventExclusiveGrabberChanged FINAL)
 
 public:
     WSeat(const QString &name = QStringLiteral("seat0"));
@@ -99,12 +100,16 @@ public:
     WInputDevice *keyboard() const;
     void setKeyboard(WInputDevice *newKeyboard);
 
+    bool ignoreSurfacePointerEventExclusiveGrabber() const;
+    void setIgnoreSurfacePointerEventExclusiveGrabber(bool newIgnoreSurfacePointerEventExclusiveGrabber);
+
 Q_SIGNALS:
     void keyboardChanged();
     void keyboardFocusSurfaceChanged();
     void requestCursorShape(WAYLIB_SERVER_NAMESPACE::WGlobal::CursorShape shape);
     void requestCursorSurface(WAYLIB_SERVER_NAMESPACE::WSurface *surface, const QPoint &hotspot);
     void requestDrag(WAYLIB_SERVER_NAMESPACE::WSurface *surface);
+    void ignoreSurfacePointerEventExclusiveGrabberChanged();
 
 protected:
     using QObject::eventFilter;
