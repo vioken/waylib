@@ -155,6 +155,7 @@ public:
         handle()->pointer_notify_frame();
     }
     inline bool doEnter(WSurface *surface, QObject *eventObject, const QPointF &position) {
+        qDebug() << surface << "=====================================";
         // doEnter be called from QEvent::HoverEnter is normal,
         // but doNotifyMotion will call doEnter too,
         // so should compare pointerFocusEventObject and eventObject early
@@ -190,6 +191,7 @@ public:
         return true;
     }
     inline void doClearPointerFocus() {
+        qDebug() << Q_FUNC_INFO << pointerFocusEventObject << "--------------";
         pointerFocusEventObject.clear();
         handle()->pointer_notify_clear_focus();
         Q_ASSERT(!handle()->handle()->pointer_state.focused_surface);
@@ -401,6 +403,7 @@ public:
     WGlobal::CursorShape cursorShape = WGlobal::CursorShape::Invalid;
 
     QPointer<WSurface> dragSurface;
+    bool ignoreSurfacePointerEventExclusiveGrabber = false;
 };
 
 void WSeatPrivate::on_destroy()
@@ -1034,6 +1037,39 @@ void WSeat::setKeyboard(WInputDevice *newKeyboard)
     Q_EMIT this->keyboardChanged();
 }
 
+bool WSeat::ignoreSurfacePointerEventExclusiveGrabber() const
+{
+    W_DC(WSeat);
+    return d->ignoreSurfacePointerEventExclusiveGrabber;
+}
+
+void WSeat::setIgnoreSurfacePointerEventExclusiveGrabber(bool newIgnoreSurfacePointerEventExclusiveGrabber)
+{
+    W_D(WSeat);
+    if (d->ignoreSurfacePointerEventExclusiveGrabber == newIgnoreSurfacePointerEventExclusiveGrabber)
+        return;
+    d->ignoreSurfacePointerEventExclusiveGrabber = newIgnoreSurfacePointerEventExclusiveGrabber;
+    if (d->ignoreSurfacePointerEventExclusiveGrabber) {
+        for (WInputDevice *device : std::as_const(d->deviceList)) {
+            // Qt will auto grab the pointer event for QQuickItem when mouse pressed
+            // until mouse released. But we want always update the HoverEnter/Leave's
+            // WSurfaceItem between drag move.
+            if (device->currentExclusiveGrabber() == d->pointerFocusEventObject)
+                device->setExclusiveGrabber(nullptr);
+        }
+    } else {
+        for (WInputDevice *device : std::as_const(d->deviceList)) {
+            if (!device->currentExclusiveGrabber()
+                && device->lastExclusiveGrabber() == d->pointerFocusEventObject) {
+                // Restore
+                device->setExclusiveGrabber(d->pointerFocusEventObject);
+            }
+        }
+    }
+
+    Q_EMIT ignoreSurfacePointerEventExclusiveGrabberChanged();
+}
+
 void WSeat::notifyMotion(WCursor *cursor, WInputDevice *device, uint32_t timestamp)
 {
     W_D(WSeat);
@@ -1429,6 +1465,18 @@ bool WSeat::filterEventBeforeDisposeStage(QWindow *targetWindow, QInputEvent *ev
 
     d->addEventState(event);
 
+    if (event->isPointerEvent()) {
+        auto pe = static_cast<QPointerEvent*>(event);
+        if (pe->isEndEvent()) {
+            auto device = WInputDevice::from(event->device());
+            if (!device->currentExclusiveGrabber()
+                && device->lastExclusiveGrabber() == d->pointerFocusEventObject) {
+                // Restore the grabber, See ignoreSurfacePointerEventExclusiveGrabber
+                device->setExclusiveGrabber(d->pointerFocusEventObject);
+            }
+        }
+    }
+
     if (Q_UNLIKELY(d->eventFilter)) {
         if (d->eventFilter->beforeDisposeEvent(this, targetWindow, event)) {
             if (event->type() == QEvent::MouseMove || event->type() == QEvent::HoverMove) {
@@ -1439,6 +1487,7 @@ bool WSeat::filterEventBeforeDisposeStage(QWindow *targetWindow, QInputEvent *ev
                 // because the QQuickDeliveryAgent can't get the real last mouse
                 // position, the QQuickWindowPrivate::lastMousePosition is error.
                 if (QQuickWindow *qw = qobject_cast<QQuickWindow*>(targetWindow)) {
+                    Q_ASSERT(event->isSinglePointEvent());
                     const auto pos = static_cast<QSinglePointEvent*>(event)->position();
                     QQuickWindowPrivate::get(qw)->deliveryAgentPrivate()->lastMousePosition = pos;
                 }
@@ -1460,6 +1509,20 @@ bool WSeat::filterEventAfterDisposeStage(QWindow *targetWindow, QInputEvent *eve
 
     if (event->isAccepted() || d->pendingEvents.at(eventStateIndex).isAccepted) {
         d->pendingEvents.removeAt(eventStateIndex);
+
+        if (event->isPointerEvent()) {
+            auto pe = static_cast<QPointerEvent*>(event);
+
+            // Qt will auto grab the pointer event for QQuickItem when mouse pressed
+            // until mouse released. But we want always update the HoverEnter/Leave's
+            // WSurfaceItem between drag move.
+            if (pe->isBeginEvent()) {
+                auto ie = WInputDevice::from(event->device());
+                if (ie->currentExclusiveGrabber() == d->pointerFocusEventObject)
+                    ie->setExclusiveGrabber(nullptr);
+            }
+        }
+
         return false;
     }
 
