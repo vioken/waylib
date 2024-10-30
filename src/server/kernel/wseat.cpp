@@ -184,6 +184,10 @@ public:
             onEventObjectDestroy = QObject::connect(eventObject, &QObject::destroyed,
                                                     q_func(), [this] {
                 doClearPointerFocus();
+                // Qt missing HoverEnter event to next Object after pointerFocusEventObject destroyed
+                QHoverEvent hoverEvent(QEvent::HoverEnter, QPointF(0,0), cursor->position(), cursor->position(),
+                               Qt::NoModifier);
+                QCoreApplication::sendEvent(cursor->eventWindow(), &hoverEvent);
             });
         }
 
