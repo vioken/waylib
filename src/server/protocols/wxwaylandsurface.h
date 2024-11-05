@@ -113,6 +113,9 @@ public:
     WindowTypes windowTypes() const;
     DecorationsType decorationsType() const;
 
+    void configureSize(uint16_t width, uint16_t height);
+    void configurePosition(int16_t x, int16_t y);
+
 public Q_SLOTS:
     bool checkNewSize(const QSize &size) override;
     void resize(const QSize &size) override;
