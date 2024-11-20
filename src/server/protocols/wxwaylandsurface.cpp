@@ -45,6 +45,8 @@ public:
     void updateChildren();
     void updateParent();
     void updateWindowTypes();
+    void doConfigureSize(uint16_t width, uint16_t height);
+    void doConfigurePosition(int16_t x, int16_t y);
 
     W_DECLARE_PUBLIC(WXWaylandSurface)
 
@@ -240,6 +242,98 @@ void WXWaylandSurfacePrivate::updateWindowTypes()
     windowTypes = types;
     Q_EMIT q_func()->windowTypesChanged();
 }
+
+void WXWaylandSurfacePrivate::doConfigureSize(uint16_t width, uint16_t height) {
+    // auto xsurface = nativeHandle();
+    // xsurface->width = width;
+    // xsurface->height = height;
+
+    // uint32_t mask = XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT;
+    // uint32_t values[] = { width, height };
+    // qDebug() << Q_FUNC_INFO << " " << width << " " << height;
+    // xcb_configure_window(xwayland->xcbConnection(), xsurface->window_id, mask, values);
+
+    // xcb_flush(xwayland->xcbConnection());
+
+    auto xsurface = handle()->handle();
+    int old_w = xsurface->width;
+    int old_h = xsurface->height;
+
+    xsurface->x = 100;
+    xsurface->y = 100;
+    xsurface->width = width;
+    xsurface->height = height;
+
+    struct wlr_xwm *xwm = xsurface->xwm;
+    uint32_t mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y |
+        XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT |
+        XCB_CONFIG_WINDOW_BORDER_WIDTH;
+    uint32_t values[] = {100, 100, width, height, 0};
+    xcb_configure_window(xwayland->xcbConnection(), xsurface->window_id, mask, values);
+
+           // If the window size did not change, then we cannot rely on
+           // the X server to generate a ConfigureNotify event. Instead,
+           // we are supposed to send a synthetic event. See ICCCM part
+           // 4.1.5. But we ignore override-redirect windows as ICCCM does
+           // not apply to them.
+    if (width == old_w && height == old_h && !xsurface->override_redirect) {
+        xcb_configure_notify_event_t configure_notify = {
+            .response_type = XCB_CONFIGURE_NOTIFY,
+            .event = xsurface->window_id,
+            .window = xsurface->window_id,
+            .x = 100,
+            .y = 100,
+            .width = width,
+            .height = height,
+        };
+
+        xcb_send_event(xwayland->xcbConnection(), 0, xsurface->window_id,
+                       XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                       (const char *)&configure_notify);
+    }
+
+    xcb_flush(xwayland->xcbConnection());
+
+
+    //wlr_xwayland_surface_configure(q_func()->handle()->handle(),100,100,width,height);
+}
+
+void WXWaylandSurfacePrivate::doConfigurePosition(int16_t x, int16_t y)
+{
+    return;
+    auto xsurface = nativeHandle();
+
+    xsurface->x = x;
+    xsurface->y = y;
+
+    uint32_t mask = XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y;
+    uint32_t values[] = { (uint32_t)x, (uint32_t)y };
+    xcb_configure_window(xwayland->xcbConnection(), xsurface->window_id, mask, values);
+
+    // If the window size did not change, then we cannot rely on
+    // the X server to generate a ConfigureNotify event. Instead,
+    // we are supposed to send a synthetic event. See ICCCM part
+    // 4.1.5. But we ignore override-redirect windows as ICCCM does
+    // not apply to them.
+    if (!xsurface->override_redirect) {
+        xcb_configure_notify_event_t configure_notify = {
+            .response_type = XCB_CONFIGURE_NOTIFY,
+            .event = xsurface->window_id,
+            .window = xsurface->window_id,
+            .x = x,
+            .y = y,
+            .width = xsurface->width,
+            .height = xsurface->height,
+        };
+
+        xcb_send_event(xwayland->xcbConnection(), 0, xsurface->window_id,
+                       XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+                       (const char *)&configure_notify);
+    }
+
+    xcb_flush(xwayland->xcbConnection());
+}
+
 
 WXWaylandSurface::WXWaylandSurface(qw_xwayland_surface *handle, WXWayland *xwayland, QObject *parent)
     : WToplevelSurface(*new WXWaylandSurfacePrivate(this, handle, xwayland), parent)
@@ -459,6 +553,18 @@ WXWaylandSurface::DecorationsType WXWaylandSurface::decorationsType() const
 {
     W_DC(WXWaylandSurface);
     return static_cast<DecorationsType>(d->nativeHandle()->decorations);
+}
+
+void WXWaylandSurface::configureSize(uint16_t width, uint16_t height)
+{
+    W_D(WXWaylandSurface);
+    d->doConfigureSize(width, height);
+}
+
+void WXWaylandSurface::configurePosition(int16_t x, int16_t y)
+{
+    W_D(WXWaylandSurface);
+    d->doConfigurePosition(x, y);
 }
 
 bool WXWaylandSurface::checkNewSize(const QSize &size)
