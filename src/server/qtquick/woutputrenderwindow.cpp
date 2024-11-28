@@ -177,7 +177,6 @@ public:
 
     inline void init() {
         connect(this, &OutputHelper::requestRender, renderWindow(), qOverload<>(&WOutputRenderWindow::render));
-        connect(this, &OutputHelper::damaged, renderWindow(), &WOutputRenderWindow::scheduleRender);
         // TODO: pre update scale after WOutputHelper::setScale
         output()->output()->safeConnect(&WOutput::scaleChanged, this, &OutputHelper::updateSceneDPR);
     }
@@ -1646,10 +1645,10 @@ void WOutputRenderWindow::attach(WOutputLayer *layer, WOutputViewport *output)
 
     auto outputHelper = d->getOutputHelper(output);
     if (outputHelper && outputHelper->attachLayer(wapper))
-        d->scheduleDoRender();
+        outputHelper->requestFrame();
 
-    connect(layer, &WOutputLayer::flagsChanged, this, &WOutputRenderWindow::scheduleRender);
-    connect(layer, &WOutputLayer::zChanged, this, &WOutputRenderWindow::scheduleRender);
+    connect(layer, &WOutputLayer::flagsChanged, outputHelper, &OutputHelper::requestFrame);
+    connect(layer, &WOutputLayer::zChanged, outputHelper, &OutputHelper::requestFrame);
 
     if (auto od = WOutputViewportPrivate::get(output)) {
         od->notifyLayersChanged();
@@ -1876,7 +1875,6 @@ void WOutputRenderWindow::update(WOutputViewport *output)
     int index = d->indexOfOutputHelper(output);
     Q_ASSERT(index >= 0);
     d->outputs.at(index)->update();
-    d->scheduleDoRender();
 }
 
 qreal WOutputRenderWindow::width() const
