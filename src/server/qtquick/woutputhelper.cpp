@@ -47,10 +47,7 @@ public:
         output->safeConnect(&qw_output::notify_frame, qq, [this] {
             on_frame();
         });
-        output->safeConnect(&qw_output::notify_needs_frame, qq, [this] {
-            setNeedsFrame(true);
-            qwoutput()->qw_output::schedule_frame();
-        });
+        output->safeConnect(&qw_output::notify_needs_frame, qq, &WOutputHelper::requestFrame);
         output->safeConnect(&qw_output::notify_damage, qq, [this] {
             on_damage();
         });
@@ -134,8 +131,10 @@ void WOutputHelperPrivate::on_frame()
 
 void WOutputHelperPrivate::on_damage()
 {
-    setContentIsDirty(true);
-    Q_EMIT q_func()->damaged();
+    // The damage envent is from wlr_cursor.
+
+    // The cursor's implementation is in WOutputLayer,
+    // is not in wlroots, so don't do anything here.
 }
 
 qw_buffer *WOutputHelperPrivate::acquireBuffer(wlr_swapchain **sc, int *bufferAge)
@@ -333,6 +332,13 @@ void WOutputHelper::update()
 {
     W_D(WOutputHelper);
     d->update();
+}
+
+void WOutputHelper::requestFrame()
+{
+    W_D(WOutputHelper);
+    d->setNeedsFrame(true);
+    d->qwoutput()->schedule_frame();
 }
 
 WAYLIB_SERVER_END_NAMESPACE
