@@ -240,6 +240,7 @@ public:
     WBufferRenderer *afterRender();
     WBufferRenderer *compositeLayers(const QVector<LayerData*> layers, bool forceShadowRenderer);
     bool commit(WBufferRenderer *buffer);
+    bool commitWithCurrentBuffer();
     bool tryToHardwareCursor(const LayerData *layer);
 
 private:
@@ -1068,6 +1069,17 @@ bool OutputHelper::commit(WBufferRenderer *buffer)
     return WOutputHelper::commit();
 }
 
+bool OutputHelper::commitWithCurrentBuffer()
+{
+    if (output()->offscreen())
+        return true;
+    if (!m_lastCommitBuffer)
+        return false;
+    setBuffer(m_lastCommitBuffer->lastBuffer());
+
+    return WOutputHelper::commit();
+}
+
 bool OutputHelper::tryToHardwareCursor(const LayerData *layer)
 {
     do {
@@ -1744,7 +1756,7 @@ void WOutputRenderWindow::setOutputScale(WOutputViewport *output, float scale)
 
     if (auto helper = d->getOutputHelper(output)) {
         helper->setScale(scale);
-        helper->WOutputHelper::commit();
+        helper->commitWithCurrentBuffer();
         helper->update();
     }
 }
@@ -1755,7 +1767,7 @@ void WOutputRenderWindow::rotateOutput(WOutputViewport *output, WOutput::Transfo
 
     if (auto helper = d->getOutputHelper(output)) {
         helper->setTransform(t);
-        helper->WOutputHelper::commit();
+        helper->commitWithCurrentBuffer();
         helper->update();
     }
 }

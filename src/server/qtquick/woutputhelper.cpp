@@ -255,6 +255,14 @@ bool WOutputHelper::commit()
 {
     W_D(WOutputHelper);
     wlr_output_state state = d->state;
+    if (state.committed == 0)
+        return false;
+
+    if (state.committed != WLR_OUTPUT_STATE_LAYERS) {
+        Q_ASSERT_X(state.committed & WLR_OUTPUT_STATE_BUFFER, Q_FUNC_INFO,
+                   "WOutputHelper::commit: buffer is not set, you will got a black frame");
+    }
+
     wlr_output_state_init(&d->state);
     bool ok = d->qwoutput()->commit_state(&state);
     wlr_output_state_finish(&state);
