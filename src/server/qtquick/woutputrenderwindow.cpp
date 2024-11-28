@@ -1744,7 +1744,8 @@ void WOutputRenderWindow::setOutputScale(WOutputViewport *output, float scale)
 
     if (auto helper = d->getOutputHelper(output)) {
         helper->setScale(scale);
-        update();
+        helper->WOutputHelper::commit();
+        helper->update();
     }
 }
 
@@ -1754,7 +1755,8 @@ void WOutputRenderWindow::rotateOutput(WOutputViewport *output, WOutput::Transfo
 
     if (auto helper = d->getOutputHelper(output)) {
         helper->setTransform(t);
-        update();
+        helper->WOutputHelper::commit();
+        helper->update();
     }
 }
 
