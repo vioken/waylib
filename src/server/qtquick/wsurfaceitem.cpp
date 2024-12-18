@@ -301,9 +301,6 @@ WSurfaceItemContent::~WSurfaceItemContent()
         d->surface->safeDisconnect(d->updateTextureConnection);
     }
 
-    if (d->frameDoneConnection)
-        QObject::disconnect(d->frameDoneConnection);
-
     //`d->window` will become nullptr in ~QQuickItem
     // Don't move this to private class
     d->cleanTextureProvider();
