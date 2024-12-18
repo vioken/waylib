@@ -55,6 +55,7 @@ public:
     QVarLengthArray<xcb_atom_t> supportedAtoms() const;
     void setSupportedAtoms(const QVarLengthArray<xcb_atom_t> &atoms);
     void setAtomSupported(xcb_atom_t atom, bool supported);
+    void setResourceManagerAtom(const QByteArray &value);
 
     void setSeat(WSeat *seat);
     WSeat *seat() const;

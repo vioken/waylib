@@ -218,6 +218,23 @@ void WXWayland::setAtomSupported(xcb_atom_t atom, bool supported)
     }
 }
 
+void WXWayland::setResourceManagerAtom(const QByteArray &value)
+{
+    W_D(WXWayland);
+    auto xcb_conn = xcbConnection();
+    auto root = xcbScreen()->root;
+    auto cookie = xcb_intern_atom(xcb_conn, 0, strlen("RESOURCE_MANAGER"), "RESOURCE_MANAGER");
+    auto reply = xcb_intern_atom_reply(xcb_conn, cookie, nullptr);
+    if (!reply) {
+        return;
+    }
+    auto resource_manager_atom = reply->atom;
+    xcb_change_property(xcb_conn, XCB_PROP_MODE_REPLACE, root, resource_manager_atom,
+                        XCB_ATOM_STRING, 8, value.size(), value.constData());
+    xcb_flush(xcb_conn);
+    free(reply);
+}
+
 void WXWayland::setSeat(WSeat *seat)
 {
     W_D(WXWayland);
