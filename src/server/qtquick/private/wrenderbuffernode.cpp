@@ -5,12 +5,14 @@
 #define protected public
 #define private public
 #include <private/qsgrenderer_p.h>
+#include <private/qsgbatchrenderer_p.h>
 #undef protected
 #undef private
 
 #include "wrenderbuffernode_p.h"
 #include "wbufferrenderer_p.h"
 #include "wqmlhelper_p.h"
+#include "platformplugin/types.h"
 
 #include <QQuickItem>
 #include <QRunnable>
@@ -301,19 +303,22 @@ public:
     }
 
     void sync(const QSize &pixelSize, QSGRootNode *rootNode,
-              const QMatrix4x4 &matrix = {}, QSGRenderer *base = nullptr,
-              const QVector2D &dpr = {}) {
+              const QMatrix4x4 &matrix = {}, const QMatrix4x4 &baseProjectionMatrix = {},
+              QSGRenderer *base = nullptr, const QVector2D &dpr = {}) {
         Q_ASSERT(!renderer->rootNode());
 
         if (base) {
             renderer->setDevicePixelRatio(base->devicePixelRatio());
             renderer->setDeviceRect(base->deviceRect());
             renderer->setViewportRect(base->viewportRect());
+
+            // The m22 and m23 is control the z-order for depth test.
+            // If have a base QSGRenderer, we should inherit the depth test from
+            // baseProjectionMatrix.
+            renderer->setProjectionMatrix(baseProjectionMatrix);
 #if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
-            renderer->setProjectionMatrix(base->projectionMatrix(0));
             renderer->setProjectionMatrixWithNativeNDC(base->projectionMatrixWithNativeNDC(0));
 #else
-            renderer->setProjectionMatrix(base->projectionMatrix());
             renderer->setProjectionMatrixWithNativeNDC(base->projectionMatrixWithNativeNDC());
 #endif
         } else {
@@ -359,28 +364,54 @@ public:
         return true;
     }
 
-    bool render(qreal oldDPR, QRhiCommandBuffer* &oldCB) {
+    bool render(qreal oldDPR, QRhiCommandBuffer* &oldCB, bool forceDepthTest = false) {
         Q_ASSERT(renderer->m_is_rendering);
         renderer->render();
         renderer->m_is_rendering = false;
         renderer->m_changed_emitted = false;
 
         context->prepareSync(oldDPR, oldCB, graphicsConfiguration());
+        bool ok = false;
 
-        bool ok = rhi()->endOffscreenFrame() == QRhi::FrameOpSuccess;
+        do {
+            if (forceDepthTest && Q_LIKELY(isBatchRenderer)) {
+                auto batchRenderer = static_cast<QSGBatchRenderer::Renderer*>(renderer);
+                if (auto sm = batchRenderer->m_shaderManager) {
+                    if (Q_LIKELY(!sm->pipelineCache.isEmpty())) {
+                        const auto pipelines = sm->pipelineCache.values();
+                        QVector<bool> cacheDepthTestValues;
+                        cacheDepthTestValues.reserve(pipelines.size());
+
+                        for (auto pipeline : pipelines) {
+                            cacheDepthTestValues.append(pipeline->hasDepthTest());
+                            pipeline->setDepthTest(true);
+                        }
+                        ok = rhi()->endOffscreenFrame() == QRhi::FrameOpSuccess;
+                        Q_ASSERT(cacheDepthTestValues.size() == sm->pipelineCache.size());
+                        for (int i = 0; i < pipelines.size(); ++i)
+                            pipelines[i]->setDepthTest(cacheDepthTestValues.at(i));
+
+                        break;
+                    }
+                }
+            }
+
+            ok = rhi()->endOffscreenFrame() == QRhi::FrameOpSuccess;
+        } while (false);
+
         renderer->setRootNode(nullptr);
 
         return ok;
     }
 
-    inline bool render(QRhiRenderTarget *rt) {
+    inline bool render(QRhiRenderTarget *rt, bool forceDepthTest = false) {
         qreal oldDPR;
         QRhiCommandBuffer *oldCB;
 
         if (!preprocess(rt, oldDPR, oldCB))
             return false;
 
-        return render(oldDPR, oldCB);
+        return render(oldDPR, oldCB, forceDepthTest);
     }
 
 private:
@@ -389,7 +420,10 @@ private:
     RhiManager(QQuickWindow *owner)
         : DataManager<RhiManager, void>(owner) {
         Q_ASSERT(owner->findChildren<RhiManager*>(Qt::FindDirectChildrenOnly).size() == 1);
-        auto rhi = QSGRhiSupport::instance()->createRhi(owner, owner);
+        std::unique_ptr<QOffscreenSurface> fallbackSurface(new QW::OffscreenSurface(nullptr));
+        fallbackSurface->create();
+
+        auto rhi = QSGRhiSupport::instance()->createRhi(owner, fallbackSurface.get());
         if (!rhi.rhi)
             return;
         Q_ASSERT(rhi.rhi->backend() == owner->rhi()->backend());
@@ -397,9 +431,16 @@ private:
         m_rhi->rhi = rhi.rhi;
         m_rhi->own = rhi.own;
         m_rhi->gc = owner->graphicsConfiguration();
+        m_rhi->offscreenSurface = fallbackSurface.release();
 
         context = QQuickWindowPrivate::get(owner)->context;
+        // Don't use RenderMode2D, when use this renderer on an exists renderTarget
+        // we need to ensure the renderer don't overwrite the depth buffer, because
+        // the exists renderTarget is using in the other QSGRenderer, maybe that
+        // renderer is using depth test, and the other QSGRenderer is not finished render.
+        // For an example: RhiNode to render its content nodes on an exists renderTarget.
         renderer = context->createRenderer(QSGRendererInterface::RenderMode2DNoDepthBuffer);
+        isBatchRenderer = dynamic_cast<QSGBatchRenderer::Renderer*>(renderer);
     }
 
     ~RhiManager() {
@@ -422,23 +463,27 @@ private:
 
     struct Rhi {
         QRhi *rhi;
+        QOffscreenSurface *offscreenSurface;
         bool own;
         QQuickGraphicsConfiguration gc;
 
-        static inline void cleanup(Rhi *pointer) {
-            if (!pointer || !pointer->own)
+        ~Rhi() {
+            if (!own)
                 return;
 
             auto rhiSupport = QSGRhiSupport::instance();
             if (rhiSupport)
-                rhiSupport->destroyRhi(pointer->rhi, pointer->gc);
+                rhiSupport->destroyRhi(rhi, gc);
             else
-                delete pointer->rhi;
+                delete rhi;
+
+            delete offscreenSurface;
         }
     };
 
     QSGRenderContext *context;
     QSGRenderer *renderer;
+    bool isBatchRenderer = false;
 
     QScopedPointer<Rhi> m_rhi;
 };
@@ -516,13 +561,10 @@ public:
     }
 
     RenderingFlags flags() const override {
-        // FIXME: shoule we support DepthAwareRendering?
-        // When enable DepthAwareRendering, render buffer node may have a wrong order.
-        // Disable DepthAwareRendering here.
         if (Q_UNLIKELY(!contentNode))
-            return BoundedRectRendering;
+            return BoundedRectRendering | DepthAwareRendering;
 
-        return {};
+        return DepthAwareRendering;
     }
 
     void releaseResources() override {
@@ -629,7 +671,8 @@ public:
         if (renderData) {
             if (!renderData->rt || sgTexture()->rhiTexture() != texture->data) {
                 QRhiTextureRenderTargetDescription rtDesc(texture->data);
-                const auto flags = QRhiTextureRenderTarget::PreserveColorContents;
+                const auto flags = QRhiTextureRenderTarget::PreserveColorContents
+                    | QRhiTextureRenderTarget::PreserveDepthStencilContents;
                 auto newRT = rhi->rhi()->newTextureRenderTarget(rtDesc, flags);
                 newRT->setRenderPassDescriptor(newRT->newCompatibleRenderPassDescriptor());
                 if (!newRT->create()) {
@@ -666,7 +709,7 @@ public:
             const QPointF sourcePos = renderMatrix.map(m_rect.topLeft());
             renderData->imageNode->setRect(QRectF(-(devicePixelRatio - 1) * sourcePos, ct->pixelSize()));
 
-            rhi->sync(texture->data->pixelSize(), &renderData->rootNode, renderMatrix.inverted(), nullptr,
+            rhi->sync(texture->data->pixelSize(), &renderData->rootNode, renderMatrix.inverted(), {}, nullptr,
                       {texture->data->pixelSize().width() / float(m_rect.width() * devicePixelRatio),
                        texture->data->pixelSize().height() / float(m_rect.height() * devicePixelRatio)});
             rhi->render(renderData->rt.get());
@@ -698,8 +741,13 @@ public:
             Q_ASSERT(renderTarget()->resourceType() == QRhiResource::TextureRenderTarget);
             auto textureRT = static_cast<QRhiTextureRenderTarget*>(renderTarget());
             auto saveFlags = textureRT->flags();
-            textureRT->setFlags(QRhiTextureRenderTarget::PreserveColorContents);
+            textureRT->setFlags(QRhiTextureRenderTarget::PreserveColorContents
+                                | QRhiTextureRenderTarget::PreserveDepthStencilContents);
             auto currentRenderer = maybeBufferRenderer();
+            // If the source renderer enable depth test, we should enable depth test also,
+            // to ensure the contentNode's z order on RenderMode2DNoDepthBuffer render mode.
+            const bool forceDepthTest = currentRenderer->currentBatchRenderer()
+                                   && currentRenderer->currentBatchRenderer()->useDepthBuffer();
 
             if (clipList() || inheritedOpacity() < 1.0) {
                 if (!node)
@@ -729,7 +777,7 @@ public:
 
                 overrideChildNodesTo(contentNode, childContainer);
 
-                rhi->sync(ct->pixelSize(), &node->rootNode, {},
+                rhi->sync(ct->pixelSize(), &node->rootNode, {}, *projectionMatrix(),
                           currentRenderer ? currentRenderer->currentRenderer() : nullptr);
                 qreal oldDPR;
                 QRhiCommandBuffer *oldCB;
@@ -746,16 +794,15 @@ public:
                         }
                     }
 
-                    rhi->render(oldDPR, oldCB);
+                    rhi->render(oldDPR, oldCB, forceDepthTest);
                 }
 
                 restoreChildNodesTo(childContainer, contentNode);
             } else {
                 node.reset();
-
-                rhi->sync(ct->pixelSize(), contentNode, *this->matrix(),
+                rhi->sync(ct->pixelSize(), contentNode, *this->matrix(), *projectionMatrix(),
                           currentRenderer ? currentRenderer->currentRenderer() : nullptr);
-                rhi->render(textureRT);
+                rhi->render(textureRT, forceDepthTest);
             }
 
             textureRT->setFlags(saveFlags);
