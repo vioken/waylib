@@ -5,6 +5,7 @@
 
 #include "wsurfaceitem.h"
 #include "wsurface.h"
+#include "wwrappointer.h"
 
 #include <QQuickWindow>
 #include <QSGImageNode>
@@ -63,8 +64,8 @@ public:
     }
 
     Q_DECLARE_PUBLIC(WSurfaceItem)
-    QPointer<WSurface> surface;
-    QPointer<WToplevelSurface> shellSurface;
+    WSurface *surface = nullptr;
+    WWrapPointer<WToplevelSurface> shellSurface;
     std::unique_ptr<SurfaceState> surfaceState;
     QQuickItem *contentContainer = nullptr;
     QQmlComponent *delegate = nullptr;

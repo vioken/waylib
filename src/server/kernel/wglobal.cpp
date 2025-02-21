@@ -202,6 +202,9 @@ QW_NAMESPACE::qw_object_basic *WWrapObject::handle() const
 bool WWrapObject::isInvalidated() const
 {
     W_DC(WWrapObject);
+
+    Q_ASSERT_X(d->invalidated || handle() != nullptr, Q_FUNC_INFO, "WWrapObject not invalidate in time");
+
     return d->invalidated;
 }
 
