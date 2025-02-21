@@ -271,7 +271,7 @@ public:
     }
 
     W_DECLARE_PUBLIC(WSurfaceItemContent)
-    WWrapPointer<WSurface> surface;
+    WSurface *surface = nullptr;
     QRectF bufferSourceBox;
     QPoint bufferOffset;
     qreal devicePixelRatio = 1.0;
@@ -592,7 +592,7 @@ WSurfaceItem *WSurfaceItem::fromFocusObject(QObject *focusObject)
 WSurface *WSurfaceItem::surface() const
 {
     Q_D(const WSurfaceItem);
-    return d->surface.get();
+    return d->surface;
 }
 
 void WSurfaceItem::setSurface(WSurface *surface)
@@ -900,6 +900,7 @@ void WSurfaceItem::releaseResources()
 
     if (d->surface) {
         d->surface->safeDisconnect(this);
+        d->surface = nullptr;
     }
 
     if (!d->surfaceFlags.testFlag(DontCacheLastBuffer)) {
@@ -936,7 +937,7 @@ bool WSurfaceItem::sendEvent(QInputEvent *event)
     if (!d->surface)
         return false;
 
-    return WSeat::sendEvent(d->surface.get(), this, d->eventItem, event);
+    return WSeat::sendEvent(d->surface, this, d->eventItem, event);
 }
 
 bool WSurfaceItem::doResizeSurface(const QSize &newSize)
@@ -1220,7 +1221,7 @@ WSurfaceItem *WSurfaceItemPrivate::ensureSubsurfaceItem(WSurface *subsurfaceSurf
 {
     for (int i = 0; i < subsurfaces.count(); ++i) {
         auto surfaceItem = subsurfaces.at(i);
-        WSurface *surface = surfaceItem->d_func()->surface.get();
+        WSurface *surface = surfaceItem->d_func()->surface;
 
         if (surface && surface == subsurfaceSurface) {
             if (surfaceItem->parent() == parent) {

@@ -64,7 +64,7 @@ public:
     }
 
     Q_DECLARE_PUBLIC(WSurfaceItem)
-    WWrapPointer<WSurface> surface;
+    WSurface *surface = nullptr;
     WWrapPointer<WToplevelSurface> shellSurface;
     std::unique_ptr<SurfaceState> surfaceState;
     QQuickItem *contentContainer = nullptr;
