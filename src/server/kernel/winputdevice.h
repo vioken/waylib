@@ -49,6 +49,7 @@ public:
     static WInputDevice *from(const QInputDevice *device);
 
     Type type() const;
+    QString name() const;
     void setSeat(WSeat *seat);
     WSeat *seat() const;
 

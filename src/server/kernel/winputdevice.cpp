@@ -7,7 +7,6 @@
 
 #include <qwinputdevice.h>
 
-#include <QDebug>
 #include <QInputDevice>
 #include <QPointer>
 
@@ -78,9 +77,23 @@ WInputDevice::Type WInputDevice::type() const
     case WLR_INPUT_DEVICE_SWITCH: return Type::Switch;
     }
 
-    // TODO: use qCWarning
-    qWarning("Unknow input device type %i\n", d->nativeHandle()->type);
+
     return Type::Unknow;
+}
+
+QString WInputDevice::name() const
+{
+    W_DC(WInputDevice);
+
+    if (d->nativeHandle() && d->nativeHandle()->name) {
+        return QString::fromUtf8(d->nativeHandle()->name);
+    }
+
+    if (d->qtDevice) {
+        return d->qtDevice->name();
+    }
+
+    return QString("unnamed");
 }
 
 void WInputDevice::setSeat(WSeat *seat)

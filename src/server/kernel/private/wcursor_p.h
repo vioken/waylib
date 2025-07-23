@@ -72,6 +72,7 @@ public:
 
     void connect();
     void processCursorMotion(QW_NAMESPACE::qw_pointer *device, uint32_t time);
+    WSeat *getDeviceSeat(WInputDevice *inputDevice);
 
     W_DECLARE_PUBLIC(WCursor)
 

@@ -6,9 +6,11 @@
 #include <WEvent>
 #include <WServer>
 #include <WInputDevice>
+#include <WOutput>
 
 #include <QEvent>
 #include <QSharedData>
+#include <QRegularExpression>
 
 Q_MOC_INCLUDE(<wsurface.h>)
 
@@ -60,6 +62,8 @@ class WAYLIB_SERVER_EXPORT WSeat : public WWrapObject, public WServerInterface
     Q_PROPERTY(WInputDevice* keyboard READ keyboard WRITE setKeyboard NOTIFY keyboardChanged FINAL)
     Q_PROPERTY(WSurface* keyboardFocus READ keyboardFocusSurface WRITE setKeyboardFocusSurface NOTIFY keyboardFocusSurfaceChanged FINAL)
     Q_PROPERTY(bool alwaysUpdateHoverTarget READ alwaysUpdateHoverTarget WRITE setAlwaysUpdateHoverTarget NOTIFY alwaysUpdateHoverTargetChanged FINAL)
+    Q_PROPERTY(bool isFallback READ isFallback WRITE setIsFallback NOTIFY isFallbackChanged FINAL)
+    Q_PROPERTY(QList<WOutput*> outputs READ outputs NOTIFY outputsChanged FINAL)
 
 public:
     WSeat(const QString &name = QStringLiteral("seat0"));
@@ -105,6 +109,16 @@ public:
     bool alwaysUpdateHoverTarget() const;
     void setAlwaysUpdateHoverTarget(bool newIgnoreSurfacePointerEventExclusiveGrabber);
 
+    bool isFallback() const;
+    void setIsFallback(bool fallback);
+
+    QList<WOutput*> outputs() const;
+    void attachOutput(WOutput *output);
+    void detachOutput(WOutput *output);
+
+    bool matchesDevice(WInputDevice *device, const QList<QRegularExpression> &rules) const;
+    QList<WInputDevice*> deviceList() const;
+
 Q_SIGNALS:
     void keyboardChanged();
     void keyboardFocusSurfaceChanged();
@@ -112,6 +126,8 @@ Q_SIGNALS:
     void requestCursorSurface(WAYLIB_SERVER_NAMESPACE::WSurface *surface, const QPoint &hotspot);
     void requestDrag(WAYLIB_SERVER_NAMESPACE::WSurface *surface);
     void alwaysUpdateHoverTargetChanged();
+    void isFallbackChanged();
+    void outputsChanged();
 
 protected:
     using QObject::eventFilter;

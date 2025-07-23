@@ -103,9 +103,10 @@ void WCursorPrivate::on_button(wlr_pointer_button_event *event)
         lastPressedOrTouchDownPosition = q_func()->position();
     }
 
-    if (Q_LIKELY(seat)) {
-        seat->notifyButton(q_func(), WInputDevice::fromHandle(device),
-                           button, event->state, event->time_msec);
+    if (auto inputDevice = WInputDevice::fromHandle(device)) {
+        if (auto deviceSeat = getDeviceSeat(inputDevice)) {
+            deviceSeat->notifyButton(q_func(), inputDevice, button, event->state, event->time_msec);
+        }
     }
 }
 
@@ -113,11 +114,13 @@ void WCursorPrivate::on_axis(wlr_pointer_axis_event *event)
 {
     auto device = qw_pointer::from(event->pointer);
 
-    if (Q_LIKELY(seat)) {
-        seat->notifyAxis(q_func(), WInputDevice::fromHandle(device), event->source,
-                         event->orientation == WL_POINTER_AXIS_HORIZONTAL_SCROLL
-                         ? Qt::Horizontal : Qt::Vertical, event->relative_direction,
-                         event->delta, event->delta_discrete, event->time_msec);
+    if (auto inputDevice = WInputDevice::fromHandle(device)) {
+        if (auto deviceSeat = getDeviceSeat(WInputDevice::fromHandle(device))) {
+            deviceSeat->notifyAxis(q_func(), inputDevice, event->source,
+                                 event->orientation == WL_POINTER_AXIS_HORIZONTAL_SCROLL
+                                 ? Qt::Horizontal : Qt::Vertical, event->relative_direction,
+                                 event->delta, event->delta_discrete, event->time_msec);
+        }
     }
 }
 
@@ -317,8 +320,25 @@ void WCursorPrivate::processCursorMotion(qw_pointer *device, uint32_t time)
 {
     W_Q(WCursor);
 
-    if (Q_LIKELY(seat))
-        seat->notifyMotion(q, WInputDevice::fromHandle(device), time);
+    if (auto inputDevice = WInputDevice::fromHandle(device)) {
+        if (auto deviceSeat = getDeviceSeat(inputDevice)) {
+            deviceSeat->notifyMotion(q, inputDevice, time);
+        }
+    }
+}
+
+WSeat *WCursorPrivate::getDeviceSeat(WInputDevice *inputDevice)
+{
+    if (Q_UNLIKELY(!inputDevice)) {
+        return seat;
+    }
+
+    WSeat *deviceSeat = inputDevice->seat();
+    if (Q_LIKELY(deviceSeat)) {
+        return deviceSeat;
+    }
+
+    return seat;
 }
 
 WCursor::WCursor(WCursorPrivate &dd, QObject *parent)

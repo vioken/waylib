@@ -61,6 +61,7 @@ set(SOURCES
     kernel/wserver.cpp
     kernel/wsurface.cpp
     kernel/wtoplevelsurface.cpp
+    kernel/wseatmanager.cpp
 
 
     kernel/wtypes.cpp
@@ -154,6 +155,7 @@ set(HEADERS
     kernel/wxcursorimage.h
     kernel/wsocket.h
     kernel/wtoplevelsurface.h
+    kernel/wseatmanager.h
 
     kernel/WOutput
     kernel/WServer
@@ -165,6 +167,7 @@ set(HEADERS
     kernel/WEvent
     kernel/WInputEvent
     kernel/WSurface
+    kernel/WSeatManager
 
     qtquick/wsurfaceitem.h
     qtquick/WSurfaceItem

@@ -307,7 +307,9 @@ void WInputMethodHelper::resendKeyboardFocus()
         qCDebug(qLcInputMethod()) << "trying to send focus to" << textInput << "from client" << textInput->waylandClient();
         if (focus->waylandClient() == textInput->waylandClient()) {
             qCDebug(qLcInputMethod) << "focus sent to" << textInput;
-            textInput->sendEnter(focus);
+            if (!textInput->seat() || textInput->seat()->name() == d->seat->name()) {
+                textInput->sendEnter(focus);
+            }
         }
     }
 }
