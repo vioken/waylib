@@ -1,3 +1,9 @@
+waylib (0.6.13.1) unstable; urgency=medium
+
+  * bump version to 0.6.13.1
+
+ -- Lu YaNing <luyaning@uniontech.com>  Thu, 24 Jul 2025 21:08:27 +0800
+
 waylib (0.6.13) unstable; urgency=medium
 
   * Fix not clear WSurfuce when instantRelease XWaylandSurface
