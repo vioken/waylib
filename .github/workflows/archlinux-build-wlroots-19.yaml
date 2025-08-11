@@ -24,7 +24,7 @@ jobs:
           pacman -Syu --noconfirm --noprogressbar base-devel qt6-base qt6-declarative cmake pkgconfig pixman vulkan-headers wlroots0.19 wayland-protocols wlr-protocols git
           pacman -Syu --noconfirm --noprogressbar clang ninja make
           pacman -Syu --noconfirm --noprogressbar fakeroot meson sudo
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: true
       - name: Configure CMake
