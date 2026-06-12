@@ -26,18 +26,20 @@ Based on the above features, compositor developers need only focus on the busine
 
 ## Building
 
+### Prerequisites
+
 Step 1: Compiling and Installing wlroots and qwlroots
 
 waylib requires the development version (0.19) of wlroots, which needs to be [compiled and installed manually](https://gitlab.freedesktop.org/wlroots/wlroots#building). Arch Linux users can install [wlroots-0.19](https://archlinux.org/packages/extra/x86_64/wlroots0.19/).
 
 For qwlroots, it is currently recommended to use the version provided as a submodule. However, you can also [compile and install](https://github.com/vioken/qwlroots) it by yourself. 
 
-If using the submodule version, please note the following two points:
+If using the submodule version, please initialize the submodules when you clone the source code: `git clone git@github.com:vioken/waylib.git --recursive`
 
-1. Initialize the submodules when you clone the source code: `git clone git@github.com:vioken/waylib.git --recursive`
-2. Before the final compilation, add the cmake parameter "-DWITH_SUBMODULE_QWLROOTS=ON" to enable the building of the submodule.
 
-Step 2: Installing other dependencies
+### Method 1: Command Line (System Packages)
+
+Step 1: Installing other dependencies
 
 Debian
 
@@ -57,12 +59,43 @@ It is recommended to manage dependencies using [nix-direnv](https://github.com/n
 
 You can also packaging by using the command "nix build -v -L".
 
-Step 3: Execute the following commands
+Step 2: Execute the following commands
 
 ```bash
 cmake -B build -DWITH_SUBMODULE_QWLROOTS=ON
 cmake --build build
 ```
+
+---
+
+### Method 2: Qt Creator (Standalone Qt Installation)
+
+Use this method if you have downloaded Qt separately from the official Qt website using the Maintenance Tool and want to develop using Qt Creator.
+
+> **Tested Environment:** This method and the current state of `waylib` have been tested/built successfully using **Qt 6.9.2** and **wlroots 0.19.0 **.
+
+**Step 1: Open the Project**
+1. Launch Qt Creator.
+2. Go to `File` -> `Open File or Project...`
+3. Select the main `CMakeLists.txt` file located in the root of your cloned `waylib` repository.
+
+**Step 2: Configure CMake Options**
+To enable the building of the `qwlroots` submodule, you need to add a specific CMake flag before the final configuration:
+
+1. In Qt Creator, go to the **Projects** mode (wrench icon on the left sidebar).
+2. Under your selected Kit (e.g., *Desktop Qt 6.9.2*), click on **Build Settings**.
+3. Scroll down to the **CMake** section.
+4. Locate the **Initial Configuration** table.
+5. Click **Add** -> **Boolean** and enter the following details:
+   * **Key:** `WITH_SUBMODULE_QWLROOTS`
+   * **Value:** `ON` 
+   *(Alternatively, you can just paste `-DWITH_SUBMODULE_QWLROOTS:BOOL=ON` if using raw CMake arguments).*
+6. Click **Re-configure with Initial Parameters** (or simply build the project, which will trigger CMake).
+
+**Step 3: Build**
+Click the **Build** button (hammer icon) in the bottom-left corner to compile the project.
+
+---
 
 ## How to Contribute
 
