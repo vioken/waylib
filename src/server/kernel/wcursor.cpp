@@ -30,6 +30,81 @@
 #include <QLoggingCategory>
 #include <private/qcursor_p.h>
 
+#include "wrelativepointerv1.h"
+#include "wserver.h"
+
+#include <wlr/types/wlr_pointer_constraints_v1.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
+#include <pixman.h>
+#include <cmath>
+
+// Inline replacement for wlr_region_confine() to avoid linking the wlroots
+// util library directly from libwaylibserver (it is only available indirectly
+// via QWlroots). The implementation mirrors wlr_region_confine from
+// wlroots/util/region.c, using only the pixman API that waylibserver already
+// links against.
+static void regionConfine(const pixman_region32_t *region, double x1, double y1,
+                           double x2, double y2, double *x2_out, double *y2_out,
+                           const pixman_box32_t *box)
+{
+    // Clamp the target to the box.
+    double x = x2;
+    double y = y2;
+    x = std::max<double>(x, box->x1);
+    x = std::min<double>(x, box->x2);
+    y = std::max<double>(y, box->y1);
+    y = std::min<double>(y, box->y2);
+
+    // If the clamped point is inside the region we're done.
+    if (pixman_region32_contains_point(region, std::lround(x), std::lround(y), nullptr)) {
+        *x2_out = x;
+        *y2_out = y;
+        return;
+    }
+
+    // Calculate the delta from the source point.
+    const double dx = x - x1;
+    const double dy = y - y1;
+    const double delta = std::max<double>(std::fabs(dx), std::fabs(dy));
+    if (delta < 1e-9) {
+        *x2_out = x1;
+        *y2_out = y1;
+        return;
+    }
+
+    // Step along the line from (x1,y1) to (x,y) pixel by pixel.
+    const double step_x = dx / delta;
+    const double step_y = dy / delta;
+    for (int i = static_cast<int>(delta); i > 0; i--) {
+        x -= step_x;
+        y -= step_y;
+        if (pixman_region32_contains_point(region, std::lround(x), std::lround(y), nullptr)) {
+            *x2_out = x;
+            *y2_out = y;
+            return;
+        }
+    }
+
+    *x2_out = x1;
+    *y2_out = y1;
+}
+
+static bool regionConfineWrapper(const pixman_region32_t *region, double x1, double y1,
+                                 double x2, double y2, double *x2_out, double *y2_out)
+{
+    int nrects = 0;
+    const pixman_box32_t *rects = pixman_region32_rectangles(region, &nrects);
+    if (nrects == 0)
+        return false;
+
+    for (int i = 0; i < nrects; i++) {
+        const pixman_box32_t *box = &rects[i];
+        regionConfine(region, x1, y1, x2, y2, x2_out, y2_out, box);
+        return true;
+    }
+    return false;
+}
+
 QW_USE_NAMESPACE
 WAYLIB_SERVER_BEGIN_NAMESPACE
 
@@ -80,15 +155,22 @@ void WCursorPrivate::sendLeaveEvent(WInputDevice *device)
 void WCursorPrivate::on_motion(wlr_pointer_motion_event *event)
 {
     auto device = qw_pointer::from(event->pointer);
+    const QPointF oldPos = q_func()->position();
     q_func()->move(device, QPointF(event->delta_x, event->delta_y));
-    processCursorMotion(device, event->time_msec);
+    if (!applyPointerConstraint(device, event->time_msec, event->delta_x, event->delta_y,
+                                event->unaccel_dx, event->unaccel_dy, oldPos))
+        processCursorMotion(device, event->time_msec);
 }
 
 void WCursorPrivate::on_motion_absolute(wlr_pointer_motion_absolute_event *event)
 {
     auto device = qw_pointer::from(event->pointer);
+    const QPointF oldPos = q_func()->position();
     q_func()->setScalePosition(device, QPointF(event->x, event->y));
-    processCursorMotion(device, event->time_msec);
+    const QPointF delta = q_func()->position() - oldPos;
+    if (!applyPointerConstraint(device, event->time_msec, delta.x(), delta.y(),
+                                delta.x(), delta.y(), oldPos))
+        processCursorMotion(device, event->time_msec);
 }
 
 void WCursorPrivate::on_button(wlr_pointer_button_event *event)
@@ -319,6 +401,50 @@ void WCursorPrivate::processCursorMotion(qw_pointer *device, uint32_t time)
 
     if (Q_LIKELY(seat))
         seat->notifyMotion(q, WInputDevice::fromHandle(device), time);
+}
+
+bool WCursorPrivate::applyPointerConstraint(qw_pointer *device, uint32_t timeMsec,
+                                            double dx, double dy,
+                                            double dxUnaccel, double dyUnaccel,
+                                            const QPointF &oldPos)
+{
+    W_Q(WCursor);
+    if (!activeConstraint)
+        return false;
+
+    wlr_seat *wlrSeat = seat ? seat->handle()->handle() : nullptr;
+    if (!wlrSeat)
+        return false;
+
+    if (activeConstraint->type == WLR_POINTER_CONSTRAINT_V1_LOCKED) {
+        if (auto *server = seat->server()) {
+            if (auto *relative = server->findInterface<WRelativePointerManagerV1>()) {
+                relative->sendRelativeMotion(wlrSeat, static_cast<uint64_t>(timeMsec) * 1000,
+                                             dx, dy, dxUnaccel, dyUnaccel);
+            }
+        }
+        // Warp back to the anchor so physical movement does not accumulate.
+        q->setPosition(device, lockedWarpTarget);
+        return true;
+    }
+
+    if (activeConstraint->type == WLR_POINTER_CONSTRAINT_V1_CONFINED) {
+        // The constraint region and the seat's last surface-local position are
+        // both in logical coordinates, so the output-layout delta maps directly.
+        const double sx = wlrSeat->pointer_state.sx;
+        const double sy = wlrSeat->pointer_state.sy;
+        double confinedSx = sx + dx;
+        double confinedSy = sy + dy;
+        if (regionConfineWrapper(&activeConstraint->region, sx, sy,
+                               confinedSx, confinedSy, &confinedSx, &confinedSy)) {
+            q->setPosition(device, oldPos + QPointF(confinedSx - sx, confinedSy - sy));
+        } else {
+            q->setPosition(device, oldPos);
+        }
+        return false;
+    }
+
+    return false;
 }
 
 WCursor::WCursor(WCursorPrivate &dd, QObject *parent)
@@ -658,6 +784,43 @@ void WCursor::setVisible(bool visible)
         return;
     d->visible = visible;
     Q_EMIT visibleChanged();
+}
+
+void WCursor::setActivePointerConstraint(wlr_pointer_constraint_v1 *constraint)
+{
+    W_D(WCursor);
+    if (d->activeConstraint == constraint)
+        return;
+
+    if (d->activeConstraint
+            && d->activeConstraint->type == WLR_POINTER_CONSTRAINT_V1_LOCKED)
+        setVisible(d->cursorVisibleBeforeLock);
+
+    d->activeConstraint = constraint;
+
+    if (!constraint)
+        return;
+
+    if (constraint->type == WLR_POINTER_CONSTRAINT_V1_LOCKED) {
+        d->cursorVisibleBeforeLock = isVisible();
+        setVisible(false);
+        wlr_seat *wlrSeat = d->seat ? d->seat->handle()->handle() : nullptr;
+        if (wlrSeat && constraint->current.cursor_hint.enabled) {
+            const double sx = wlrSeat->pointer_state.sx;
+            const double sy = wlrSeat->pointer_state.sy;
+            d->lockedWarpTarget = position()
+                + QPointF(constraint->current.cursor_hint.x - sx,
+                          constraint->current.cursor_hint.y - sy);
+        } else {
+            d->lockedWarpTarget = position();
+        }
+    }
+}
+
+wlr_pointer_constraint_v1 *WCursor::activePointerConstraint() const
+{
+    W_DC(WCursor);
+    return d->activeConstraint;
 }
 
 QPointF WCursor::position() const
